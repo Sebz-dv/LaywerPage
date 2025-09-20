@@ -1,6 +1,7 @@
 // layouts/AppLayout.jsx
 import React from "react";
 import Navbar from "../components/navbar/Navbar.jsx";
+import Footer from "./Footer.jsx";
 
 function cx(...xs) { return xs.filter(Boolean).join(" "); }
 
@@ -50,13 +51,7 @@ export default function AppLayout({ children }) {
           "border-[hsl(var(--border))] bg-[hsl(var(--card))]"
         )}
       >
-        <div className="w-full px-4 py-6 text-sm text-[hsl(var(--fg))/0.75]">
-          © {new Date().getFullYear()} Montoya & Asociados ·
-          <span className="mx-2">•</span>
-          <a href="/privacidad" className="hover:underline underline-offset-4">Privacidad</a>
-          <span className="mx-2">•</span>
-          <a href="/terminos" className="hover:underline underline-offset-4">Términos</a>
-        </div>
+        <Footer />
       </footer>
     </div>
   );
