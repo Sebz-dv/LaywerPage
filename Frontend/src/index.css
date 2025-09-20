@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+/* Dark variant al estilo Sebas */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ======== Tokens (HSL para soportar /opacidad) ======== */
+:root {
+  /* Base */
+  --bg: 40 20% 98%;
+  --fg: 230 24% 12%;
+
+  --card: 0 0% 100%;
+  --muted: 40 15% 92%;
+  --border: 30 10% 80%;
+  --ring: 40 30% 40%;
+
+  /* Marca y CTA */
+  --brand: 210 28% 20%;
+  --brand-contrast: 48 32% 92%;
+
+  --cta: 40 70% 45%;
+  --cta-contrast: 230 24% 12%;
+
+  /* Semánticos */
+  --success: 164 34% 36%;
+  --warning: 38 92% 48%;
+  --destructive: 0 62% 45%;
+
+  /* Aliases */
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-contrast);
+  --accent: var(--cta);
+  --accent-foreground: var(--cta-contrast);
+}
+
+/* ======== Overrides en dark ======== */
+.dark {
+  --bg: 220 20% 6%;
+  --fg: 210 20% 92%;
+
+  --card: 220 20% 9%;
+  --muted: 220 12% 16%;
+  --border: 220 12% 22%;
+  --ring: 40 70% 55%;
+
+  --brand: 210 18% 85%;
+  --brand-contrast: 230 28% 10%;
+
+  --cta: 40 72% 52%;
+  --cta-contrast: 230 28% 10%;
+
+  --success: 164 38% 46%;
+  --warning: 38 100% 54%;
+  --destructive: 0 62% 56%;
+}
+
+/* ======== Base mínimos ======== */
+html, body {
+  background: hsl(var(--bg));
+  color: hsl(var(--fg));
+}
