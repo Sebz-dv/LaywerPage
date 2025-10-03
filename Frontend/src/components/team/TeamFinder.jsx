@@ -1,10 +1,12 @@
 // components/team/TeamFinder.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
 }
+
 const slugify = (s = "") =>
   s
     .toLowerCase()
@@ -14,31 +16,52 @@ const slugify = (s = "") =>
     .trim()
     .replace(/\s+/g, "-");
 
+// ✅ API base para JSON
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+// ✅ ORIGIN para archivos estáticos
+const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? "http://localhost:8000";
+const resolveUrl = (u) => (!u ? "" : u.startsWith("http") ? u : `${API_ORIGIN}${u}`);
+
+// ✅ Fallback imagen
+const FALLBACK_AVATAR =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23e5e7eb"/></svg>';
 
 export default function TeamFinder({
   className = "",
   basePath = "/equipo",
-  initialTab = "todos",
+  initialTab = "todos", // 'juridico' | 'no-juridico' | 'todos'
   pageSize = 9,
+  imageFitDefault = "cover", // 'cover' | 'contain'
 }) {
-  const [tab, setTab] = useState(initialTab); // 'juridico' | 'no-juridico' | 'todos'
+  // ===== Filtros
+  const [tab, setTab] = useState(initialTab);
   const [nombre, setNombre] = useState("");
   const [cargo, setCargo] = useState("");
   const [area, setArea] = useState("");
   const [ciudad, setCiudad] = useState("");
 
+  // ===== Resultados y facetas
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [facets, setFacets] = useState({ cargos: [], areas: [], ciudades: [] });
 
+  // ===== Red
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Debounce para nombre
   const debouncedNombre = useDebounce(nombre, 250);
 
+  // ===== Preferencia de ajuste de imagen (persistente)
+  const [imageFit, setImageFit] = useState(() => {
+    const saved = localStorage.getItem("team_image_fit");
+    return saved === "cover" || saved === "contain" ? saved : imageFitDefault;
+  });
+  useEffect(() => {
+    localStorage.setItem("team_image_fit", imageFit);
+  }, [imageFit]);
+
+  // ===== Query
   const query = useMemo(() => {
     const p = new URLSearchParams();
     if (tab !== "todos") p.set("tab", tab);
@@ -51,185 +74,215 @@ export default function TeamFinder({
     return p.toString();
   }, [tab, debouncedNombre, cargo, area, ciudad, page, pageSize]);
 
-  // Fetch
+  // ===== Fetch
   useEffect(() => {
-    let abort = new AbortController();
+    const ctrl = new AbortController();
     setLoading(true);
     setError("");
 
-    fetch(`${API_URL}/team?${query}`, { signal: abort.signal })
+    fetch(`${API_URL}/team?${query}`, { signal: ctrl.signal })
       .then(async (r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
       .then((json) => {
-        const { data, meta } = json;
+        const { data, meta } = json || {};
         setLastPage(meta?.last_page ?? 1);
         setFacets({
           cargos: meta?.facets?.cargos ?? [],
           areas: meta?.facets?.areas ?? [],
           ciudades: meta?.facets?.ciudades ?? [],
         });
-        // Si page===1 reiniciamos; si no, agregamos
-        setItems((prev) => (page === 1 ? data : [...prev, ...data]));
+        setItems((prev) => (page === 1 ? data ?? [] : [...prev, ...(data ?? [])]));
       })
       .catch((e) => {
         if (e.name !== "AbortError") setError(e.message || "Error");
       })
       .finally(() => setLoading(false));
 
-    return () => abort.abort();
+    return () => ctrl.abort();
   }, [query, page]);
 
-  // Resetear page al cambiar filtros
+  // Reset page al cambiar filtros
   useEffect(() => {
     setPage(1);
   }, [tab, debouncedNombre, cargo, area, ciudad]);
 
   const canLoad = page < lastPage;
 
+  // ===== Animations
+  const prefersReduced = useReducedMotion();
+
+  const gridVariants = {
+    hidden: {},
+    show: {
+      transition: { staggerChildren: 0.05, delayChildren: 0.03 },
+    },
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 10, scale: 0.98 },
+    show: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: prefersReduced
+        ? { duration: 0.2 }
+        : { type: "spring", stiffness: 420, damping: 28, mass: 0.6 },
+    },
+    hover: prefersReduced
+      ? {}
+      : {
+        y: -3,
+        transition: { duration: 0.18 },
+      },
+  };
+
   return (
     <section className={cx("w-full", className)}>
-
-      {/* Tabs */}
-      <div className="mt-4 inline-flex rounded-xl border border-[hsl(var(--border))] p-1 bg-[hsl(var(--card))]">
+      {/* ===== Tabs con indicador animado (layoutId) */}
+      <div className="mt-4 inline-flex relative rounded-xl border border-[hsl(var(--border))] p-1 bg-[hsl(var(--card))]">
         {[
           { id: "juridico", label: "Jurídico" },
           { id: "no-juridico", label: "No Jurídico" },
           { id: "todos", label: "Todos" },
-        ].map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={cx(
-              "px-3 py-1.5 text-sm rounded-lg transition-colors",
-              tab === t.id
-                ? "bg-[hsl(var(--muted))] text-[hsl(var(--fg))]"
-                : "text-[hsl(var(--fg))/0.85] hover:bg-[hsl(var(--muted))]"
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
+        ].map((t) => {
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={cx(
+                "relative px-3 py-1.5 text-sm rounded-lg transition-colors z-10",
+                active
+                  ? "text-[hsl(var(--fg))]"
+                  : "text-[hsl(var(--fg))/0.85] hover:text-[hsl(var(--fg))]"
+              )}
+            >
+              {active && (
+                <motion.span
+                  layoutId="tabIndicator"
+                  className="absolute inset-0 rounded-lg bg-[hsl(var(--muted))]"
+                  transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                  aria-hidden
+                />
+              )}
+              <span className="relative">{t.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Filtros */}
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7]">
-            Nombre
-          </label>
+      {/* ===== Filtros + Ajuste imagen */}
+      <motion.div
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22 }}
+        className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
+      >
+        <div className="group">
+          <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7]">Nombre</label>
           <input
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             placeholder="Ej. Ana, Andrés…"
             className="w-full rounded-xl px-3 py-2 border outline-none bg-[hsl(var(--card))] text-[hsl(var(--fg))]
-                       border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                       border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--ring))] transition-shadow"
           />
         </div>
 
-        <Select
-          label="CARGO"
-          value={cargo}
-          onChange={setCargo}
-          options={facets.cargos}
-        />
-        <Select
-          label="ÁREA"
-          value={area}
-          onChange={setArea}
-          options={facets.areas}
-        />
-        <Select
-          label="CIUDAD"
-          value={ciudad}
-          onChange={setCiudad}
-          options={facets.ciudades}
-        />
-      </div>
+        <Select label="CARGO" value={cargo} onChange={setCargo} options={facets.cargos} />
+        <Select label="ÁREA" value={area} onChange={setArea} options={facets.areas} />
+        <Select label="CIUDAD" value={ciudad} onChange={setCiudad} options={facets.ciudades} />
 
-      {/* Resultados */}
-      <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((p, i) => {
-          const slug = p.slug ?? slugify(p.nombre);
-          return (
-            <article
-              key={slug + i}
-              className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 shadow-sm group"
+        {/* Ajuste imagen (cover/contain) */}
+        <div className="flex flex-col">
+          <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7]">Ajuste imagen</label>
+          <div className="inline-flex rounded-lg border border-[hsl(var(--border))] overflow-hidden">
+            <button
+              onClick={() => setImageFit("cover")}
+              className={cx(
+                "px-3 py-2 text-xs",
+                imageFit === "cover"
+                  ? "bg-[hsl(var(--muted))] text-[hsl(var(--fg))]"
+                  : "text-[hsl(var(--fg))/0.8] hover:bg-[hsl(var(--muted))]"
+              )}
+              aria-pressed={imageFit === "cover"}
             >
-              <div className="aspect-[4/3] w-full rounded-lg bg-[hsl(var(--muted))] grid place-items-center overflow-hidden">
-                {p.foto_url ? (
-                  <img
-                    src={p.foto_url}
-                    alt={p.nombre}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="text-[hsl(var(--fg))/0.5] text-sm">
-                    Foto
-                  </span>
-                )}
-              </div>
-              <h3 className="mt-4 text-lg font-semibold">{p.nombre}</h3>
-              <p className="text-sm text-[hsl(var(--fg))/0.85]">{p.cargo}</p>
-              <p className="text-sm text-[hsl(var(--fg))/0.7]">
-                {p.area} · {p.ciudad}
-              </p>
-              <div className="mt-4">
-                <Link
-                  to={`${basePath}/${slug}`}
-                  className={cx(
-                    "inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium border",
-                    "bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))]",
-                    "hover:bg-[hsl(var(--muted))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
-                  )}
-                >
-                  Ver Perfil
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M7 12h10M13 6l6 6-6 6"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                  </svg>
-                </Link>
-              </div>
-            </article>
-          );
-        })}
+              Llenar
+            </button>
+            <button
+              onClick={() => setImageFit("contain")}
+              className={cx(
+                "px-3 py-2 text-xs",
+                imageFit === "contain"
+                  ? "bg-[hsl(var(--muted))] text-[hsl(var(--fg))]"
+                  : "text-[hsl(var(--fg))/0.8] hover:bg-[hsl(var(--muted))]"
+              )}
+              aria-pressed={imageFit === "contain"}
+            >
+              Ajustar
+            </button>
+          </div>
+        </div>
+      </motion.div>
 
-        {/* Skeletons */}
-        {loading &&
-          items.length === 0 &&
+      {/* ===== Grid de resultados */}
+      <motion.div
+        variants={gridVariants}
+        initial="hidden"
+        animate="show"
+        className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        <AnimatePresence>
+          {items.map((p, i) => {
+            const slug = p.slug ?? slugify(p.nombre);
+            const key = p.id ?? slug ?? `row-${i}`;
+            const imgSrc = resolveUrl(p.foto_url);
+            return (
+              <TeamCard
+                key={key}
+                imgSrc={imgSrc}
+                nombre={p.nombre}
+                cargo={p.cargo}
+                area={p.area}
+                ciudad={p.ciudad}
+                href={`${basePath}/${slug}`}
+                variants={cardVariants}
+                imageFit={imageFit}
+              />
+            );
+          })}
+        </AnimatePresence>
+
+        {/* Skeletons iniciales */}
+        {loading && items.length === 0 &&
           Array.from({ length: pageSize }).map((_, k) => (
             <div
-              key={k}
-              className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 animate-pulse"
+              key={`skeleton-${k}`}
+              className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 overflow-hidden relative"
             >
-              <div className="aspect-[4/3] w-full rounded-lg bg-[hsl(var(--muted))]" />
+              <div className="aspect-[4/3] w-full rounded-lg bg-[hsl(var(--muted))] relative overflow-hidden" />
               <div className="mt-4 h-4 w-2/3 bg-[hsl(var(--muted))] rounded" />
               <div className="mt-2 h-3 w-1/2 bg-[hsl(var(--muted))] rounded" />
               <div className="mt-2 h-3 w-1/3 bg-[hsl(var(--muted))] rounded" />
+              <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
             </div>
           ))}
-      </div>
+      </motion.div>
 
-      {/* Estado vacío / error */}
+      {/* ===== Vacío / error */}
       {!loading && items.length === 0 && (
-        <p className="mt-6 text-sm text-[hsl(var(--fg))/0.7]">
-          {error
-            ? `Error: ${error}`
-            : "Sin resultados para los filtros actuales."}
-        </p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-6 text-sm text-[hsl(var(--fg))/0.7]"
+        >
+          {error ? `Error: ${error}` : "Sin resultados para los filtros actuales."}
+        </motion.p>
       )}
 
-      {/* Cargar más */}
+      {/* ===== Cargar más */}
       {items.length > 0 && (
         <div className="mt-6 flex justify-center">
           {canLoad ? (
@@ -237,17 +290,24 @@ export default function TeamFinder({
               onClick={() => setPage((p) => p + 1)}
               disabled={loading}
               className={cx(
-                "rounded-xl px-4 py-2 text-sm font-medium border",
+                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium border",
                 "bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))]",
-                "hover:bg-[hsl(var(--muted))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                "hover:bg-[hsl(var(--muted))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]",
+                "transition-colors"
               )}
+              aria-busy={loading}
             >
-              {loading ? "Cargando..." : "Cargar más"}
+              {loading ? (
+                <>
+                  <Spinner />
+                  Cargando…
+                </>
+              ) : (
+                "Cargar más"
+              )}
             </button>
           ) : (
-            <p className="text-sm text-[hsl(var(--fg))/0.7]">
-              No hay más resultados.
-            </p>
+            <p className="text-sm text-[hsl(var(--fg))/0.7]">No hay más resultados.</p>
           )}
         </div>
       )}
@@ -255,28 +315,155 @@ export default function TeamFinder({
   );
 }
 
-// Subcomponentes auxiliares
+/* ===================== Subcomponentes ===================== */
+
+function TeamCard({ imgSrc, nombre, cargo, area, ciudad, href, variants, imageFit }) {
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const prefersReduced = useReducedMotion();
+
+  return (
+    <motion.article
+      variants={variants}
+      whileHover="hover"
+      whileTap={{ scale: prefersReduced ? 1 : 0.995 }}
+      layout
+      className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 shadow-sm group transition-shadow hover:shadow-[0_6px_24px_-12px_rgba(0,0,0,0.35)]"
+    >
+      {/* Imagen con animación de carga (blur + shimmer) */}
+      <div
+        className={cx(
+          "relative aspect-[4/3] w-full rounded-lg overflow-hidden",
+          imageFit === "contain" ? "bg-[hsl(var(--card))]" : "bg-[hsl(var(--muted))]"
+        )}
+      >
+        {!imgLoaded && (
+          <>
+            {/* Shimmer overlay */}
+            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.1s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            {/* Blur placeholder */}
+            <div className="absolute inset-0 backdrop-blur-[2px] opacity-70" />
+          </>
+        )}
+
+        {imgSrc ? (
+          <motion.img
+            src={imgError ? FALLBACK_AVATAR : imgSrc}
+            alt={nombre}
+            decoding="async"
+            loading="lazy"
+            draggable="false"
+            onLoad={() => setImgLoaded(true)}
+            onError={() => {
+              setImgError(true);
+              setImgLoaded(true);
+            }}
+            initial={{ opacity: 0, scale: imageFit === "cover" ? 1.015 : 1 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={prefersReduced ? { duration: 0.2 } : { duration: 0.35, ease: [0.22, 0.61, 0.36, 1] }}
+            className={cx(
+              "absolute inset-0 h-full w-full object-center",
+              imageFit === "cover" ? "object-cover" : "object-contain",
+              imgLoaded ? "blur-0" : "blur-[6px]",
+              imageFit === "cover" && imgLoaded
+                ? "group-hover:scale-[1.012] transition-transform duration-300 will-change-transform"
+                : ""
+            )}
+          />
+        ) : (
+          <span className="absolute inset-0 grid place-items-center text-[hsl(var(--fg))/0.5] text-sm">
+            Foto
+          </span>
+        )}
+
+        {/* borde sutil al hover */}
+        <span className="pointer-events-none absolute inset-0 ring-0 group-hover:ring-2 ring-[hsl(var(--ring))/0.25] transition-all rounded-lg" />
+      </div>
+
+      <motion.h3
+        className="mt-4 text-lg font-semibold"
+        initial={{ opacity: 0, y: 4 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.6 }}
+        transition={{ duration: 0.2, delay: 0.05 }}
+      >
+        {nombre}
+      </motion.h3>
+      <p className="text-sm text-[hsl(var(--fg))/0.85]">{cargo}</p>
+      <p className="text-sm text-[hsl(var(--fg))/0.7]">
+        {area} · {ciudad}
+      </p>
+
+      <div className="mt-4">
+        <Link
+          to={href}
+          className={cx(
+            "inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium border",
+            "bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))]",
+            "hover:bg-[hsl(var(--muted))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]",
+            "transition-colors"
+          )}
+        >
+          Ver Perfil
+          <motion.svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            aria-hidden="true"
+            initial={false}
+            whileHover={{ x: 2 }}
+            transition={{ duration: 0.18 }}
+          >
+            <path
+              d="M7 12h10M13 6l6 6-6 6"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              fill="none"
+            />
+          </motion.svg>
+        </Link>
+      </div>
+    </motion.article>
+  );
+}
+
 function Select({ label, value, onChange, options = [] }) {
   return (
-    <div>
-      <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7]">
-        {label}
-      </label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl px-3 py-2 border outline-none
-                   bg-[hsl(var(--card))] text-[hsl(var(--fg))]
-                   border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--ring))]"
-      >
-        <option value="">Todas</option>
-        {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
+    <div className="group">
+      <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7]">{label}</label>
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full appearance-none rounded-xl px-3 py-2 border outline-none
+                     bg-[hsl(var(--card))] text-[hsl(var(--fg))]
+                     border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--ring))] transition-shadow"
+        >
+          <option value="">Todas</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+        <motion.span
+          initial={{ rotate: 0 }}
+          animate={{ rotate: value ? 180 : 0 }}
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"
+        >
+          ▾
+        </motion.span>
+      </div>
     </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" opacity="0.25" />
+      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" fill="none" />
+    </svg>
   );
 }
 
@@ -284,9 +471,13 @@ function useDebounce(value, delay = 250) {
   const [v, setV] = useState(value);
   const t = useRef();
   useEffect(() => {
-    clearTimeout(t.current);
+    clearTimeout(t?.current);
     t.current = setTimeout(() => setV(value), delay);
-    return () => clearTimeout(t.current);
+    return () => clearTimeout(t?.current);
   }, [value, delay]);
   return v;
 }
+
+/* ====== CSS util (pegar en tu global si no existe) ======
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+*/

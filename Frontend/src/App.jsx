@@ -8,6 +8,9 @@ import Intro from "./pages/Intro";
 import AppLayout from "./layouts/AppLayout";
 import TeamProfile from "./pages/TeamProfile";
 import TeamIndex from "./pages/TeamIndex";
+import AdminLayout from "./layouts/AdminLayout"; 
+import TeamMembersPage from "./components/team/TeamMembersPage";
+
 
 function Shell() {
   return (
@@ -17,22 +20,31 @@ function Shell() {
   );
 }
 
+function AdminShell() {
+  return (
+    <AdminLayout>
+      <Outlet />
+    </AdminLayout>
+  );
+}
+
 export default function App() {
   return (
     <Routes>
       {/* Públicas (todas con AppLayout + Navbar) */}
       <Route element={<Shell />}>
         <Route path="/" element={<Intro />} />
-        <Route path="/login" element={<Login />} /> {/* <-- mover aquí */}
-        <Route path="/register" element={<Register />} /> {/* <-- mover aquí */}
-        <Route path="/equipo/:slug" element={<TeamProfile />} /> {/* 👈 NUEVA */}
-        <Route path="/equipo" element={<TeamIndex />} /> 
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/equipo/:slug" element={<TeamProfile />} />
+        <Route path="/equipo" element={<TeamIndex />} />
       </Route>
 
       {/* Protegidas (también con AppLayout + Navbar) */}
       <Route element={<ProtectedRoute />}>
-        <Route element={<Shell />}>
+        <Route element={<AdminShell />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dash/members" element={<TeamMembersPage />} />
         </Route>
       </Route>
 

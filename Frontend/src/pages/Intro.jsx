@@ -31,7 +31,6 @@ export default function IntroPage() {
           showAnchors
           titleClassName="md:text-5xl leading-tight font-semibold flex justify-center"
         />
-
         <TeamHero />
         <TeamKpis className="mt-10" />
         <TeamFinder className="mt-2" />

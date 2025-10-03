@@ -1,13 +1,24 @@
 // src/components/team/MembersTable.jsx
-import React from "react";
+import React, { useMemo } from "react";
 
 const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? "http://localhost:8000";
-const resolveUrl = (u) => (!u ? "" : u.startsWith("http") ? u : `${API_ORIGIN}${u}`);
+const resolveUrl = (u) =>
+  !u ? "" : u.startsWith("http") ? u : `${API_ORIGIN}${u}`;
 const FALLBACK_AVATAR =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23e5e7eb"/></svg>';
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
+}
+
+// 🔑 Genera una key robusta
+function keyOf(m, i) {
+  return (
+    m?.id ??
+    m?.slug ??
+    (m?.nombre && m?.cargo ? `${m.nombre}::${m.cargo}` : null) ??
+    `row-${i}`
+  );
 }
 
 /**
@@ -28,6 +39,22 @@ export function MembersTable({
   onDelete,
   onOpenProfile,
 }) {
+  // (Opcional) Detecta duplicados en dev
+  useMemo(() => {
+    if (import.meta.env.DEV) {
+      const keys = new Map();
+      items.forEach((m, i) => {
+        const k = keyOf(m, i);
+        keys.set(k, (keys.get(k) ?? 0) + 1);
+      });
+      const dups = [...keys.entries()].filter(([, c]) => c > 1);
+      if (dups.length) {
+        // eslint-disable-next-line no-console
+        console.warn("Hay keys duplicadas en MembersTable:", dups);
+      }
+    }
+  }, [items]);
+
   return (
     <div className="rounded-xl border bg-[hsl(var(--card))] border-[hsl(var(--border))] p-4">
       <div className="mt-2 overflow-auto">
@@ -44,8 +71,11 @@ export function MembersTable({
             </tr>
           </thead>
           <tbody>
-            {items.map((m) => (
-              <tr key={m.slug} className="border-b border-[hsl(var(--border))]">
+            {items.map((m, i) => (
+              <tr
+                key={keyOf(m, i)}
+                className="border-b border-[hsl(var(--border))]"
+              >
                 <Td>
                   {m.foto_url ? (
                     <img
@@ -106,11 +136,18 @@ export function MembersTable({
 
 function Th({ children, className }) {
   return (
-    <th className={cx("px-3 py-2 text-[hsl(var(--fg))/0.7] font-medium", className)}>
+    <th
+      className={cx(
+        "px-3 py-2 text-[hsl(var(--fg))/0.7] font-medium",
+        className
+      )}
+    >
       {children}
     </th>
   );
 }
 function Td({ children, className }) {
-  return <td className={cx("px-3 py-2 align-middle", className)}>{children}</td>;
+  return (
+    <td className={cx("px-3 py-2 align-middle", className)}>{children}</td>
+  );
 }

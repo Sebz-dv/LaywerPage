@@ -70,7 +70,7 @@ class TeamMembersController extends Controller
             'area'     => 'required|string|max:255',
             'ciudad'   => 'required|string|max:255',
             'tipo'     => ['required', Rule::in(['juridico', 'no-juridico'])],
-            'foto'     => 'nullable|image|max:3072',
+            'foto'     => 'nullable|image',
         ]);
 
         // 👇 NO guardes 'foto' como columna
@@ -95,7 +95,7 @@ class TeamMembersController extends Controller
             'area'     => 'sometimes|required|string|max:255',
             'ciudad'   => 'sometimes|required|string|max:255',
             'tipo'     => ['sometimes', 'required', Rule::in(['juridico', 'no-juridico'])],
-            'foto'     => 'nullable|image|max:3072',
+            'foto'     => 'nullable|image',
         ]);
 
         // 👇 NO guardes 'foto' como columna

@@ -1,10 +1,9 @@
 // pages/TeamProfile.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { teamService } from "../services/teamService";
-import { teamProfileService } from "../services/teamProfileService"; // debe existir
-// (Opcional) Si usas lucide-react, descomenta estas líneas
-// import { Mail, Award, Briefcase, GraduationCap, MapPin, ChevronLeft } from "lucide-react";
+import { teamProfileService } from "../services/teamProfileService"; // asegúrate de tenerlo
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
@@ -19,6 +18,7 @@ const FALLBACK_AVATAR =
 export default function TeamProfile() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const prefersReduced = useReducedMotion();
 
   const [person, setPerson] = useState(null); // {nombre, cargo, area, ciudad, tipo, foto_url, ...}
   const [profile, setProfile] = useState(null); // {email, idiomas[], perfil, educacion[], experiencia[], reconocimientos[]}
@@ -32,7 +32,7 @@ export default function TeamProfile() {
       setErr("");
       try {
         const [{ data: p }, prof] = await Promise.all([
-          teamService.getBySlug(slug), // { data: {...} }
+          teamService.getBySlug(slug),
           safeGetProfile(slug),
         ]);
         if (aborted) return;
@@ -57,16 +57,19 @@ export default function TeamProfile() {
   if (err) {
     return (
       <div className="theme-law mx-auto max-w-6xl px-4 py-10">
-        <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6"
+        >
           <p className="text-red-600 font-medium">{err}</p>
           <button
             onClick={() => navigate(-1)}
             className="mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm border bg-[hsl(var(--card))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))] transition-colors"
           >
-            {/* <ChevronLeft className="h-4 w-4"/> */}
             Volver
           </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -74,7 +77,11 @@ export default function TeamProfile() {
   if (!person) {
     return (
       <div className="theme-law mx-auto max-w-6xl px-4 py-10">
-        <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6"
+        >
           <p>Perfil no encontrado.</p>
           <Link
             to="/equipo"
@@ -82,7 +89,7 @@ export default function TeamProfile() {
           >
             Volver al equipo
           </Link>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -90,34 +97,38 @@ export default function TeamProfile() {
   return (
     <div className="theme-law mx-auto max-w-6xl px-4 py-10">
       {/* Migas */}
-      <nav className="text-sm text-[hsl(var(--fg))/0.7]">
+      <motion.nav
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22 }}
+        className="text-sm text-[hsl(var(--fg))/0.7]"
+      >
         <Link to="/" className="hover:underline underline-offset-4">Inicio</Link>
         <span className="mx-2">/</span>
         <Link to="/equipo" className="hover:underline underline-offset-4">Nuestro Equipo</Link>
         <span className="mx-2">/</span>
         <span className="text-[hsl(var(--fg))]">{person.nombre}</span>
-      </nav>
+      </motion.nav>
 
-      {/* HERO */}
-      <header className="mt-6 relative overflow-hidden rounded-3xl border border-[hsl(var(--border))] bg-gradient-to-br from-[hsl(var(--card))] to-[hsl(var(--muted))] p-6 md:p-8">
+      {/* HERO con foto grande a la izquierda */}
+      <motion.header
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={prefersReduced ? { duration: 0.2 } : { type: "spring", stiffness: 420, damping: 34 }}
+        className="mt-6 relative overflow-hidden rounded-3xl border border-[hsl(var(--border))] bg-gradient-to-br from-[hsl(var(--card))] to-[hsl(var(--muted))] p-6 md:p-8"
+      >
         {/* background blobs */}
-        <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-[hsl(var(--accent))]/20 blur-3xl"/>
-        <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-[hsl(var(--ring))]/20 blur-3xl"/>
-        <div className="relative grid gap-6 md:grid-cols-[160px_1fr] items-center">
-          <div className="h-40 w-40 rounded-2xl overflow-hidden ring-2 ring-[hsl(var(--border))] bg-[hsl(var(--muted))] shadow-sm">
-            {foto ? (
-              <img
-                src={foto}
-                alt={person.nombre}
-                className="h-full w-full object-cover"
-                onError={(e) => { e.currentTarget.src = FALLBACK_AVATAR; }}
-              />
-            ) : (
-              <img src={FALLBACK_AVATAR} alt="" className="h-full w-full" />
-            )}
-          </div>
+        <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-[hsl(var(--accent))]/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-[hsl(var(--ring))]/20 blur-3xl" />
 
-          <div>
+        <div className="relative grid gap-6 md:grid-cols-[minmax(220px,272px)_1fr] items-center">
+          <ProfilePhoto src={foto} alt={person.nombre} />
+
+          <motion.div
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.35, ease: [0.22, 0.61, 0.36, 1] }}
+          >
             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">{person.nombre}</h1>
             <p className="mt-2 text-[hsl(var(--fg))/0.85]">
               {person.cargo}
@@ -140,27 +151,35 @@ export default function TeamProfile() {
                   href={`mailto:${profile.email}`}
                   className="ml-auto inline-flex items-center gap-2 rounded-xl border bg-white/40 dark:bg-white/5 backdrop-blur px-3 py-1.5 text-sm border-[hsl(var(--border))] hover:bg-white/60 dark:hover:bg-white/10 transition-colors"
                 >
-                  {/* <Mail className="h-4 w-4"/> */}
                   {profile.email}
                 </a>
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
-      </header>
+      </motion.header>
 
       {/* LAYOUT PRINCIPAL */}
       <div className="mt-8 grid gap-6 lg:grid-cols-[2fr_1fr]">
         {/* Perfil largo */}
-        <SectionCard title="Perfil">
-          <p className="whitespace-pre-wrap leading-relaxed text-[hsl(var(--fg))/0.9]">
+        <SectionCard
+          title="Perfil"
+          animate
+        >
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.24 }}
+            className="whitespace-pre-wrap leading-relaxed text-[hsl(var(--fg))/0.9]"
+          >
             {profile?.perfil || "Este profesional aún no tiene un perfil detallado."}
-          </p>
+          </motion.p>
         </SectionCard>
 
         {/* Aside sticky */}
         <aside className="lg:sticky lg:top-6 h-fit">
-          <SectionCard title="Información">
+          <SectionCard title="Información" animate>
             <ul className="mt-3 space-y-2 text-sm">
               <InfoRow label="Ciudad" value={person.ciudad || "—"} />
               <InfoRow label="Área" value={person.area || "—"} />
@@ -168,7 +187,7 @@ export default function TeamProfile() {
             </ul>
             <Link
               to="/equipo"
-              className="mt-4 inline-flex rounded-xl px-3 py-2 text-sm border bg-[hsl(var(--card))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
+              className="mt-4 inline-flex rounded-xl px-3 py-2 text-sm border bg-[hsl(var(--card))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))] transition-colors"
             >
               Volver al listado
             </Link>
@@ -178,9 +197,9 @@ export default function TeamProfile() {
 
       {/* Columnas con listas / timelines */}
       <div className="mt-6 grid gap-6 md:grid-cols-3">
-        <TimelineCard title="Educación" items={toItems(profile?.educacion)} iconName="graduation" />
-        <TimelineCard title="Experiencia" items={toItems(profile?.experiencia)} iconName="briefcase" />
-        <TimelineCard title="Reconocimientos" items={toItems(profile?.reconocimientos)} iconName="award" />
+        <TimelineCard title="Educación" items={toItems(profile?.educacion)} />
+        <TimelineCard title="Experiencia" items={toItems(profile?.experiencia)} />
+        <TimelineCard title="Reconocimientos" items={toItems(profile?.reconocimientos)} />
       </div>
     </div>
   );
@@ -191,8 +210,8 @@ function Skeleton() {
   return (
     <div className="theme-law mx-auto max-w-6xl px-4 py-10">
       <div className="h-8 w-48 bg-[hsl(var(--muted))] rounded animate-pulse" />
-      <div className="mt-6 grid gap-6 md:grid-cols-[160px_1fr]">
-        <div className="h-40 w-40 bg-[hsl(var(--muted))] rounded-2xl animate-pulse" />
+      <div className="mt-6 grid gap-6 md:grid-cols-[minmax(220px,272px)_1fr]">
+        <div className="h-[272px] w-[272px] max-w-full bg-[hsl(var(--muted))] rounded-2xl animate-pulse" />
         <div className="space-y-3">
           <div className="h-6 w-2/3 bg-[hsl(var(--muted))] rounded animate-pulse" />
           <div className="h-4 w-1/3 bg-[hsl(var(--muted))] rounded animate-pulse" />
@@ -207,12 +226,29 @@ function Skeleton() {
   );
 }
 
-function SectionCard({ title, children, className }) {
-  return (
-    <section className={cx("rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6", className)}>
+function SectionCard({ title, children, className, animate }) {
+  const content = (
+    <section className={cx(
+      "rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6",
+      className
+    )}>
       {title && <h2 className="font-semibold text-lg tracking-tight">{title}</h2>}
       <div className={cx(title && "mt-3")}>{children}</div>
     </section>
+  );
+
+  if (!animate) return content;
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.35 }}
+      transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
+      className={cx("rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6", className)}
+    >
+      {title && <h2 className="font-semibold text-lg tracking-tight">{title}</h2>}
+      <div className={cx(title && "mt-3")}>{children}</div>
+    </motion.section>
   );
 }
 
@@ -238,20 +274,30 @@ function InfoRow({ label, value, className }) {
 
 function TimelineCard({ title, items = [] }) {
   return (
-    <SectionCard title={title}>
+    <SectionCard title={title} animate>
       {items.length > 0 ? (
         <ul className="mt-2 relative">
           {/* línea vertical */}
           <div className="absolute left-4 top-1 bottom-1 w-px bg-[hsl(var(--border))]" />
-          {items.map((item, i) => (
-            <li key={`${title}-${i}`} className="relative pl-10 pb-4 last:pb-0">
-              {/* punto */}
-              <span className="absolute left-3 top-1.5 h-3 w-3 rounded-full bg-[hsl(var(--accent))] ring-2 ring-white dark:ring-[hsl(var(--card))]" />
-              <p className="font-medium leading-snug">{item.title}</p>
-              {item.subtitle && <p className="text-sm text-[hsl(var(--fg))/0.8]">{item.subtitle}</p>}
-              {item.meta && <p className="text-xs text-[hsl(var(--fg))/0.6] mt-0.5">{item.meta}</p>}
-            </li>
-          ))}
+          <AnimatePresence>
+            {items.map((item, i) => (
+              <motion.li
+                key={`${title}-${i}`}
+                initial={{ opacity: 0, x: -8 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 0.22 }}
+                className="relative pl-10 pb-4 last:pb-0"
+              >
+                {/* punto */}
+                <span className="absolute left-3 top-1.5 h-3 w-3 rounded-full bg-[hsl(var(--accent))] ring-2 ring-white dark:ring-[hsl(var(--card))]" />
+                <p className="font-medium leading-snug">{item.title}</p>
+                {item.subtitle && <p className="text-sm text-[hsl(var(--fg))/0.8]">{item.subtitle}</p>}
+                {item.meta && <p className="text-xs text-[hsl(var(--fg))/0.6] mt-0.5">{item.meta}</p>}
+              </motion.li>
+            ))}
+          </AnimatePresence>
         </ul>
       ) : (
         <p className="text-sm text-[hsl(var(--fg))/0.7]">Sin registros.</p>
@@ -260,9 +306,54 @@ function TimelineCard({ title, items = [] }) {
   );
 }
 
+/** --------------------- Foto con animación y shimmer --------------------- */
+function ProfilePhoto({ src, alt }) {
+  const [loaded, setLoaded] = useState(false);
+  const [err, setErr] = useState(false);
+  const prefersReduced = useReducedMotion();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -12 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.35, ease: [0.22, 0.61, 0.36, 1] }}
+      className="relative h-[272px] w-[272px] max-w-full rounded-2xl overflow-hidden ring-2 ring-[hsl(var(--border))] bg-[hsl(var(--muted))] shadow-sm"
+    >
+      {/* Shimmer mientras carga */}
+      {!loaded && (
+        <>
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.1s_infinite] bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+          <div className="absolute inset-0 backdrop-blur-[2px] opacity-70" />
+        </>
+      )}
+
+      <motion.img
+        src={err ? FALLBACK_AVATAR : (src || FALLBACK_AVATAR)}
+        alt={alt}
+        decoding="async"
+        loading="lazy"
+        className={cx(
+          "absolute inset-0 h-full w-full object-cover object-center",
+          loaded ? "blur-0" : "blur-[8px]"
+        )}
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          setErr(true);
+          setLoaded(true);
+        }}
+        initial={{ scale: 1.03, opacity: 0.0 }}
+        animate={{ scale: 1.0, opacity: 1 }}
+        transition={prefersReduced ? { duration: 0.2 } : { duration: 0.5, ease: [0.22, 0.61, 0.36, 1] }}
+      />
+
+      {/* Halo sutil al hover */}
+      <span className="pointer-events-none absolute inset-0 ring-0 hover:ring-2 ring-[hsl(var(--ring))/0.25] transition-all rounded-2xl" />
+    </motion.div>
+  );
+}
+
 /** --------------------- HELPERS --------------------- */
 function toItems(list) {
-  // Acepta tanto array de strings como array de objetos { title, subtitle, meta }
   if (!Array.isArray(list)) return [];
   return list.map((x) =>
     typeof x === "string"
@@ -275,13 +366,15 @@ function toItems(list) {
   );
 }
 
-// Helpers
 async function safeGetProfile(slug) {
   try {
     const { data } = await teamProfileService.get(slug);
     return data || null;
   } catch {
-    // si aún no existe perfil, devolvemos null sin romper
     return null;
   }
 }
+
+/* ====== CSS util (pegar en tu global si no existe) ======
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+*/

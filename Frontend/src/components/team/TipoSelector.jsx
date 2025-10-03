@@ -3,15 +3,7 @@ import React from "react";
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
 }
-
-/**
- * props:
- * - label: string
- * - value: string
- * - onChange: (v: string) => void
- * - required?: boolean
- * - groups: Array<{ label: string, options: Array<{ label: string, value: string }> }>
- */
+ 
 export function TipoSelector({
   label = "Tipo",
   value,
