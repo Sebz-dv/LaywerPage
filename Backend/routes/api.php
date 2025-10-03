@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CarouselController;
 use App\Http\Controllers\InfoBlockController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TeamMemberProfilesController;
 use App\Http\Controllers\TeamMembersController;
 
@@ -32,7 +33,7 @@ Route::apiResource('team', TeamMembersController::class)->only([
 ]);
 
 Route::get('/team/{slug}/profile', [TeamMemberProfilesController::class, 'showBySlug']);
-Route::match(['post','patch'], '/team/{slug}/profile', [TeamMemberProfilesController::class, 'upsertBySlug']);
+Route::match(['post', 'patch'], '/team/{slug}/profile', [TeamMemberProfilesController::class, 'upsertBySlug']);
 Route::delete('/team/{slug}/profile', [TeamMemberProfilesController::class, 'destroyBySlug']);
 
 Route::get('/carrusel',   [CarouselController::class, 'index']);
@@ -42,3 +43,7 @@ Route::get('/carrusel/{filename}/download', [CarouselController::class, 'downloa
 
 Route::apiResource('info-blocks', InfoBlockController::class);
 Route::patch('info-blocks/reorder', [InfoBlockController::class, 'reorder']);
+
+Route::get('/settings', [SettingsController::class, 'show']);
+Route::post('/settings', [SettingsController::class, 'update']);       // multipart
+Route::delete('/settings/logo', [SettingsController::class, 'destroyLogo']);

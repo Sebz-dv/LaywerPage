@@ -9,6 +9,7 @@ import { MembersTable } from "../components/team/MembersTable";
 import BrowserTabs from "../components/navigation/BrowserTabs.jsx";
 import CarouselManager from "../components/images/CarouselManager.jsx";
 import InfoBlocksManager from "../components/info/InfoBlocksManager.jsx";
+import SiteSettings from "../components/settings/SiteSettings.jsx";
 
 function cx(...xs) { return xs.filter(Boolean).join(" "); }
 
@@ -156,12 +157,18 @@ export default function Dashboard() {
       <InfoBlocksManager />
     </section>
   ), []);
+  const SettingTab = useMemo(() => (
+    <section className="rounded-xl border bg-[hsl(var(--card))] border-[hsl(var(--border))] p-6" key="empresa">
+      <SiteSettings />
+    </section>
+  ), []);
 
   const tabs = useMemo(() => ([
     { id: "miembros", label: "Miembros", element: MiembrosListTab },
     { id: "banner", label: "Imagenes del Banner", element: CarruselTab },
     { id: "empresa", label: "Empresa", element: InfoTab },
-  ]), [MiembrosListTab, CarruselTab, InfoTab]);
+    { id: "settings", label: "Configuracion de Empresa", element: SettingTab },
+  ]), [MiembrosListTab, CarruselTab, InfoTab, SettingTab]);
 
   return (
     <div className={cx("p-6 space-y-6", pageClass)}>
