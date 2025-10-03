@@ -244,10 +244,9 @@ export default function TeamFinder({
             >
               {loading ? "Cargando..." : "Cargar más"}
             </button>
-          ) : (
-            <p className="text-sm text-[hsl(var(--fg))/0.7]">
-              No hay más resultados.
-            </p>
+          )  : (
+            <span className="text-sm text-[hsl(var(--fg))/0.7]"> 
+            </span>
           )}
         </div>
       )}

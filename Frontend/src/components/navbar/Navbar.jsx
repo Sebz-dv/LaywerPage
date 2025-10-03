@@ -13,7 +13,7 @@ function cx(...xs) { return xs.filter(Boolean).join(" "); }
 export default function NavbarLanding({
   navItemsPublic = [
     { to: "/", label: "Inicio", end: true },
-    { to: "/servicios", label: "Servicios" },
+    { to: "/servicios", label: "Áreas de práctica" },
     { to: "/equipo", label: "Equipo" },
     { to: "/publicaciones", label: "Publicaciones" },
     { to: "/contacto", label: "Contacto" },

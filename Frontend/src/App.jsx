@@ -8,6 +8,8 @@ import Intro from "./pages/Intro";
 import AppLayout from "./layouts/AppLayout";
 import TeamProfile from "./pages/TeamProfile";
 import TeamIndex from "./pages/TeamIndex";
+import Services from "./components/team/ServicesView";
+import ServiceDetail from "./components/team/ServiceDetail";
 
 function Shell() {
   return (
@@ -27,6 +29,8 @@ export default function App() {
         <Route path="/register" element={<Register />} /> {/* <-- mover aquí */}
         <Route path="/equipo/:slug" element={<TeamProfile />} /> {/* 👈 NUEVA */}
         <Route path="/equipo" element={<TeamIndex />} /> 
+        <Route path="/servicios" element={<Services />} /> {/* 👈 NUEVA */}
+        <Route path="/servicios/:slug" element={<ServiceDetail />} />
       </Route>
 
       {/* Protegidas (también con AppLayout + Navbar) */}

@@ -3,18 +3,22 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { api } from "../../lib/api";
 import { carouselService } from "../../services/carouselService";
 
-// utilidades
+// utils
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 const clampIndex = (n, c) => (c === 0 ? 0 : ((n % c) + c) % c);
 
 function pickBackendOrigin() {
   const env = import.meta.env?.VITE_API_ORIGIN;
   if (typeof env === "string" && /^https?:\/\//i.test(env)) {
-    try { return new URL(env).origin; } catch {}
+    try { return new URL(env).origin; } catch {
+      return env.split("/").slice(0, 3).join("/");
+    }
   }
   const base = api?.defaults?.baseURL;
   if (typeof base === "string" && /^https?:\/\//i.test(base)) {
-    try { return new URL(base).origin; } catch {}
+    try { return new URL(base).origin; } catch {
+      return base.split("/").slice(0, 3).join("/");
+    }
   }
   return "http://localhost:8000";
 }
@@ -28,31 +32,35 @@ function resolveUrl(u) {
   return `${BACKEND_ORIGIN}/${s.replace(/^\/+/, "")}`;
 }
 
-// Media query mínima
-function useMedia(query) {
-  const [m, setM] = useState(() =>
-    typeof window !== "undefined" ? window.matchMedia(query).matches : false
-  );
+function useReducedMotion() {
+  const [pref, setPref] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const mq = window.matchMedia(query);
-    const h = () => setM(mq.matches);
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const h = () => setPref(mq.matches);
     h(); mq.addEventListener("change", h);
     return () => mq.removeEventListener("change", h);
-  }, [query]);
-  return m;
+  }, []);
+  return pref;
+}
+
+function useOnScreen(ref, rootMargin = "0px") {
+  const [isIntersecting, setIntersecting] = useState(true);
+  useEffect(() => {
+    if (!ref.current || typeof IntersectionObserver === "undefined") return;
+    const obs = new IntersectionObserver(([e]) => setIntersecting(e.isIntersecting), { rootMargin });
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [ref, rootMargin]);
+  return isIntersecting;
 }
 
 /**
  * Carrusel sobrio para firmas de abogados.
- * - Sin botón de descarga ni tarjetas inferiores.
- * - Flechas “ghost glass” y bullets minimal.
- * - Overlay elegante para título y subtítulo.
+ * Optimizado para imágenes 1920×823 y 2560×1097 (misma relación).
  */
 export default function LawFirmCarousel({
   className,
-  mobileAspect = "16/9",
-  desktopAspect = "21/9",
   rounded = "rounded-2xl",
   autoplay = true,
   interval = 4500,
@@ -67,15 +75,18 @@ export default function LawFirmCarousel({
   const [err, setErr] = useState("");
   const [index, setIndex] = useState(0);
   const [isHover, setHover] = useState(false);
+
+  const rootRef = useRef(null);
   const trackRef = useRef(null);
 
-  // Swipe (tacto/mouse)
+  // Swipe
   const startX = useRef(0);
   const deltaX = useRef(0);
   const dragging = useRef(false);
 
-  const isMdUp = useMedia("(min-width: 768px)");
   const fitClass = slideFit === "cover" ? "object-cover" : "object-contain";
+  const prefersReduced = useReducedMotion();
+  const onScreen = useOnScreen(rootRef, "50px");
 
   const load = useCallback(async () => {
     setLoading(true); setErr("");
@@ -107,20 +118,14 @@ export default function LawFirmCarousel({
     [count, loop]
   );
 
-  // autoplay
+  // autoplay (pausa si no está en pantalla o hover)
   useEffect(() => {
     if (!autoplay || count <= 1) return;
     if (pauseOnHover && isHover) return;
+    if (!onScreen) return;
     const id = setInterval(next, Math.max(2000, interval));
     return () => clearInterval(id);
-  }, [autoplay, interval, next, count, isHover, pauseOnHover]);
-
-  // relación de aspecto responsive
-  const padTop = useMemo(() => {
-    const aspect = isMdUp ? desktopAspect : mobileAspect;
-    const [w, h] = aspect.split("/").map((n) => Number(n) || 0);
-    return w > 0 && h > 0 ? (h / w) * 100 : 56.25;
-  }, [isMdUp, desktopAspect, mobileAspect]);
+  }, [autoplay, interval, next, count, isHover, pauseOnHover, onScreen]);
 
   const onKeyDown = (e) => {
     if (e.key === "ArrowRight") { e.preventDefault(); next(); }
@@ -131,32 +136,46 @@ export default function LawFirmCarousel({
 
   // Handlers de swipe
   const onPointerDown = (e) => {
+    if (!trackRef.current) return;
     dragging.current = true;
+    trackRef.current.setPointerCapture?.(e.pointerId);
     startX.current = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
     deltaX.current = 0;
   };
   const onPointerMove = (e) => {
-    if (!dragging.current) return;
+    if (!dragging.current || !trackRef.current) return;
     const x = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
     deltaX.current = x - startX.current;
-    // desplazamiento visual opcional
-    if (trackRef.current) {
-      const pct = (-index * 100) + (deltaX.current / (trackRef.current.offsetWidth || 1)) * 100;
-      trackRef.current.style.transform = `translateX(${pct}%)`;
-    }
+    const w = trackRef.current.offsetWidth || 1;
+    const pct = (-index * 100) + (deltaX.current / w) * 100;
+    trackRef.current.style.transform = `translate3d(${pct}%,0,0)`;
   };
-  const onPointerUp = () => {
-    if (!dragging.current) return;
-    dragging.current = false;
-    const threshold = (trackRef.current?.offsetWidth || 300) * 0.15;
+  const endDrag = () => {
+    if (!dragging.current || !trackRef.current) return;
+    const threshold = (trackRef.current.offsetWidth || 300) * 0.15;
     if (deltaX.current < -threshold) next();
     else if (deltaX.current > threshold) prev();
     // reset transform controlado por estado
-    if (trackRef.current) {
-      trackRef.current.style.transform = `translateX(-${index * 100}%)`;
-    }
+    trackRef.current.style.transform = `translate3d(-${index * 100}%,0,0)`;
+    dragging.current = false;
     deltaX.current = 0;
   };
+
+  // Prefetch de la siguiente imagen
+  useEffect(() => {
+    if (count <= 1) return;
+    const nxt = (index + 1) % count;
+    const src = items[nxt]?.src;
+    if (!src) return;
+    const img = new Image();
+    img.decoding = "async";
+    img.loading = "eager";
+    img.src = src;
+  }, [index, count, items]);
+
+  const transitionCls = prefersReduced
+    ? "transition-none"
+    : "transition-transform duration-500 ease-[cubic-bezier(.22,.61,.36,1)]";
 
   return (
     <section className={cx("w-full", className)}>
@@ -166,9 +185,11 @@ export default function LawFirmCarousel({
         </div>
       )}
 
-      {/* wrapper centrado a 90vw para hero sobrio */}
+      {/* wrapper full-bleed con 2px por lado */}
       <div
-        className="relative left-1/2 -translate-x-1/2 w-[90vw] select-none"
+        ref={rootRef}
+        className="relative w-full px-[2px] select-none outline-none"
+        role="region"
         aria-roledescription="carousel"
         aria-label="Carrusel de la firma"
         onMouseEnter={pauseOnHover ? () => setHover(true) : undefined}
@@ -178,29 +199,31 @@ export default function LawFirmCarousel({
       >
         <div
           className={cx(
-            "relative overflow-hidden border bg-[hsl(var(--card))]",
-            "border-[hsl(var(--border))]",
-            "shadow-sm",
+            "relative w-full overflow-hidden border bg-[hsl(var(--card))]",
+            "border-[hsl(var(--border))] shadow-sm",
             rounded
           )}
+          style={{ aspectRatio: "1920 / 823" }}
         >
-          {/* máscara sutil en bordes para look editorial */}
+          {/* máscara sutil */}
           <div className="pointer-events-none absolute inset-0 [mask-image:radial-gradient(120%_100%_at_50%_50%,#000_65%,transparent_100%)]" />
-
-          {/* ratio */}
-          <div style={{ paddingTop: `${padTop}%` }} />
 
           {/* track */}
           <div
             ref={trackRef}
-            className="absolute inset-0 flex h-full w-full transition-transform duration-500 ease-out will-change-transform"
-            style={{ transform: `translateX(-${index * 100}%)` }}
+            className={cx(
+              "absolute inset-0 flex h-full w-full will-change-transform",
+              transitionCls
+            )}
+            style={{ transform: `translate3d(-${index * 100}%,0,0)` }}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
             onTouchStart={onPointerDown}
             onTouchMove={onPointerMove}
-            onTouchEnd={onPointerUp}
+            onTouchEnd={endDrag}
+            onMouseLeave={endDrag}
           >
             {loading ? (
               <SkeletonSlide />
@@ -217,12 +240,13 @@ export default function LawFirmCarousel({
                   fitClass={fitClass}
                   index={i}
                   count={count}
+                  priority={i === 0}
                 />
               ))
             )}
           </div>
 
-          {/* Flechas ghost-glass (sin descarga, sin extras) */}
+          {/* Flechas */}
           {showArrows && count > 1 && !loading && (
             <>
               <NavButton dir="prev" onClick={prev} ariaLabel="Anterior" />
@@ -230,13 +254,13 @@ export default function LawFirmCarousel({
             </>
           )}
 
-          {/* Línea de progreso sutil del autoplay */}
-          {autoplay && count > 1 && (
+          {/* Progreso autoplay */}
+          {autoplay && count > 1 && !prefersReduced && (
             <AutoplayBar key={index} duration={Math.max(2000, interval)} />
           )}
         </div>
 
-        {/* Bullets minimal (sin miniaturas ni tarjetas) */}
+        {/* Bullets */}
         {showDots && count > 1 && !loading && (
           <div className="mt-3 flex items-center justify-center gap-2">
             {items.map((_, i) => (
@@ -246,7 +270,7 @@ export default function LawFirmCarousel({
                 aria-label={`Ir a la imagen ${i + 1} de ${count}`}
                 aria-current={i === index ? "true" : undefined}
                 className={cx(
-                  "h-1.5 w-6 rounded-full transition-all",
+                  "h-1.5 w-6 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]",
                   i === index
                     ? "bg-[hsl(var(--brand))]"
                     : "bg-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
@@ -262,7 +286,7 @@ export default function LawFirmCarousel({
 
 // ===== Subcomponentes =====
 
-function Slide({ src, alt, title, subtitle, fitClass, index, count }) {
+function Slide({ src, alt, title, subtitle, fitClass, index, count, priority }) {
   return (
     <figure
       className="relative h-full w-full shrink-0"
@@ -277,13 +301,14 @@ function Slide({ src, alt, title, subtitle, fitClass, index, count }) {
           "absolute inset-0 h-full w-full bg-[hsl(var(--muted))]",
           fitClass
         )}
-        loading="lazy"
+        loading={priority ? "eager" : "lazy"}
+        fetchpriority={priority ? "high" : "auto"}
         decoding="async"
         draggable={false}
-        onError={(e) => { e.currentTarget.style.opacity = 0.2; }}
-        sizes="90vw"
+        onError={(e) => { e.currentTarget.style.opacity = 0.25; }}
+        sizes="100vw"
       />
-      {/* Overlay legal sobrio */}
+
       {(title || subtitle) && (
         <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 p-4 sm:p-6">
           <div className="mx-auto max-w-5xl">
@@ -294,35 +319,21 @@ function Slide({ src, alt, title, subtitle, fitClass, index, count }) {
                 </h3>
               )}
               {subtitle && (
-                <p className="text-xs sm:text-sm opacity-90">
-                  {subtitle}
-                </p>
+                <p className="text-xs sm:text-sm opacity-90">{subtitle}</p>
               )}
             </div>
           </div>
         </figcaption>
       )}
-      {/* Sello discreto arriba-izquierda (marca/área de práctica) */}
-      <div className="pointer-events-none absolute left-3 top-3 sm:left-4 sm:top-4">
-        <span className="inline-flex items-center gap-1 rounded-full border border-[hsl(var(--border))/0.7] bg-[hsl(var(--card))/0.6] px-2 py-1 text-[10px] font-medium uppercase tracking-wide backdrop-blur">
-          <svg width="12" height="12" viewBox="0 0 24 24" className="opacity-70" aria-hidden>
-            <path d="M12 2l7 4v6c0 5-3.5 9-7 10-3.5-1-7-5-7-10V6l7-4z" fill="currentColor" />
-          </svg>
-          Firma Legal
-        </span>
-      </div>
     </figure>
   );
 }
 
 function NavButton({ dir, onClick, ariaLabel }) {
   const cls =
-    "group absolute top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/75 backdrop-blur transition hover:bg-[hsl(var(--muted))]/90 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]";
+    "group absolute top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/75 backdrop-blur transition hover:bg-[hsl(var(--muted))]/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]";
   const side = dir === "prev" ? "left-3" : "right-3";
-  const icon =
-    dir === "prev"
-      ? "M14 18l-6-6 6-6"
-      : "M10 6l6 6-6 6";
+  const icon = dir === "prev" ? "M14 18l-6-6 6-6" : "M10 6l6 6-6 6";
   return (
     <button
       type="button"
@@ -344,12 +355,13 @@ function NavButton({ dir, onClick, ariaLabel }) {
       >
         <path d={icon}></path>
       </svg>
-      {/* micro “hint” arriba del botón al hover en desktop */}
-      <span className={cx(
-        "pointer-events-none absolute -top-9 rounded-md px-2 py-1 text-[11px]",
-        "border border-[hsl(var(--border))] bg-[hsl(var(--card))]/95 shadow-sm",
-        "opacity-0 transition group-hover:opacity-100"
-      )}>
+      <span
+        className={cx(
+          "pointer-events-none absolute -top-9 rounded-md px-2 py-1 text-[11px]",
+          "border border-[hsl(var(--border))] bg-[hsl(var(--card))]/95 shadow-sm",
+          "opacity-0 transition group-hover:opacity-100"
+        )}
+      >
         {dir === "prev" ? "Anterior" : "Siguiente"}
       </span>
     </button>
@@ -367,7 +379,7 @@ function SkeletonSlide() {
 
 function EmptySlide() {
   return (
-    <div className="relative h-full w-full shrink-0 flex items-center justify-center">
+    <div className="relative flex h-full w-full shrink-0 items-center justify-center">
       <p className="text-[hsl(var(--fg))/0.7]">Aún no hay imágenes.</p>
     </div>
   );
@@ -381,10 +393,7 @@ function AutoplayBar({ duration = 4000 }) {
         style={{ animation: `lfc-progress ${duration}ms linear forwards` }}
       />
       <style>{`
-        @keyframes lfc-progress {
-          from { width: 0%; }
-          to   { width: 100%; }
-        }
+        @keyframes lfc-progress { from { width: 0% } to { width: 100% } }
       `}</style>
     </div>
   );

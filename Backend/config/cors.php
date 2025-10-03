@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'paths' => ['api/*'], // con esto basta si todas tus rutas están en routes/api.php
+    'paths' => ['api/*', 'login', 'logout', 'register', 'refresh'], // con esto basta si todas tus rutas están en routes/api.php
     'allowed_methods' => ['*'],
     'allowed_origins' => [
         'http://localhost:5173',
