@@ -144,7 +144,7 @@ export default function Dashboard() {
         <ProfileModal slug={profileFor} onClose={() => setProfileFor(null)} />
       )}
     </section>
-  ), [items, loading, error, search, profileFor]);
+  ), [items, loading, error, search, profileFor , load , onEdit, onDelete]);
 
   const CarruselTab = useMemo(() => (
     <section className="rounded-xl border bg-[hsl(var(--card))] border-[hsl(var(--border))] p-6" key="banner">
@@ -166,7 +166,7 @@ export default function Dashboard() {
   const tabs = useMemo(() => ([
     { id: "miembros", label: "Miembros", element: MiembrosListTab },
     { id: "banner", label: "Imagenes del Banner", element: CarruselTab },
-    { id: "empresa", label: "Empresa", element: InfoTab },
+    { id: "empresa", label: "¿Quienes somos?", element: InfoTab },
     { id: "settings", label: "Configuracion de Empresa", element: SettingTab },
   ]), [MiembrosListTab, CarruselTab, InfoTab, SettingTab]);
 
@@ -194,13 +194,7 @@ export default function Dashboard() {
               { label: "Tipo de miembro", options: [
                 { label: "Jurídico", value: "juridico" },
                 { label: "No Jurídico", value: "no-juridico" },
-              ]},
-              { label: "Tipo de navegador", options: [
-                { label: "Chrome", value: "navegador:chrome" },
-                { label: "Firefox", value: "navegador:firefox" },
-                { label: "Edge", value: "navegador:edge" },
-                { label: "Safari", value: "navegador:safari" },
-              ]},
+              ]}
             ]}
           />
         </div>

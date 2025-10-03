@@ -12,15 +12,19 @@ function cx(...xs) {
   return xs.filter(Boolean).join(" ");
 }
 
-/** Sección con paddings coherentes y container interno */
-function Section({ id, className, children }) {
+/** Sección con opción full-bleed (sin container) */
+function Section({ id, className, children, fullBleed = false }) {
   return (
     <section
       id={id}
       className={cx("relative py-12 sm:py-16", className)}
       aria-label={id?.replace(/-/g, " ")}
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">{children}</div>
+      {fullBleed ? (
+        children
+      ) : (
+        <div className="mx-auto max-w-7xl">{children}</div>
+      )}
     </section>
   );
 }
@@ -52,27 +56,16 @@ function SectionHeader({ eyebrow, title, subtitle, align = "center" }) {
 
 export default function IntroPage() {
   return (
-    <div className="relative">
-      {/* Fondo existente */}
-      <Backdrop />
-
-      {/* Halo/gradiente suave detrás del carrusel */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] overflow-hidden"
-      >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div
-            className="mx-auto h-64 w-full rounded-[3rem] blur-3xl opacity-60
-            bg-[radial-gradient(80%_80%_at_50%_0%,hsl(var(--brand)/0.20),hsl(var(--cta)/0.08)_50%,transparent_80%)]"
-          />
-        </div>
-      </div>
-
-      {/* Hero visual: carrusel */}
-      <Section id="hero" className="pt-16 sm:pt-20">
+    // 👉 2px laterales en TODA la página
+    <div className="px-[2px]">
+      {/* Fondo */}
+      <Section id="backdrop" className="pt-16 sm:pt-20" fullBleed>
+        <Backdrop />
+      </Section>
+      {/* Hero visual: carrusel full-bleed (usa el padding de 2px del wrapper) */}
+      <Section id="hero" className="mt-[-90px]" fullBleed>
         <CarouselViewer
-          className="ring-1 ring-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm mt-2"
+          className="w-full ring-1 ring-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm"
           aspect="16/9"
           rounded="rounded-2xl"
           autoplay
@@ -87,52 +80,55 @@ export default function IntroPage() {
 
       {/* Nuestra organización */}
       <Section id="org">
-        <SectionHeader
-          eyebrow="Nuestra organización"
-          title="Propósito, horizonte y valores"
-          subtitle="Lo que nos guía hoy y nos exige ser mejores mañana."
-        />
-        <div className="mt-8">
-          <InfoBlocksSection
-            title="" // ya lo gestiona SectionHeader
-            subtitle=""
-            order={["mision", "vision"]}
-            layout="stack" // grid | columns | stack
-            showAnchors
-            titleClassName="hidden" // ocultamos el H2 interno para no duplicar jerarquía
+        <div className="mt-[-90px]">
+          <SectionHeader
+            eyebrow="Nuestra organización"
+            title="Propósito, horizonte y valores"
+            subtitle="Lo que nos guía hoy y nos exige ser mejores mañana."
           />
+          <div className="mt-8">
+            <InfoBlocksSection
+              title=""
+              subtitle=""
+              order={["mision", "vision"]}
+              layout="stack"
+              showAnchors
+              titleClassName="hidden"
+            />
+          </div>
         </div>
       </Section>
 
       {/* Equipo: hero + KPIs */}
-      <Section id="team" className="pt-4">
-        <div className="grid gap-8 md:gap-10">
-          <TeamHero />
-          <div className="border-t border-[hsl(var(--border))]" />
-          <TeamKpis className="mt-2" />
+      <Section id="team" className="mt-[-90px]">
+        <div className="px-[2px]">
+          <div className="grid gap-8 md:gap-10">
+            <TeamKpis className="mt-2" />
+            <div className="border-t border-[hsl(var(--border))]" />
+            <TeamHero />
+          </div>
         </div>
       </Section>
 
       {/* Buscador del equipo */}
-      <Section id="team-finder" className="pt-4">
-        <SectionHeader
-          eyebrow="Conoce a las personas"
-          title="Encuentra al experto indicado"
-          subtitle="Filtra por especialidad, ciudad o área."
-        />
-        <TeamFinder className="mt-6" />
+      <Section id="team-finder" className="mt-[-90px]">
+        <div className="px-[2px]">
+          <SectionHeader
+            eyebrow="Conoce a las personas"
+            title="Encuentra al experto indicado"
+            subtitle="Filtra por especialidad, ciudad o área."
+          />
+          <TeamFinder className="mt-6" />
+        </div>
       </Section>
 
       {/* Features / cierre */}
-      <Section id="features" className="pb-20 sm:pb-24">
-        <div className="border-t border-[hsl(var(--border))] mb-10" />
-        <SectionHeader
-          align="left"
-          eyebrow="¿Por qué nosotros?"
-          title="Capacidades y diferenciales"
-          subtitle="Una arquitectura pensada para escalar procesos y resultados."
-        />
-        <FeaturesGrid className="mt-8 sm:mt-10" />
+      <Section id="features" className="mt-[-90px]">
+        <div className="px-[2px]">
+          <div className="border-t border-[hsl(var(--border))] mb-10" />
+           
+          <FeaturesGrid className="mt-8 sm:mt-10" />
+        </div>
       </Section>
     </div>
   );

@@ -19,7 +19,7 @@ class User extends Authenticatable implements JWTSubject
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed', // <-- si dejas esto, NO uses Hash::make en el controller
+            'password'          => 'hashed',
         ];
     }
 

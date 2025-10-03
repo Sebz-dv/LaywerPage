@@ -17,8 +17,7 @@ Route::post('refresh',  [AuthController::class, 'refresh'])->middleware('jwt.coo
 Route::post('logout',   [AuthController::class, 'logout'])->middleware('jwt.cookie');
 
 Route::middleware(['jwt.cookie', 'auth:api'])->group(function () {
-    Route::get('me',        [AuthController::class, 'me']);
-    // Perfil
+    Route::get('me',        [AuthController::class, 'me']); 
     Route::get('profile',          [ProfileController::class, 'show']);
     Route::put('profile',          [ProfileController::class, 'update']);
     Route::put('profile/password', [ProfileController::class, 'updatePassword']);
@@ -47,3 +46,4 @@ Route::patch('info-blocks/reorder', [InfoBlockController::class, 'reorder']);
 Route::get('/settings', [SettingsController::class, 'show']);
 Route::post('/settings', [SettingsController::class, 'update']);       // multipart
 Route::delete('/settings/logo', [SettingsController::class, 'destroyLogo']);
+
