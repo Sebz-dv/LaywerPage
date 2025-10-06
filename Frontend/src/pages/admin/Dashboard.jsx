@@ -1,15 +1,15 @@
 // src/pages/Dashboard.jsx
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useAuth } from "../context/useAuth.js";
-import usePageReady from "../hooks/usePageReady.js";
-import { teamService } from "../services/teamService";
-import ProfileModal from "../components/team/ProfileModal.jsx";
-import { MemberForm } from "../components/team/MemberForm";
-import { MembersTable } from "../components/team/MembersTable";
-import BrowserTabs from "../components/navigation/BrowserTabs.jsx";
-import CarouselManager from "../components/images/CarouselManager.jsx";
-import InfoBlocksManager from "../components/info/InfoBlocksManager.jsx";
-import SiteSettings from "../components/settings/SiteSettings.jsx";
+import { useAuth } from "../../context/useAuth.js";
+import usePageReady from "../../hooks/usePageReady.js";
+import { teamService } from "../../services/teamService.js";
+import ProfileModal from "../../components/team/ProfileModal.jsx";
+import { MemberForm } from "../../components/team/MemberForm.jsx";
+import { MembersTable } from "../../components/team/MembersTable.jsx";
+import BrowserTabs from "../../components/navigation/BrowserTabs.jsx";
+import CarouselManager from "../../components/images/CarouselManager.jsx";
+import InfoBlocksManager from "../../components/info/InfoBlocksManager.jsx";
+import SiteSettings from "../../components/settings/SiteSettings.jsx";
 
 function cx(...xs) { return xs.filter(Boolean).join(" "); }
 

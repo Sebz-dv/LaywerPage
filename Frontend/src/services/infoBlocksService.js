@@ -1,4 +1,4 @@
-import { api } from "../lib/api";
+import { api } from "../lib/api";  // Apunta a http://localhost:8000/api
 
 const BASE = "info-blocks";
 

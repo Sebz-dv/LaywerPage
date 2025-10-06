@@ -4,10 +4,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock } from "lucide-react";
 import { FiEye, FiEyeOff, FiLock } from "react-icons/fi";
-import { useAuth } from "../context/useAuth.js";
-import Loader from "../components/Loader.jsx";
-import usePageReady from "../hooks/usePageReady.js";
-import { useRouteLoading } from "../hooks/useRouteLoading.js";
+import { useAuth } from "../../context/useAuth.js";
+import Loader from "../../components/Loader.jsx";
+import usePageReady from "../../hooks/usePageReady.js";
+import { useRouteLoading } from "../../hooks/useRouteLoading.js";
 
 /* ================= Helpers ================= */
 function cn(...xs) {

@@ -1,6 +1,6 @@
 
 import React from "react";
-import TeamFinder from "../components/team/TeamFinder";
+import TeamFinder from "../../components/team/TeamFinder";
 
 export default function TeamIndex(){
   return (

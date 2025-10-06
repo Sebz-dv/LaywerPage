@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { useAuth } from "../context/useAuth.js";
+import { useAuth } from "../../context/useAuth.js";
 import { Link, useNavigate } from "react-router-dom";
-import Loader from "../components/Loader.jsx";
-import usePageReady from "../hooks/usePageReady.js";
-import { useRouteLoading } from "../hooks/useRouteLoading.js";
+import Loader from "../../components/Loader.jsx";
+import usePageReady from "../../hooks/usePageReady.js";
+import { useRouteLoading } from "../../hooks/useRouteLoading.js";
 
 export default function Register() {
   const nav = useNavigate();

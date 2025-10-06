@@ -3,7 +3,7 @@ import {
   FaHome,
   FaCog,
   FaUserFriends ,
-  FaGripHorizontal,
+  FaAlignCenter ,
   FaProductHunt,
 } from "react-icons/fa";
 
@@ -21,10 +21,10 @@ export const menuItems = [
     icon: FaUserFriends ,
   },
   {
-    key: "categories",
-    label: "Categorias",
-    link: "/dash/categories",
-    icon: FaGripHorizontal,
+    key: "areas",
+    label: "Áreas",
+    link: "/dash/areas",
+    icon: FaAlignCenter,
   },
   {
     key: "products",

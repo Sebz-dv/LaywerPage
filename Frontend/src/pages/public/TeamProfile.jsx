@@ -2,8 +2,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { teamService } from "../services/teamService";
-import { teamProfileService } from "../services/teamProfileService"; // asegúrate de tenerlo
+import { teamService } from "../../services/teamService";
+import { teamProfileService } from "../../services/teamProfileService"; // asegúrate de tenerlo
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
