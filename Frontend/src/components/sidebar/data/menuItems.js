@@ -2,9 +2,11 @@
 import {
   FaHome,
   FaCog,
-  FaUserFriends ,
-  FaAlignCenter ,
+  FaUserFriends,
+  FaAlignCenter,
   FaProductHunt,
+  FaBookmark,
+  FaBloggerB,
 } from "react-icons/fa";
 
 export const menuItems = [
@@ -18,7 +20,7 @@ export const menuItems = [
     key: "miembros",
     label: "Miembros",
     link: "/dash/members",
-    icon: FaUserFriends ,
+    icon: FaUserFriends,
   },
   {
     key: "areas",
@@ -31,6 +33,12 @@ export const menuItems = [
     label: "Productos",
     link: "/dash/products",
     icon: FaProductHunt,
+  },
+  {
+    key: "publicaciones",
+    label: "Publicaciones",
+    link: "/dash/articles",
+    icon: FaBookmark, 
   },
   {
     key: "ajustes",

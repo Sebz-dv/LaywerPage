@@ -17,14 +17,25 @@ return new class extends Migration
             $table->string('title');
             $table->string('subtitle')->nullable();
             $table->text('excerpt')->nullable();
-            $table->string('icon_url', 512)->nullable();  // ↑ por si usas CDN o firmas
-            $table->string('to_path', 512)->nullable();   // ↑ rutas largas sin sustos
+            $table->longText('body')->nullable();
+
+            // Imagen / ícono
+            $table->string('icon_path')->nullable();  // archivo en storage/app/public/...
+            $table->string('icon_url')->nullable();   // opcional: URL externa (si no subes archivo)
+
+            // JSON con bullets
             $table->json('bullets')->nullable();
+
+            // Flags de UI
             $table->boolean('featured')->default(false);
             $table->boolean('active')->default(true);
-            $table->unsignedInteger('order')->default(0); // puedes mantenerlo si no usas SQL crudo
+
+            $table->unsignedInteger('order')->default(0);
+
             $table->timestamps();
             $table->softDeletes();
+
+            // Índices útiles para filtros
             $table->index(['featured', 'active', 'order']);
         });
     }

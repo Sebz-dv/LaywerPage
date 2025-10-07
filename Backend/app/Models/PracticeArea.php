@@ -3,56 +3,62 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 
 class PracticeArea extends Model
 {
     use SoftDeletes;
 
     protected $fillable = [
-        'slug','title','subtitle','excerpt',
-        'icon_url','to_path','bullets',
+        'slug','title','subtitle','excerpt','body',
+        'icon_path','icon_url','bullets',
         'featured','active','order',
     ];
 
     protected $casts = [
         'bullets'  => 'array',
-        'featured' => 'bool',
-        'active'   => 'bool',
-        'order'    => 'int',
+        'featured' => 'boolean',
+        'active'   => 'boolean',
+        'order'    => 'integer',
     ];
 
-    // URL absoluta para el icono (si es relativa, la prefijamos con APP_URL)
-    public function getIconAbsoluteUrlAttribute(): ?string
+    protected $appends = ['icon']; // URL resuelta para el front
+
+    // Accessor: icon => URL final (prioriza icon_url, si no usa storage)
+    public function getIconAttribute(): ?string
     {
-        if (!$this->icon_url) return null;
-        if (str_starts_with($this->icon_url, 'http')) return $this->icon_url;
-        return url($this->icon_url); // ej: http://localhost:8000/storage/...
+        if ($this->icon_url) return $this->icon_url;
+        if ($this->icon_path) return asset('storage/' . ltrim($this->icon_path, '/'));
+        return null;
     }
 
-    // Chequeo de existencia en el disco 'public' cuando icon_url apunta a /storage/*
-    public function getIconExistsAttribute(): ?bool
+    // Generar slug si no viene
+    protected static function booted(): void
     {
-        if (!$this->icon_url) return null;
-        if (!str_starts_with($this->icon_url, '/storage/')) return null; // no sabemos el disco
-        $rel = ltrim(str_replace('/storage/', '', $this->icon_url), '/'); // practice-areas/xxx.png
-        return Storage::disk('public')->exists($rel);
-    }
-
-    protected static function booted()
-    {
-        static::creating(function ($model) {
-            if (empty($model->slug)) {
-                $model->slug = Str::slug($model->title) . '-' . Str::random(4);
+        static::creating(function (PracticeArea $m) {
+            if (!$m->slug) {
+                $base = Str::slug($m->title);
+                $slug = $base;
+                $i = 1;
+                while (static::where('slug', $slug)->withTrashed()->exists()) {
+                    $slug = $base.'-'.$i++;
+                }
+                $m->slug = $slug;
             }
         });
+    }
 
-        static::updating(function ($model) {
-            if ($model->isDirty('title') && empty($model->getOriginal('slug'))) {
-                $model->slug = Str::slug($model->title) . '-' . Str::random(4);
-            }
+    // Scope de búsqueda simple
+    public function scopeSearch(Builder $q, ?string $term): Builder
+    {
+        if (!$term) return $q;
+        $term = trim($term);
+        return $q->where(function($qq) use ($term) {
+            $qq->where('title', 'like', "%$term%")
+               ->orWhere('subtitle', 'like', "%$term%")
+               ->orWhere('excerpt', 'like', "%$term%");
         });
     }
 }

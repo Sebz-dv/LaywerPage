@@ -1,68 +1,78 @@
 // src/services/practiceAreasService.js
 import { api } from "../lib/api"; // baseURL: http://localhost:8000/api
 
-export const practiceAreasService = {
-  list,
-  get,
-  create,
-  update,
-  destroy: remove,
-  toggle,
-};
+function isFileLike(v) {
+  return (
+    (typeof File !== "undefined" && v instanceof File) ||
+    (v && typeof v === "object" && v.name && v.size != null && v.type != null)
+  );
+}
 
-// src/services/practiceAreasService.js
-function toPayload(payload) {
-  const hasFile = payload?.iconFile instanceof File;
-  if (!hasFile) return payload;
-
+function toFormData(payload, methodOverride = null) {
   const fd = new FormData();
-  for (const [k, v] of Object.entries(payload)) {
-    if (k === "iconFile") continue;
-    if (v === undefined || v === null) continue;
+  if (methodOverride) fd.append("_method", methodOverride);
 
-    if (Array.isArray(v)) {
-      v.forEach((x) => fd.append(`${k}[]`, x));
-    } else if (typeof v === "boolean") {
-      fd.append(k, v ? "1" : "0");            // 👈 booleans como 1/0
-    } else {
-      fd.append(k, v);
+  const hasIconFile = isFileLike(payload.icon);
+
+  for (const [k, raw] of Object.entries(payload)) {
+    if (raw === undefined) continue;
+
+    if (k === "bullets") {
+      fd.append("bullets", JSON.stringify(Array.isArray(raw) ? raw : []));
+      continue;
     }
+
+    if (k === "icon_url" && hasIconFile) continue; // si hay archivo, ignora la URL
+
+    let v = raw;
+    if (typeof v === "boolean") v = v ? "1" : "0"; // boolean -> string aceptada por Laravel
+    fd.append(k, v == null ? "" : v);
   }
-  fd.append("icon", payload.iconFile);         // campo archivo
   return fd;
 }
 
+export const practiceAreasService = {
+  list(params = {}) {
+    return api.get("/practice-areas", { params }).then((r) => r.data);
+  },
 
-async function list(params = {}) {
-  const { data } = await api.get("/practice-areas", { params });
-  return data; // { data, meta, links }
-}
+  get(idOrSlug) {
+    return api.get(`/practice-areas/${idOrSlug}`).then((r) => r.data);
+  },
 
-async function get(idOrSlug) {
-  const { data } = await api.get(`/practice-areas/${idOrSlug}`);
-  return data;
-}
+  create(payload) {
+    const hasFile = isFileLike(payload.icon);
+    if (hasFile) {
+      const fd = toFormData(payload);
+      return api
+        .post("/practice-areas", fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        .then((r) => r.data);
+    }
+    return api.post("/practice-areas", payload).then((r) => r.data);
+  },
 
-async function create(payload) {
-  const body = toPayload(payload);
-  const headers = body instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined;
-  const { data } = await api.post("/practice-areas", body, { headers });
-  return data;
-}
+  update(id, payload) {
+    const hasFile = isFileLike(payload.icon);
+    if (hasFile) {
+      const fd = toFormData(payload, "PUT");
+      return api
+        .post(`/practice-areas/${id}`, fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+        })
+        .then((r) => r.data);
+    }
+    return api.put(`/practice-areas/${id}`, payload).then((r) => r.data);
+  },
 
-async function update(id, payload) {
-  const body = toPayload(payload);
-  const headers = body instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined;
-  const { data } = await api.put(`/practice-areas/${id}`, body, { headers });
-  return data;
-}
+  remove(id) {
+    return api.delete(`/practice-areas/${id}`).then((r) => r.data);
+  },
 
-async function remove(id) {
-  const { data } = await api.delete(`/practice-areas/${id}`);
-  return data;
-}
-
-async function toggle(id, field = "active") {
-  const { data } = await api.post(`/practice-areas/${id}/toggle`, null, { params: { field } });
-  return data;
-}
+  toggle(id, field) {
+    return api
+      .post(`/practice-areas/${id}/toggle`, { field })
+      .then((r) => r.data);
+  },
+};
