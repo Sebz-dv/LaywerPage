@@ -143,15 +143,15 @@ export default function IntroPage() {
             variants={fadeIn}
             className="border-t border-[hsl(var(--border))]"
           />
-
-          <motion.div variants={fadeUp}>
-            <TeamHero />
-          </motion.div>
         </motion.div>
       </Section>
 
+      <motion.div variants={fadeUp}>
+        <TeamHero />
+      </motion.div>
+
       {/* Buscador del equipo */}
-      <Section id="team-finder" className="mt-[-90px]">
+      <Section id="team-finder" className="mt-[-70px]">
         <motion.div className="px-[2px]" variants={staggerWrap}>
           {/* Entrada “slide-up” suave */}
           <motion.div variants={fadeUp} className="mt-6">
@@ -161,17 +161,9 @@ export default function IntroPage() {
       </Section>
 
       {/* Features / cierre */}
-      <Section id="features" className="mt-[-90px]">
-        <motion.div className="px-[2px]" variants={staggerWrap}>
-          <motion.div
-            variants={fadeIn}
-            className="border-t border-[hsl(var(--border))] mb-10"
-          />
-          <motion.div variants={fadeUp} className="mt-8 sm:mt-10">
-            <FeaturesGrid />
-          </motion.div>
-        </motion.div>
-      </Section>
+      <motion.div variants={fadeUp} >
+        <FeaturesGrid />
+      </motion.div>
     </div>
   );
 }

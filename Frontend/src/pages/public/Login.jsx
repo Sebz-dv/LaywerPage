@@ -372,14 +372,14 @@ export default function Login() {
                 </div>
 
                 <h2 className="mt-4 text-xl sm:text-2xl font-semibold text-[hsl(var(--fg))]">
-                  Montoya & Asociados
+                  Blanco & Ramírez
                 </h2>
                 <p className="mt-1 text-sm text-[hsl(var(--fg)/0.75)] max-w-xs leading-relaxed">
                   Plataforma segura para clientes y equipo. Transparencia, orden
                   y resultados.
                 </p>
                 <span className="mt-6 text-xs text-[hsl(var(--fg)/0.65)]">
-                  © {new Date().getFullYear()} Montoya & Asociados
+                  © {new Date().getFullYear()} Blanco & Ramírez
                 </span>
               </div>
 

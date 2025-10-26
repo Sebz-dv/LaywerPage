@@ -15,6 +15,7 @@ function cx(...xs) {
 export default function NavbarLanding({
   navItemsPublic = [
     { to: "/", label: "Inicio", end: true },
+    { to: "/about-us", label: "Sobre nosotros" },
     { to: "/servicios", label: "Áreas de práctica" },
     { to: "/equipo", label: "Equipo" },
     { to: "/publicaciones", label: "Publicaciones" },
@@ -71,11 +72,11 @@ export default function NavbarLanding({
       try {
         const s = await settingsService.get();
         setBrand({
-          name: s?.site_name || "Montoya & Asociados",
+          name: s?.site_name || "Blanco & Ramírez",
           logoUrl: s?.logo_url || "",
         });
       } catch {
-        setBrand((b) => ({ ...b, name: b.name || "Montoya & Asociados" }));
+        setBrand((b) => ({ ...b, name: b.name || "Blanco & Ramírez" }));
       }
     })();
   }, []);
@@ -135,7 +136,7 @@ export default function NavbarLanding({
               </div>
 
               <span className="font-semibold tracking-tight text-[hsl(var(--accent-foreground))]">
-                {brand.name || "Montoya & Asociados"}
+                {brand.name || "Blanco & Ramírez"}
               </span>
             </Link>
 

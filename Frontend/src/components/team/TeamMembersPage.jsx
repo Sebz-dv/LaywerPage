@@ -30,9 +30,10 @@ export default function TeamMembersPage() {
     () => ({
       nombre: "",
       cargo: "",
-      area: "",
+      areas: [],       // ← array JSON
       ciudad: "",
       tipo: "",
+      tipo_otro: "",   // ← para "otro"
       foto_url: "",
     }),
     []
@@ -68,6 +69,15 @@ export default function TeamMembersPage() {
     else setFotoPreview(null);
   }, []);
 
+  // Limpia objectURL cuando cambie o al desmontar
+  useEffect(() => {
+    return () => {
+      if (fotoPreview && fotoPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(fotoPreview);
+      }
+    };
+  }, [fotoPreview]);
+
   // Abrir crear
   const openCreate = useCallback(() => {
     setIsEditing(false);
@@ -85,9 +95,11 @@ export default function TeamMembersPage() {
     setForm({
       nombre: m.nombre ?? "",
       cargo: m.cargo ?? "",
-      area: m.area ?? "",
+      // compatibilidad: si aún tienes 'area' string en datos viejos
+      areas: Array.isArray(m.areas) ? m.areas : (m.areas ? [m.areas] : (m.area ? [m.area] : [])),
       ciudad: m.ciudad ?? "",
       tipo: m.tipo ?? "",
+      tipo_otro: "",
       foto_url: m.foto_url ?? "",
     });
     setFotoFile(null);
@@ -111,6 +123,20 @@ export default function TeamMembersPage() {
   const handleSubmit = useCallback(async () => {
     try {
       const payload = { ...form };
+
+      // Garantiza array limpio para 'areas'
+      payload.areas = Array.isArray(payload.areas)
+        ? payload.areas.filter(Boolean)
+        : payload.areas
+        ? [payload.areas]
+        : [];
+
+      // Manejo de 'otro'
+      if (payload.tipo !== "otro") {
+        delete payload.tipo_otro;
+      }
+
+      // Archivo
       if (fotoFile) payload.foto = fotoFile; // key que espera el backend
 
       if (isEditing && currentSlug) {
@@ -147,7 +173,7 @@ export default function TeamMembersPage() {
     setTimeout(() => setProfileSlug(null), 100);
   }, []);
 
-  // Tipos del selector
+  // Tipos del selector (incluye "Otro…")
   const extraTipoGroups = useMemo(
     () => [
       {
@@ -156,6 +182,7 @@ export default function TeamMembersPage() {
           { value: "", label: "— Selecciona un tipo —" },
           { value: "juridico", label: "Jurídico" },
           { value: "no-juridico", label: "No Jurídico" },
+          { value: "otro", label: "Otro…" },
         ],
       },
     ],
@@ -170,15 +197,12 @@ export default function TeamMembersPage() {
           <h1 className="text-lg font-semibold">Equipo</h1>
           <p className="text-sm text-muted">Gestiona miembros, perfiles y fotos.</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="btn btn-primary"
-        >
+        <button onClick={openCreate} className="btn btn-primary">
           Nuevo miembro
         </button>
       </div>
 
-      {/* Tabla (deja sus estilos internos, la envolvemos si quieres card) */}
+      {/* Tabla */}
       <div className="card card-pad">
         <MembersTable
           items={items}
@@ -251,9 +275,7 @@ function Modal({ open, onClose, ariaLabel, children }) {
         <div className="card">
           {/* Header del modal */}
           <div className="flex items-center justify-between card-pad pb-0">
-            <h2 className="text-base font-semibold">
-              {ariaLabel}
-            </h2>
+            <h2 className="text-base font-semibold">{ariaLabel}</h2>
             <button
               type="button"
               onClick={onClose}
@@ -266,9 +288,7 @@ function Modal({ open, onClose, ariaLabel, children }) {
           </div>
 
           {/* Body */}
-          <div className="card-pad pt-3">
-            {children}
-          </div>
+          <div className="card-pad pt-3">{children}</div>
         </div>
       </div>
     </div>

@@ -19,6 +19,7 @@ import BlogList from "./pages/public/blog/BlogList.jsx";
 import BlogArticle from "./pages/public/blog/BlogArticle.jsx";
 import SiteSettings from "./components/settings/SiteSettings.jsx";
 import InfoBlocksManager from "./components/info/InfoBlocksManager.jsx";
+import AboutUs from "./pages/public/AboutUs.jsx";
 
 function Shell() {
   return (
@@ -44,14 +45,13 @@ export default function App() {
         <Route path="/" element={<Intro />} />
         <Route path="/login" element={<Login />} /> {/* <-- mover aquí */}
         <Route path="/register" element={<Register />} /> {/* <-- mover aquí */}
-        <Route path="/equipo/:slug" element={<TeamProfile />} />{" "}
-        {/* 👈 NUEVA */}
-        <Route path="/equipo" element={<TeamIndex />} />
-        {/* <Route path="/servicios" element={<Services />} /> 👈 NUEVA */}
+        <Route path="/equipo/:slug" element={<TeamProfile />} />{" "} 
+        <Route path="/equipo" element={<TeamIndex />} /> 
         <Route path="/servicios" element={<PracticeAreasPage />} />
         <Route path="/servicios/:slug" element={<ServiceDetail />} />
         <Route path="/publicaciones" element={<BlogList />} />
         <Route path="/publicaciones/:slug" element={<BlogArticle />} />
+        <Route path="/about-us" element={<AboutUs />} />
       </Route>
 
       {/* Protegidas (también con AppLayout + Navbar) */}

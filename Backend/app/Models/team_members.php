@@ -9,13 +9,26 @@ class team_members extends Model
 {
     protected $table = 'team_members';
     protected $guarded = [];
-
+    protected $casts = [
+        'areas' => 'array', // ← JSON[]
+    ];
     // Bind por slug en rutas: /team/{slug}
     public function getRouteKeyName(): string
     {
         return 'slug';
     }
+    
+    public function setAreasAttribute($value)
+    {
+        $arr = collect(is_array($value) ? $value : [$value])
+            ->filter(fn($v) => is_string($v) && trim($v) !== '')
+            ->map(fn($v) => trim($v))
+            ->unique()
+            ->values()
+            ->all();
 
+        $this->attributes['areas'] = json_encode($arr);
+    }
     protected static function booted(): void
     {
         static::creating(function ($m) {

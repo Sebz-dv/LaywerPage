@@ -1,5 +1,6 @@
 <?php
 
+// app/Http/Controllers/TeamMembersController.php
 namespace App\Http\Controllers;
 
 use App\Models\team_members;
@@ -10,37 +11,48 @@ use Illuminate\Validation\Rule;
 
 class TeamMembersController extends Controller
 {
-
     public function index(Request $req)
     {
-        $perPage = min((int) $req->integer('per_page', 9), 50);
+        $perPage = min((int)$req->integer('per_page', 9), 50);
         $q = team_members::query();
 
         // Filtros
         if ($tab = (string) $req->string('tab')->lower()) {
-            if (in_array($tab, ['juridico', 'no-juridico'])) $q->where('tipo', $tab);
+            // backward compat: si usas 'tab' como 'tipo'
+            $q->where('tipo', $tab);
         }
         if ($nombre = (string) $req->string('nombre')) {
             $q->where('nombre', 'LIKE', '%' . $nombre . '%');
         }
-        foreach (['cargo', 'area', 'ciudad'] as $f) {
-            if ($v = (string) $req->string($f)) $q->where($f, $v);
+
+        if ($cargo = (string) $req->string('cargo')) {
+            $q->where('cargo', $cargo);
+        }
+        if ($ciudad = (string) $req->string('ciudad')) {
+            $q->where('ciudad', $ciudad);
         }
 
-        // 👇 Nuevo: orden
-        $sort = (string) $req->query('sort', 'latest'); // latest | nombre
-        if ($sort === 'latest') {
-            $q->orderByDesc('id'); // o created_at desc
-        } else {
-            $q->orderBy('nombre');
+        // Filtro de área (string) contra JSON[]
+        if ($area = (string) $req->string('area')) {
+            // requiere MySQL 5.7+/8: JSON_CONTAINS
+            $q->whereJsonContains('areas', $area);
         }
+
+        // Orden
+        $sort = (string) $req->query('sort', 'latest'); // latest | nombre
+        $sort === 'latest' ? $q->orderByDesc('id') : $q->orderBy('nombre');
 
         $page = $q->paginate($perPage)->appends($req->query());
 
+        // Facets
+        $rows = team_members::select('cargo', 'areas', 'ciudad')->get();
+
         $facets = [
-            'cargos'   => team_members::select('cargo')->distinct()->orderBy('cargo')->pluck('cargo'),
-            'areas'    => team_members::select('area')->distinct()->orderBy('area')->pluck('area'),
-            'ciudades' => team_members::select('ciudad')->distinct()->orderBy('ciudad')->pluck('ciudad'),
+            'cargos'   => $rows->pluck('cargo')->filter()->unique()->sort()->values()->all(),
+            'areas'    => $rows->pluck('areas')->filter()->flatMap(function ($a) {
+                return collect(is_array($a) ? $a : []);
+            })->filter()->unique()->sort()->values()->all(),
+            'ciudades' => $rows->pluck('ciudad')->filter()->unique()->sort()->values()->all(),
         ];
 
         return response()->json([
@@ -55,7 +67,6 @@ class TeamMembersController extends Controller
         ]);
     }
 
-    // Binding por slug gracias a getRouteKeyName()
     public function show(string $slug)
     {
         $m = team_members::where('slug', $slug)->with('profile')->firstOrFail();
@@ -67,14 +78,23 @@ class TeamMembersController extends Controller
         $validated = $req->validate([
             'nombre'   => 'required|string|max:255',
             'cargo'    => 'required|string|max:255',
-            'area'     => 'required|string|max:255',
+            'areas'    => 'required|array|min:1',
+            'areas.*'  => 'string|max:255',
             'ciudad'   => 'required|string|max:255',
-            'tipo'     => ['required', Rule::in(['juridico', 'no-juridico'])],
+            'tipo'     => 'required|string|max:50', // libre (incluye 'otro')
+            'tipo_otro' => 'nullable|string|max:50',
             'foto'     => 'nullable|image',
         ]);
 
-        // 👇 NO guardes 'foto' como columna
-        $data = collect($validated)->except('foto')->all();
+        $data = collect($validated)->except('foto', 'tipo_otro')->all();
+
+        // Si frente te manda tipo='otro' y tipo_otro='X', usa X
+        if (($validated['tipo'] ?? '') === 'otro' && !empty($validated['tipo_otro'])) {
+            $data['tipo'] = $validated['tipo_otro'];
+        }
+
+        // slug
+        $data['slug'] = Str::slug($validated['nombre']);
 
         if ($req->hasFile('foto')) {
             $path = $req->file('foto')->store('team', 'public');
@@ -92,14 +112,23 @@ class TeamMembersController extends Controller
         $validated = $req->validate([
             'nombre'   => 'sometimes|required|string|max:255',
             'cargo'    => 'sometimes|required|string|max:255',
-            'area'     => 'sometimes|required|string|max:255',
+            'areas'    => 'sometimes|required|array|min:1',
+            'areas.*'  => 'string|max:255',
             'ciudad'   => 'sometimes|required|string|max:255',
-            'tipo'     => ['sometimes', 'required', Rule::in(['juridico', 'no-juridico'])],
+            'tipo'     => 'sometimes|required|string|max:50',
+            'tipo_otro' => 'nullable|string|max:50',
             'foto'     => 'nullable|image',
         ]);
 
-        // 👇 NO guardes 'foto' como columna
-        $data = collect($validated)->except('foto')->all();
+        $data = collect($validated)->except('foto', 'tipo_otro')->all();
+
+        if (($validated['tipo'] ?? '') === 'otro' && !empty($validated['tipo_otro'])) {
+            $data['tipo'] = $validated['tipo_otro'];
+        }
+
+        if (array_key_exists('nombre', $validated) && $validated['nombre'] !== $m->nombre) {
+            $data['slug'] = Str::slug($validated['nombre']);
+        }
 
         if ($req->hasFile('foto')) {
             if ($m->foto_url) {

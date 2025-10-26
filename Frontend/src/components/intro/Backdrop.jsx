@@ -17,7 +17,8 @@ export default function Backdrop() {
         transition={{ duration: 0.7 }}
         className="text-4xl md:text-6xl font-bold tracking-tight"
       >
-        Defensa legal clara, estratégica y sin sorpresas
+        Comprometidos con la justicia, la educación y la buena administración
+        pública.
       </motion.h1>
 
       <motion.p
@@ -26,12 +27,14 @@ export default function Backdrop() {
         transition={{ delay: 0.2, duration: 0.7 }}
         className="mt-6 max-w-2xl text-lg md:text-xl text-white/80"
       >
-        Somos un equipo boutique especializado en{" "}
+         En{" "}
         <strong className="font-semibold text-white">
-          derecho comercial, laboral y litigios
+          Blanco & Ramírez Abogados S.A.S.{" "}
         </strong>
-        . Ayudamos a empresas y personas a resolver sus retos legales con
-        comunicación directa y resultados medibles.
+        fortalecemos la gestión jurídica del sector público y educativo,
+        brindando asesoría, representación y acompañamiento estratégico con
+        rigor académico, experiencia y una visión innovadora que protege
+        derechos y promueve el desarrollo del país.
       </motion.p>
     </section>
   );

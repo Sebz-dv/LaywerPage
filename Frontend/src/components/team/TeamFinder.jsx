@@ -31,7 +31,7 @@ export default function TeamFinder({
   className = "",
   basePath = "/equipo",
   initialTab = "todos", // 'juridico' | 'no-juridico' | 'todos'
-  pageSize = 9,
+  pageSize = 6,
   imageFitDefault = "cover", // 'cover' | 'contain'
 }) {
   // ===== Filtros
@@ -323,7 +323,7 @@ export default function TeamFinder({
               )}
             </button>
           ) : (
-            <p className="text-sm text-muted">No hay más resultados.</p>
+            ""
           )}
         </div>
       )}

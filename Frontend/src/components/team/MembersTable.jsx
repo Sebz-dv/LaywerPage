@@ -63,8 +63,7 @@ export function MembersTable({
             <tr className="border-b border-[hsl(var(--border))]">
               <Th>Foto</Th>
               <Th>Nombre</Th>
-              <Th>Cargo</Th>
-              <Th>Área</Th>
+              <Th>Cargo</Th> 
               <Th>Ciudad</Th>
               <Th>Tipo</Th>
               <Th className="w-56">Acciones</Th>
@@ -91,8 +90,7 @@ export function MembersTable({
                   )}
                 </Td>
                 <Td>{m.nombre}</Td>
-                <Td>{m.cargo}</Td>
-                <Td>{m.area}</Td>
+                <Td>{m.cargo}</Td> 
                 <Td>{m.ciudad}</Td>
                 <Td className="capitalize">{m.tipo?.replace("-", " ")}</Td>
                 <Td>

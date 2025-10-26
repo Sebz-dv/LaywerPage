@@ -6,7 +6,8 @@ import {
   FaAlignCenter,
   FaProductHunt,
   FaBookmark,
-  FaBloggerB,
+  FaArchway,
+  FaBookMedical,
 } from "react-icons/fa";
 
 export const menuItems = [
@@ -38,14 +39,9 @@ export const menuItems = [
     key: "publicaciones",
     label: "Publicaciones",
     link: "/dash/articles",
-    icon: FaBookmark, 
+    icon: FaBookmark,
   },
-  {
-    key: "datos",
-    label: "Informacion De La Empresa",
-    link: "/dash/info",
-    icon: FaBookmark, 
-  },
+
   {
     key: "ajustes",
     label: "Ajustes",
@@ -54,8 +50,14 @@ export const menuItems = [
       {
         key: "empresa",
         label: "Configuracion de Empresa",
-        icon: FaCog,
+        icon: FaArchway,
         link: "/dash/settings",
+      },
+      {
+        key: "datos",
+        label: "Informacion De La Empresa",
+        link: "/dash/info",
+        icon: FaBookMedical,
       },
     ],
   },

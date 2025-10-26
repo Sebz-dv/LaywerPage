@@ -22,15 +22,13 @@ export default function AppLayout({ children }) {
       )}
     >
       <Navbar />
-      <div aria-hidden className="h-16" />
-
-      <main id="main" role="main" className="flex-1 min-h-0 w-full h-full">
+      <main id="main" role="main" className=" w-full h-full">
         {children}
       </main>
+      <div className="mt-[-64px]">
 
-      <footer className="border-t w-full border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-        <Footer />
-      </footer>
+      <Footer />
+      </div>
     </div>
   );
 }
