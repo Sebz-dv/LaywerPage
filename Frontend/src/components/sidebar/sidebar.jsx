@@ -13,15 +13,22 @@ import { menuItems } from "./data/menuItems";
 import SidebarItem from "./SidebarItem";
 import { useAuth } from "../../context/useAuth";
 import { logoutUser } from "../../utils/logoutUser";
+// 👇 importa el servicio de settings
+import { settingsService } from "../../services/settingsService";
 
 function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const [openSubMenus, setOpenSubMenus] = useState({});
   const [hoveredMenu, setHoveredMenu] = useState(null);
   const [flyoutPosition, setFlyoutPosition] = useState(null);
   const Motion = motion;
+
   // Datos user
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+
+  // ⚠️ nuevo: datos de settings
+  const [brandLogoUrl, setBrandLogoUrl] = useState("");  // viene ABSOLUTA del backend
+  const [brandName, setBrandName] = useState("");
 
   // Dropdown user
   const [openUser, setOpenUser] = useState(false);
@@ -35,6 +42,19 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const cookies = nookies.get(null);
   const { user, logout } = useAuth();
   const isAuthenticated = Boolean(cookies.token) || Boolean(user?.email);
+
+  // Cargar settings (logo y nombre)
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = await settingsService.get();
+        setBrandLogoUrl(s.logo_url || ""); // el backend ya la devuelve absoluta (con http://.../storage/...)
+        setBrandName(s.site_name || "Logipack");
+      } catch (e) {
+        console.warn("No se pudo cargar settings:", e);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -80,24 +100,10 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
   // Swipe-to-close
   useEffect(() => {
     if (!isMobile) return;
-    let startX = 0,
-      currentX = 0,
-      touching = false;
-    const onTouchStart = (e) => {
-      touching = true;
-      startX = e.touches[0].clientX;
-      currentX = startX;
-    };
-    const onTouchMove = (e) => {
-      if (!touching) return;
-      currentX = e.touches[0].clientX;
-    };
-    const onTouchEnd = () => {
-      if (!touching) return;
-      const d = currentX - startX;
-      if (d < -60 && sidebarOpen) setSidebarOpen(false);
-      touching = false;
-    };
+    let startX = 0, currentX = 0, touching = false;
+    const onTouchStart = (e) => { touching = true; startX = e.touches[0].clientX; currentX = startX; };
+    const onTouchMove = (e) => { if (!touching) return; currentX = e.touches[0].clientX; };
+    const onTouchEnd = () => { if (!touching) return; const d = currentX - startX; if (d < -60 && sidebarOpen) setSidebarOpen(false); touching = false; };
     document.addEventListener("touchstart", onTouchStart);
     document.addEventListener("touchmove", onTouchMove);
     document.addEventListener("touchend", onTouchEnd);
@@ -112,16 +118,10 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
   useEffect(() => {
     function onDocClick(e) {
       if (!openUser) return;
-      if (
-        menuRef.current?.contains(e.target) ||
-        btnRef.current?.contains(e.target)
-      )
-        return;
+      if (menuRef.current?.contains(e.target) || btnRef.current?.contains(e.target)) return;
       setOpenUser(false);
     }
-    function onEsc(e) {
-      if (e.key === "Escape") setOpenUser(false);
-    }
+    function onEsc(e) { if (e.key === "Escape") setOpenUser(false); }
     document.addEventListener("mousedown", onDocClick);
     document.addEventListener("keydown", onEsc);
     return () => {
@@ -147,7 +147,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const handleLogout = () =>
     logoutUser({
       onContextLogout: logout,
-      apiUrl: "/api/auth/logout", // ajusta si usas otra ruta
+      apiUrl: "/api/auth/logout",
       navigate,
       afterNavigateTo: "/",
       hardReload: true,
@@ -188,13 +188,9 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
           "fixed lg:sticky inset-y-0 left-0",
           "w-72 max-w-[85vw] lg:w-auto",
           "transform transition-transform duration-300 ease-in-out",
-          isMobile
-            ? sidebarOpen
-              ? "translate-x-0"
-              : "-translate-x-full"
-            : "translate-x-0",
+          isMobile ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0",
           "lg:top-0 lg:h-screen",
-          "border-r overflow-visible", // <- importante para no recortar el dropdown
+          "border-r overflow-visible",
           "bg-[hsl(var(--bg))] text-[hsl(var(--fg))] border-[hsl(var(--border))]/20",
         ].join(" ")}
         role="dialog"
@@ -212,20 +208,31 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
           >
             {sidebarOpen && (
               <div className="flex items-center space-x-2">
-                <img
-                  src="/logipack.png"
-                  alt="Logipack"
-                  width={60}
-                  height={60}
-                  loading="eager"
-                />
-                <img
-                  src="/logipack_name.png"
-                  alt="Logipack"
-                  width={100}
-                  height={60}
-                  loading="eager"
-                />
+                {/* 👇 si hay logo en settings, úsalo; si no, fallback a assets locales */}
+                {brandLogoUrl ? (
+                  <img
+                    src={brandLogoUrl}
+                    alt={brandName || "Logo"}
+                    width={60}
+                    height={60}
+                    loading="eager"
+                    className="shrink-0 object-contain"
+                  />
+                ) : (
+                  <img
+                    src="/logipack.png"
+                    alt="Logipack"
+                    width={60}
+                    height={60}
+                    loading="eager"
+                    className="shrink-0 object-contain"
+                  />
+                )}
+
+                {/* Nombre de marca, si existe */}
+                <span className="text-base font-semibold whitespace-nowrap">
+                  {brandName || "Logipack"}
+                </span>
               </div>
             )}
             <button
@@ -291,101 +298,88 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                       }}
                       sidebarOpen={sidebarOpen}
                     >
-                      <FaAngleDown
-                        className={`${
-                          openSubMenus[item.key] ? "rotate-180" : ""
-                        }`}
-                      />
+                      <FaAngleDown className={`${openSubMenus[item.key] ? "rotate-180" : ""}`} />
                     </SidebarItem>
 
                     {/* Flyout (desktop, colapsado) */}
                     <AnimatePresence>
-                      {!isMobile &&
-                        !sidebarOpen &&
-                        hoveredMenu === item.key &&
-                        flyoutPosition && (
-                          <SidebarFlyoutPortal>
-                            <motion.div
-                              key={item.key}
-                              initial={{ opacity: 0, x: 10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: 10 }}
-                              transition={{ duration: 0.18 }}
-                              className={[
-                                "fixed z-[9999] min-w-[200px] py-2",
-                                "rounded-2xl border shadow-[0_12px_32px_-6px_rgba(0,0,0,0.55)]",
-                                "ring-1",
-                                "border-[hsl(var(--border))] ring-[hsl(var(--ring))]/15",
-                              ].join(" ")}
-                              style={{
-                                top: flyoutPosition.top,
-                                left: flyoutPosition.left,
-                                background: `hsl(var(--card))`,
-                                color: `hsl(var(--fg))`,
-                              }}
-                              onMouseLeave={() => {
-                                setHoveredMenu(null);
-                                setFlyoutPosition(null);
-                              }}
-                              onMouseEnter={() => setHoveredMenu(item.key)}
-                              role="menu"
-                              aria-label={item.label}
-                            >
-                              {item.children.map((sub) => {
-                                const active = isSubMenuItemActive(sub);
-                                return (
-                                  <div
-                                    key={sub.key}
-                                    role="menuitem"
-                                    tabIndex={0}
-                                    aria-current={active}
-                                    className={[
-                                      "group flex items-center cursor-pointer select-none",
-                                      "px-3 py-2 mx-1 rounded-lg",
-                                      "transition-[background,transform] duration-150",
-                                      "hover:bg-[hsl(var(--muted))]/30 active:bg-[hsl(var(--muted))]/40",
-                                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]",
-                                      active
-                                        ? "bg-[hsl(var(--muted))]/40 border-l-4 border-l-[hsl(var(--accent))]"
-                                        : "border-l-4 border-l-transparent",
-                                    ].join(" ")}
-                                    onClick={() => {
+                      {!isMobile && !sidebarOpen && hoveredMenu === item.key && flyoutPosition && (
+                        <SidebarFlyoutPortal>
+                          <motion.div
+                            key={item.key}
+                            initial={{ opacity: 0, x: 10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            transition={{ duration: 0.18 }}
+                            className={[
+                              "fixed z-[9999] min-w-[200px] py-2",
+                              "rounded-2xl border shadow-[0_12px_32px_-6px_rgba(0,0,0,0.55)]",
+                              "ring-1",
+                              "border-[hsl(var(--border))] ring-[hsl(var(--ring))]/15",
+                            ].join(" ")}
+                            style={{
+                              top: flyoutPosition.top,
+                              left: flyoutPosition.left,
+                              background: `hsl(var(--card))`,
+                              color: `hsl(var(--fg))`,
+                            }}
+                            onMouseLeave={() => {
+                              setHoveredMenu(null);
+                              setFlyoutPosition(null);
+                            }}
+                            onMouseEnter={() => setHoveredMenu(item.key)}
+                            role="menu"
+                            aria-label={item.label}
+                          >
+                            {item.children.map((sub) => {
+                              const active = isSubMenuItemActive(sub);
+                              return (
+                                <div
+                                  key={sub.key}
+                                  role="menuitem"
+                                  tabIndex={0}
+                                  aria-current={active}
+                                  className={[
+                                    "group flex items-center cursor-pointer select-none",
+                                    "px-3 py-2 mx-1 rounded-lg",
+                                    "transition-[background,transform] duration-150",
+                                    "hover:bg-[hsl(var(--muted))]/30 active:bg-[hsl(var(--muted))]/40",
+                                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]",
+                                    active
+                                      ? "bg-[hsl(var(--muted))]/40 border-l-4 border-l-[hsl(var(--accent))]"
+                                      : "border-l-4 border-l-transparent",
+                                  ].join(" ")}
+                                  onClick={() => {
+                                    if (sub.link) navigate(sub.link);
+                                    setHoveredMenu(null);
+                                    setFlyoutPosition(null);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
                                       if (sub.link) navigate(sub.link);
                                       setHoveredMenu(null);
                                       setFlyoutPosition(null);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter" || e.key === " ") {
-                                        e.preventDefault();
-                                        if (sub.link) navigate(sub.link);
-                                        setHoveredMenu(null);
-                                        setFlyoutPosition(null);
-                                      }
-                                    }}
-                                  >
-                                    <sub.icon
-                                      className={[
-                                        "text-lg mr-2",
-                                        active
-                                          ? "text-[hsl(var(--accent))]"
-                                          : "text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--fg))]",
-                                      ].join(" ")}
-                                    />
-                                    <span
-                                      className={
-                                        active
-                                          ? "text-[hsl(var(--fg))]"
-                                          : "text-[hsl(var(--fg))]/90"
-                                      }
-                                    >
-                                      {sub.label}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </motion.div>
-                          </SidebarFlyoutPortal>
-                        )}
+                                    }
+                                  }}
+                                >
+                                  <sub.icon
+                                    className={[
+                                      "text-lg mr-2",
+                                      active
+                                        ? "text-[hsl(var(--accent))]"
+                                        : "text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--fg))]",
+                                    ].join(" ")}
+                                  />
+                                  <span className={active ? "text-[hsl(var(--fg))]" : "text-[hsl(var(--fg))]/90"}>
+                                    {sub.label}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </motion.div>
+                        </SidebarFlyoutPortal>
+                      )}
                     </AnimatePresence>
 
                     {/* Submenú acordeón (expandido) */}
@@ -408,9 +402,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                                 aria-current={active}
                                 className={[
                                   "flex items-center cursor-pointer p-2 rounded transition-colors select-none",
-                                  active
-                                    ? "bg-[hsl(var(--muted))]/40"
-                                    : "hover:bg-[hsl(var(--muted))]/30",
+                                  active ? "bg-[hsl(var(--muted))]/40" : "hover:bg-[hsl(var(--muted))]/30",
                                 ].join(" ")}
                                 onClick={() => sub.link && navigate(sub.link)}
                                 onKeyDown={(e) => {
@@ -420,11 +412,8 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                                   }
                                 }}
                                 style={{
-                                  borderLeft: active
-                                    ? "3px solid hsl(var(--accent))"
-                                    : "3px solid transparent",
-                                  transition:
-                                    "border-color 0.2s, background 0.2s",
+                                  borderLeft: active ? "3px solid hsl(var(--accent))" : "3px solid transparent",
+                                  transition: "border-color 0.2s, background 0.2s",
                                 }}
                               >
                                 <sub.icon className="text-lg mr-2" />
@@ -445,10 +434,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
           <div className="mt-auto p-3 border-t border-[hsl(var(--border))]/20 overflow-visible">
             <ThemeToggle
               showLabel={sidebarOpen}
-              className={[
-                "w-full",
-                sidebarOpen ? "justify-center mb-2" : "justify-center mb-2 p-2",
-              ].join(" ")}
+              className={["w-full", sidebarOpen ? "justify-center mb-2" : "justify-center mb-2 p-2"].join(" ")}
             />
 
             {/* Menú de usuario */}
@@ -501,7 +487,6 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
                     transition={{ duration: 0.16 }}
                     className={[
                       "absolute bottom-12",
-                      // 👉 cuando colapsado, saca el menú a la derecha del sidebar
                       sidebarOpen ? "right-3" : "left-full ml-2",
                       "w-60 max-h-[min(60vh,320px)] overflow-auto",
                       "rounded-xl border border-[hsl(var(--border))]",

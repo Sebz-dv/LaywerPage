@@ -11,17 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('settings', function (Blueprint $t) {
-            $t->id();
-            $t->string('site_name')->default('Mi Empresa');
-            $t->string('logo_path')->nullable();         // storage path
-            $t->string('email')->nullable();
-            $t->string('phone')->nullable();
-            $t->string('address')->nullable();
-            $t->json('social_links')->nullable();        // [{platform,url,handle}]
-            $t->json('footer_blocks')->nullable();       // [{title, html}]
-            $t->unsignedBigInteger('updated_by')->nullable();
-            $t->timestamps();
+        Schema::create('settings', function (Blueprint $table) {
+            $table->id();
+            $table->string('site_name')->default('Mi Empresa');
+            $table->string('logo_path')->nullable();         // storage path
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('address')->nullable();
+            $table->json('social_links')->nullable();        // [{platform,url,handle}]
+            $table->json('footer_blocks')->nullable();       // [{title, html}]
+            $table->unsignedBigInteger('updated_by')->nullable();
+            $table->timestamps();
         });
     }
 

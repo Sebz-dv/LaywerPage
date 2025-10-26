@@ -60,12 +60,12 @@ export default function TeamProfile() {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6"
+          className="card card-pad"
         >
           <p className="text-red-600 font-medium">{err}</p>
           <button
             onClick={() => navigate(-1)}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm border bg-[hsl(var(--card))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))] transition-colors"
+            className="btn btn-outline mt-4"
           >
             Volver
           </button>
@@ -80,13 +80,10 @@ export default function TeamProfile() {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6"
+          className="card card-pad"
         >
           <p>Perfil no encontrado.</p>
-          <Link
-            to="/equipo"
-            className="mt-4 inline-block rounded-xl px-4 py-2 text-sm border bg-[hsl(var(--card))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
-          >
+          <Link to="/equipo" className="btn btn-outline mt-4 inline-flex">
             Volver al equipo
           </Link>
         </motion.div>
@@ -101,11 +98,11 @@ export default function TeamProfile() {
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.22 }}
-        className="text-sm text-[hsl(var(--fg))/0.7]"
+        className="text-sm text-muted"
       >
-        <Link to="/" className="hover:underline underline-offset-4">Inicio</Link>
+        <Link to="/" className="link">Inicio</Link>
         <span className="mx-2">/</span>
-        <Link to="/equipo" className="hover:underline underline-offset-4">Nuestro Equipo</Link>
+        <Link to="/equipo" className="link">Nuestro Equipo</Link>
         <span className="mx-2">/</span>
         <span className="text-[hsl(var(--fg))]">{person.nombre}</span>
       </motion.nav>
@@ -115,7 +112,7 @@ export default function TeamProfile() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={prefersReduced ? { duration: 0.2 } : { type: "spring", stiffness: 420, damping: 34 }}
-        className="mt-6 relative overflow-hidden rounded-3xl border border-[hsl(var(--border))] bg-gradient-to-br from-[hsl(var(--card))] to-[hsl(var(--muted))] p-6 md:p-8"
+        className="mt-6 relative overflow-hidden rounded-3xl border border-token bg-gradient-to-br from-[hsl(var(--card))] to-[hsl(var(--muted))] p-6 md:p-8"
       >
         {/* background blobs */}
         <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-[hsl(var(--accent))]/20 blur-3xl" />
@@ -136,8 +133,9 @@ export default function TeamProfile() {
             </p>
 
             <div className="mt-4 flex flex-wrap items-center gap-2 md:gap-3">
-              <Badge>{person.ciudad || "—"}</Badge>
+              <Badge variant="soft">{person.ciudad || "—"}</Badge>
               {person.tipo && <Badge variant="soft" className="capitalize">{person.tipo.replace("-", " ")}</Badge>}
+
               {Array.isArray(profile?.idiomas) && profile.idiomas.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {profile.idiomas.map((lang, i) => (
@@ -149,7 +147,7 @@ export default function TeamProfile() {
               {profile?.email && (
                 <a
                   href={`mailto:${profile.email}`}
-                  className="ml-auto inline-flex items-center gap-2 rounded-xl border bg-white/40 dark:bg-white/5 backdrop-blur px-3 py-1.5 text-sm border-[hsl(var(--border))] hover:bg-white/60 dark:hover:bg-white/10 transition-colors"
+                  className="btn btn-outline ml-auto"
                 >
                   {profile.email}
                 </a>
@@ -162,10 +160,7 @@ export default function TeamProfile() {
       {/* LAYOUT PRINCIPAL */}
       <div className="mt-8 grid gap-6 lg:grid-cols-[2fr_1fr]">
         {/* Perfil largo */}
-        <SectionCard
-          title="Perfil"
-          animate
-        >
+        <SectionCard title="Perfil" animate>
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -185,10 +180,7 @@ export default function TeamProfile() {
               <InfoRow label="Área" value={person.area || "—"} />
               <InfoRow label="Tipo" value={person.tipo?.replace("-", " ") || "—"} className="capitalize" />
             </ul>
-            <Link
-              to="/equipo"
-              className="mt-4 inline-flex rounded-xl px-3 py-2 text-sm border bg-[hsl(var(--card))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))] transition-colors"
-            >
+            <Link to="/equipo" className="btn btn-outline mt-4 inline-flex">
               Volver al listado
             </Link>
           </SectionCard>
@@ -227,24 +219,22 @@ function Skeleton() {
 }
 
 function SectionCard({ title, children, className, animate }) {
-  const content = (
-    <section className={cx(
-      "rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6",
-      className
-    )}>
-      {title && <h2 className="font-semibold text-lg tracking-tight">{title}</h2>}
-      <div className={cx(title && "mt-3")}>{children}</div>
-    </section>
-  );
-
-  if (!animate) return content;
+  const base = "card card-pad";
+  if (!animate) {
+    return (
+      <section className={cx(base, className)}>
+        {title && <h2 className="font-semibold text-lg tracking-tight">{title}</h2>}
+        <div className={cx(title && "mt-3")}>{children}</div>
+      </section>
+    );
+  }
   return (
     <motion.section
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.35 }}
       transition={{ duration: 0.28, ease: [0.22, 0.61, 0.36, 1] }}
-      className={cx("rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6", className)}
+      className={cx(base, className)}
     >
       {title && <h2 className="font-semibold text-lg tracking-tight">{title}</h2>}
       <div className={cx(title && "mt-3")}>{children}</div>
@@ -252,21 +242,26 @@ function SectionCard({ title, children, className, animate }) {
   );
 }
 
-function Badge({ children, variant = "solid", className }) {
-  const base = "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium";
-  const styles =
-    variant === "outline"
-      ? "border border-[hsl(var(--border))] bg-[hsl(var(--card))]"
-      : variant === "soft"
-      ? "bg-[hsl(var(--muted))] border border-[hsl(var(--border))]"
-      : "bg-[hsl(var(--accent))/0.15] border border-[hsl(var(--accent))/0.3]";
-  return <span className={cx(base, styles, className)}>{children}</span>;
+function Badge({ children, variant = "soft", className }) {
+  // Variantes alineadas con tus clases CSS:
+  // - soft: badge (muted)
+  // - outline: badge + bg card
+  // - solid: badge-accent (dorado sólido)
+  // - primary: badge-primary (azul marca suave)
+  const base = "badge";
+  const map = {
+    soft: base,
+    outline: cx(base, "bg-[hsl(var(--card))]"),
+    solid: "badge-accent",
+    primary: "badge-primary",
+  };
+  return <span className={cx(map[variant] || base, className)}>{children}</span>;
 }
 
 function InfoRow({ label, value, className }) {
   return (
     <li className={cx("flex items-start justify-between gap-4", className)}>
-      <span className="text-[hsl(var(--fg))/0.7]">{label}</span>
+      <span className="text-muted">{label}</span>
       <span className="font-medium text-[hsl(var(--fg))]">{value}</span>
     </li>
   );
@@ -278,7 +273,7 @@ function TimelineCard({ title, items = [] }) {
       {items.length > 0 ? (
         <ul className="mt-2 relative">
           {/* línea vertical */}
-          <div className="absolute left-4 top-1 bottom-1 w-px bg-[hsl(var(--border))]" />
+          <div className="absolute left-4 top-1 bottom-1 w-px border-token" />
           <AnimatePresence>
             {items.map((item, i) => (
               <motion.li
@@ -300,7 +295,7 @@ function TimelineCard({ title, items = [] }) {
           </AnimatePresence>
         </ul>
       ) : (
-        <p className="text-sm text-[hsl(var(--fg))/0.7]">Sin registros.</p>
+        <p className="text-sm text-muted">Sin registros.</p>
       )}
     </SectionCard>
   );
@@ -317,7 +312,7 @@ function ProfilePhoto({ src, alt }) {
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.35, ease: [0.22, 0.61, 0.36, 1] }}
-      className="relative h-[272px] w-[272px] max-w-full rounded-2xl overflow-hidden ring-2 ring-[hsl(var(--border))] bg-[hsl(var(--muted))] shadow-sm"
+      className="relative h-[272px] w-[272px] max-w-full rounded-2xl overflow-hidden ring-2 border-token bg-[hsl(var(--muted))] shadow-sm"
     >
       {/* Shimmer mientras carga */}
       {!loaded && (
@@ -374,6 +369,7 @@ async function safeGetProfile(slug) {
     return null;
   }
 }
+
 
 /* ====== CSS util (pegar en tu global si no existe) ======
 @keyframes shimmer { 100% { transform: translateX(100%); } }

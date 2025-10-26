@@ -1,4 +1,4 @@
-// ProfileEditor.jsx
+// src/components/team/ProfileEditor.jsx
 import React, { useEffect, useState } from "react";
 import { teamProfileService } from "../../services/teamProfileService";
 
@@ -37,8 +37,7 @@ export default function ProfileEditor({ slug, onClose }) {
           setRecStr(joinList(data.reconocimientos));
         }
       } catch (e) {
-        if (!aborted)
-          setErr(e?.response?.data?.message || e.message || "Error");
+        if (!aborted) setErr(e?.response?.data?.message || e.message || "Error");
       } finally {
         if (!aborted) setLoading(false);
       }
@@ -71,95 +70,115 @@ export default function ProfileEditor({ slug, onClose }) {
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
-      {err && (
-        <div className="rounded border border-red-300 bg-red-50 text-red-800 px-3 py-2">
-          {err}
+    // Contenedor scrollable para no salirse del modal/pestaña
+    <div className="max-h-[min(70vh,600px)] overflow-y-auto pr-1">
+      <form onSubmit={onSubmit} className="space-y-4">
+        {err && (
+          <div className="rounded-lg border border-[hsl(var(--destructive))]/30 bg-[hsl(var(--destructive))/0.08] text-[hsl(var(--destructive))] px-3 py-2 text-sm">
+            {err}
+          </div>
+        )}
+
+        <Field label="Email">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="input"
+            placeholder="correo@empresa.com"
+          />
+        </Field>
+
+        <Field
+          label="Idiomas"
+          hint="Uno por línea o separados por coma"
+        >
+          <textarea
+            value={idiomasStr}
+            onChange={(e) => setIdiomasStr(e.target.value)}
+            rows={2}
+            className="input min-h-[72px]"
+            placeholder={"Español\nInglés\nFrancés"}
+          />
+        </Field>
+
+        <Field label="Perfil">
+          <textarea
+            value={perfil}
+            onChange={(e) => setPerfil(e.target.value)}
+            rows={5}
+            className="input min-h-[120px]"
+            placeholder="Resumen profesional, enfoque, logros clave…"
+          />
+        </Field>
+
+        <Field
+          label="Educación"
+          hint="Uno por línea"
+        >
+          <textarea
+            value={eduStr}
+            onChange={(e) => setEduStr(e.target.value)}
+            rows={3}
+            className="input min-h-[96px]"
+            placeholder={"Abogado, Universidad X (2015)\nMaestría en…"}
+          />
+        </Field>
+
+        <Field
+          label="Experiencia"
+          hint="Uno por línea"
+        >
+          <textarea
+            value={expStr}
+            onChange={(e) => setExpStr(e.target.value)}
+            rows={3}
+            className="input min-h-[96px]"
+            placeholder={"Firma A — Asociado\nFirma B — Senior…"}
+          />
+        </Field>
+
+        <Field
+          label="Reconocimientos"
+          hint="Uno por línea"
+        >
+          <textarea
+            value={recStr}
+            onChange={(e) => setRecStr(e.target.value)}
+            rows={3}
+            className="input min-h-[96px]"
+            placeholder={"Chambers 2024 — Rising Star\nBest Lawyers…"}
+          />
+        </Field>
+
+        <div className="flex flex-wrap items-center gap-2 pt-2">
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary"
+          >
+            {loading ? "Guardando…" : "Guardar"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onClose?.(false)}
+            className="btn btn-outline"
+          >
+            Cancelar
+          </button>
         </div>
-      )}
-
-      <Field label="Email">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg px-3 py-2 border bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))]"
-        />
-      </Field>
-
-      <Field label="Idiomas (uno por línea o separados por coma)">
-        <textarea
-          value={idiomasStr}
-          onChange={(e) => setIdiomasStr(e.target.value)}
-          rows={2}
-          className="w-full rounded-lg px-3 py-2 border bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))]"
-        />
-      </Field>
-
-      <Field label="Perfil">
-        <textarea
-          value={perfil}
-          onChange={(e) => setPerfil(e.target.value)}
-          rows={5}
-          className="w-full rounded-lg px-3 py-2 border bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))]"
-        />
-      </Field>
-
-      <Field label="Educación (uno por línea)">
-        <textarea
-          value={eduStr}
-          onChange={(e) => setEduStr(e.target.value)}
-          rows={3}
-          className="w-full rounded-lg px-3 py-2 border bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))]"
-        />
-      </Field>
-
-      <Field label="Experiencia (uno por línea)">
-        <textarea
-          value={expStr}
-          onChange={(e) => setExpStr(e.target.value)}
-          rows={3}
-          className="w-full rounded-lg px-3 py-2 border bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))]"
-        />
-      </Field>
-
-      <Field label="Reconocimientos (uno por línea)">
-        <textarea
-          value={recStr}
-          onChange={(e) => setRecStr(e.target.value)}
-          rows={3}
-          className="w-full rounded-lg px-3 py-2 border bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))]"
-        />
-      </Field>
-
-      <div className="flex gap-2 pt-2">
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-lg px-4 py-2 text-sm font-medium border
-                     bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--border))/0.25]"
-        >
-          Guardar
-        </button>
-        <button
-          type="button"
-          onClick={() => onClose?.(false)}
-          className="rounded-lg px-4 py-2 text-sm font-medium border
-                     bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))]"
-        >
-          Cancelar
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }
 
-function Field({ label, children }) {
+function Field({ label, hint, children }) {
   return (
-    <div>
-      <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7)]">
+    <div className="space-y-1.5">
+      <label className="block text-xs font-medium">
         {label}
       </label>
+      {hint && <p className="text-xs text-muted">{hint}</p>}
       {children}
     </div>
   );

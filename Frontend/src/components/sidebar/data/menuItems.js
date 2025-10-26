@@ -41,15 +41,21 @@ export const menuItems = [
     icon: FaBookmark, 
   },
   {
+    key: "datos",
+    label: "Informacion De La Empresa",
+    link: "/dash/info",
+    icon: FaBookmark, 
+  },
+  {
     key: "ajustes",
     label: "Ajustes",
     icon: FaCog,
     children: [
       {
-        key: "general",
-        label: "General",
+        key: "empresa",
+        label: "Configuracion de Empresa",
         icon: FaCog,
-        link: "/pages/perfil",
+        link: "/dash/settings",
       },
     ],
   },

@@ -1,5 +1,10 @@
 // LawFirmCarousel.jsx
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect, 
+  useRef,
+  useState,
+} from "react";
 import { api } from "../../lib/api";
 import { carouselService } from "../../services/carouselService";
 
@@ -10,13 +15,17 @@ const clampIndex = (n, c) => (c === 0 ? 0 : ((n % c) + c) % c);
 function pickBackendOrigin() {
   const env = import.meta.env?.VITE_API_ORIGIN;
   if (typeof env === "string" && /^https?:\/\//i.test(env)) {
-    try { return new URL(env).origin; } catch {
+    try {
+      return new URL(env).origin;
+    } catch {
       return env.split("/").slice(0, 3).join("/");
     }
   }
   const base = api?.defaults?.baseURL;
   if (typeof base === "string" && /^https?:\/\//i.test(base)) {
-    try { return new URL(base).origin; } catch {
+    try {
+      return new URL(base).origin;
+    } catch {
       return base.split("/").slice(0, 3).join("/");
     }
   }
@@ -38,7 +47,8 @@ function useReducedMotion() {
     if (typeof window === "undefined") return;
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     const h = () => setPref(mq.matches);
-    h(); mq.addEventListener("change", h);
+    h();
+    mq.addEventListener("change", h);
     return () => mq.removeEventListener("change", h);
   }, []);
   return pref;
@@ -48,7 +58,10 @@ function useOnScreen(ref, rootMargin = "0px") {
   const [isIntersecting, setIntersecting] = useState(true);
   useEffect(() => {
     if (!ref.current || typeof IntersectionObserver === "undefined") return;
-    const obs = new IntersectionObserver(([e]) => setIntersecting(e.isIntersecting), { rootMargin });
+    const obs = new IntersectionObserver(
+      ([e]) => setIntersecting(e.isIntersecting),
+      { rootMargin }
+    );
     obs.observe(ref.current);
     return () => obs.disconnect();
   }, [ref, rootMargin]);
@@ -60,8 +73,7 @@ function useOnScreen(ref, rootMargin = "0px") {
  * Optimizado para imágenes 1920×823 y 2560×1097 (misma relación).
  */
 export default function LawFirmCarousel({
-  className,
-  rounded = "rounded-2xl",
+  className, 
   autoplay = true,
   interval = 4500,
   loop = true,
@@ -89,7 +101,8 @@ export default function LawFirmCarousel({
   const onScreen = useOnScreen(rootRef, "50px");
 
   const load = useCallback(async () => {
-    setLoading(true); setErr("");
+    setLoading(true);
+    setErr("");
     try {
       const list = await carouselService.list();
       const normalized = (Array.isArray(list) ? list : []).map((it) => ({
@@ -105,16 +118,22 @@ export default function LawFirmCarousel({
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const count = items.length;
   const goTo = useCallback((i) => setIndex(clampIndex(i, count)), [count]);
   const next = useCallback(
-    () => setIndex((i) => (loop ? clampIndex(i + 1, count) : Math.min(i + 1, count - 1))),
+    () =>
+      setIndex((i) =>
+        loop ? clampIndex(i + 1, count) : Math.min(i + 1, count - 1)
+      ),
     [count, loop]
   );
   const prev = useCallback(
-    () => setIndex((i) => (loop ? clampIndex(i - 1, count) : Math.max(i - 1, 0))),
+    () =>
+      setIndex((i) => (loop ? clampIndex(i - 1, count) : Math.max(i - 1, 0))),
     [count, loop]
   );
 
@@ -128,10 +147,22 @@ export default function LawFirmCarousel({
   }, [autoplay, interval, next, count, isHover, pauseOnHover, onScreen]);
 
   const onKeyDown = (e) => {
-    if (e.key === "ArrowRight") { e.preventDefault(); next(); }
-    if (e.key === "ArrowLeft")  { e.preventDefault(); prev(); }
-    if (e.key === "Home")       { e.preventDefault(); goTo(0); }
-    if (e.key === "End")        { e.preventDefault(); goTo(count - 1); }
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      next();
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      prev();
+    }
+    if (e.key === "Home") {
+      e.preventDefault();
+      goTo(0);
+    }
+    if (e.key === "End") {
+      e.preventDefault();
+      goTo(count - 1);
+    }
   };
 
   // Handlers de swipe
@@ -147,7 +178,7 @@ export default function LawFirmCarousel({
     const x = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
     deltaX.current = x - startX.current;
     const w = trackRef.current.offsetWidth || 1;
-    const pct = (-index * 100) + (deltaX.current / w) * 100;
+    const pct = -index * 100 + (deltaX.current / w) * 100;
     trackRef.current.style.transform = `translate3d(${pct}%,0,0)`;
   };
   const endDrag = () => {
@@ -188,7 +219,7 @@ export default function LawFirmCarousel({
       {/* wrapper full-bleed con 2px por lado */}
       <div
         ref={rootRef}
-        className="relative w-full px-[2px] select-none outline-none"
+        className="relative w-full   select-none outline-none"
         role="region"
         aria-roledescription="carousel"
         aria-label="Carrusel de la firma"
@@ -200,8 +231,7 @@ export default function LawFirmCarousel({
         <div
           className={cx(
             "relative w-full overflow-hidden border bg-[hsl(var(--card))]",
-            "border-[hsl(var(--border))] shadow-sm",
-            rounded
+            "border-[hsl(var(--border))] shadow-sm"
           )}
           style={{ aspectRatio: "1920 / 823" }}
         >
@@ -286,7 +316,16 @@ export default function LawFirmCarousel({
 
 // ===== Subcomponentes =====
 
-function Slide({ src, alt, title, subtitle, fitClass, index, count, priority }) {
+function Slide({
+  src,
+  alt,
+  title,
+  subtitle,
+  fitClass,
+  index,
+  count,
+  priority,
+}) {
   return (
     <figure
       className="relative h-full w-full shrink-0"
@@ -305,7 +344,9 @@ function Slide({ src, alt, title, subtitle, fitClass, index, count, priority }) 
         fetchpriority={priority ? "high" : "auto"}
         decoding="async"
         draggable={false}
-        onError={(e) => { e.currentTarget.style.opacity = 0.25; }}
+        onError={(e) => {
+          e.currentTarget.style.opacity = 0.25;
+        }}
         sizes="100vw"
       />
 

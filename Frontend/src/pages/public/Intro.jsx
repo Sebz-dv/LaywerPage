@@ -17,7 +17,11 @@ function cx(...xs) {
 /* ===== Animations ===== */
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+  },
 };
 
 const fadeIn = {
@@ -36,7 +40,14 @@ const staggerWrap = {
 };
 
 /** Section animada con viewport */
-function Section({ id, className, children, fullBleed = false, variants = fadeUp, amount = 0.18 }) {
+function Section({
+  id,
+  className,
+  children,
+  fullBleed = false,
+  variants = fadeUp,
+  amount = 0.18,
+}) {
   return (
     <motion.section
       id={id}
@@ -47,66 +58,45 @@ function Section({ id, className, children, fullBleed = false, variants = fadeUp
       viewport={{ once: true, amount }}
       variants={variants}
     >
-      {fullBleed ? <>{children}</> : <div className="mx-auto max-w-7xl">{children}</div>}
+      {fullBleed ? (
+        <>{children}</>
+      ) : (
+        <div className="mx-auto max-w-7xl">{children}</div>
+      )}
     </motion.section>
   );
 }
-
-/** Encabezado reutilizable con stagger */
-function SectionHeader({ eyebrow, title, subtitle, align = "center" }) {
-  const alignment =
-    align === "left" ? "text-left items-start" : "text-center items-center";
-  return (
-    <motion.div className={cx("flex flex-col gap-2", alignment)} variants={staggerWrap}>
-      {eyebrow && (
-        <motion.span
-          variants={fadeIn}
-          className="inline-flex rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-1 text-xs font-medium tracking-wide text-[hsl(var(--fg)/0.7)]"
-        >
-          {eyebrow}
-        </motion.span>
-      )}
-      {title && (
-        <motion.h2
-          variants={fadeUp}
-          className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight leading-tight"
-        >
-          {title}
-        </motion.h2>
-      )}
-      {subtitle && (
-        <motion.p
-          variants={fadeIn}
-          className="max-w-2xl text-sm sm:text-base text-[hsl(var(--fg)/0.72)]"
-        >
-          {subtitle}
-        </motion.p>
-      )}
-    </motion.div>
-  );
-}
-
 export default function IntroPage() {
   // Parallax suave del Backdrop cuando scroll: “porque podemos”
   const rootRef = useRef(null);
-  const { scrollYProgress } = useScroll({ target: rootRef, offset: ["start start", "end start"] });
+  const { scrollYProgress } = useScroll({
+    target: rootRef,
+    offset: ["start start", "end start"],
+  });
   const backdropY = useTransform(scrollYProgress, [0, 1], ["0%", "-10%"]);
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "-4%"]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0.92]);
-
+  const MotionDiv = motion.div;
   return (
-    // 👉 2px laterales en TODA la página
-    <div ref={rootRef} className="px-[2px]">
+    <div ref={rootRef}>
       {/* Fondo con parallax */}
-      <Section id="backdrop" className="pt-16 sm:pt-20" fullBleed variants={fadeIn} amount={0.05}>
-        <motion.div style={{ y: backdropY }} >
-          <Backdrop />
-        </motion.div>
-      </Section>
+
+      <motion.div style={{ y: backdropY }}>
+        <Backdrop />
+      </motion.div>
 
       {/* Hero visual: carrusel full-bleed */}
-      <Section id="hero" className="mt-[-90px]" fullBleed variants={fadeUp} amount={0.12}>
-        <motion.div style={{ y: heroY, opacity: heroOpacity }} variants={fadeUp}>
+      <Section
+        id="hero"
+        className="mt-[-90px]"
+        fullBleed
+        variants={fadeUp}
+        amount={0.12}
+      >
+        <motion.div
+          style={{ y: heroY, opacity: heroOpacity }}
+          variants={fadeUp}
+        >
           <CarouselViewer
             className="w-full ring-1 ring-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm"
             aspect="16/9"
@@ -125,11 +115,6 @@ export default function IntroPage() {
       {/* Nuestra organización */}
       <Section id="org">
         <motion.div className="mt-[-90px]" variants={staggerWrap}>
-          <SectionHeader
-            eyebrow="Nuestra organización"
-            title="Propósito, horizonte y valores"
-            subtitle="Lo que nos guía hoy y nos exige ser mejores mañana."
-          />
           <motion.div className="mt-8" variants={fadeUp}>
             <InfoBlocksSection
               title=""
@@ -145,13 +130,19 @@ export default function IntroPage() {
 
       {/* Equipo: hero + KPIs */}
       <Section id="team" className="mt-[-90px]">
-        <motion.div className="px-[2px] grid gap-8 md:gap-10" variants={staggerWrap}>
+        <motion.div
+          className="px-[2px] grid gap-8 md:gap-10"
+          variants={staggerWrap}
+        >
           {/* Sugerencia: si TeamKpis ya cuenta números, este reveal da entrada limpia */}
           <motion.div variants={fadeUp}>
             <TeamKpis className="mt-2" />
           </motion.div>
 
-          <motion.div variants={fadeIn} className="border-t border-[hsl(var(--border))]" />
+          <motion.div
+            variants={fadeIn}
+            className="border-t border-[hsl(var(--border))]"
+          />
 
           <motion.div variants={fadeUp}>
             <TeamHero />
@@ -162,11 +153,6 @@ export default function IntroPage() {
       {/* Buscador del equipo */}
       <Section id="team-finder" className="mt-[-90px]">
         <motion.div className="px-[2px]" variants={staggerWrap}>
-          <SectionHeader
-            eyebrow="Conoce a las personas"
-            title="Encuentra al experto indicado"
-            subtitle="Filtra por especialidad, ciudad o área."
-          />
           {/* Entrada “slide-up” suave */}
           <motion.div variants={fadeUp} className="mt-6">
             <TeamFinder />
@@ -177,7 +163,10 @@ export default function IntroPage() {
       {/* Features / cierre */}
       <Section id="features" className="mt-[-90px]">
         <motion.div className="px-[2px]" variants={staggerWrap}>
-          <motion.div variants={fadeIn} className="border-t border-[hsl(var(--border))] mb-10" />
+          <motion.div
+            variants={fadeIn}
+            className="border-t border-[hsl(var(--border))] mb-10"
+          />
           <motion.div variants={fadeUp} className="mt-8 sm:mt-10">
             <FeaturesGrid />
           </motion.div>

@@ -1,11 +1,22 @@
 // src/pages/admin/SiteSettings.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { settingsService } from "../../services/settingsService.js";
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
 }
 
+/* ========= Helpers de URL ========= */
+const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || "http://127.0.0.1:8000";
+function absolutize(url) {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url)) return url;
+  const base = API_ORIGIN.replace(/\/$/, "");
+  const path = url.startsWith("/") ? url : `/${url}`;
+  return `${base}${path}`;
+}
+
+/* ========= Subcomponentes ========= */
 function SocialLinksEditor({ value = [], onChange }) {
   const add = () =>
     onChange([...(value || []), { platform: "", url: "", handle: "" }]);
@@ -102,6 +113,7 @@ function FooterBlocksEditor({ value = [], onChange }) {
   );
 }
 
+/* ========= Página ========= */
 export default function SiteSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -113,8 +125,8 @@ export default function SiteSettings() {
     address: "",
     social_links: [],
     footer_blocks: [],
-    logo: null,
-    logo_url: "",
+    logo: null,      // File local (preview)
+    logo_url: "",    // URL (absoluta) del backend
   });
 
   useEffect(() => {
@@ -123,7 +135,7 @@ export default function SiteSettings() {
       setForm((f) => ({
         ...f,
         ...s,
-        // asegurar arrays
+        logo_url: absolutize(s.logo_url || ""), // normaliza a absoluta
         social_links: Array.isArray(s.social_links) ? s.social_links : [],
         footer_blocks: Array.isArray(s.footer_blocks) ? s.footer_blocks : [],
         logo: null,
@@ -132,19 +144,25 @@ export default function SiteSettings() {
     })();
   }, []);
 
+  // URL resuelta y key para forzar repaint del <img> cuando cambia
+  const resolvedLogoUrl = useMemo(() => absolutize(form.logo_url), [form.logo_url]);
+
   const onFile = (file) => setForm((f) => ({ ...f, logo: file }));
+
   const onSave = async (e) => {
     e?.preventDefault();
     setSaving(true);
     setErrors(null);
     try {
       const payload = { ...form };
-      delete payload.logo_url; // no enviar
+      delete payload.logo_url; // no enviar URL
       const saved = await settingsService.save(payload);
+
       setForm((f) => ({
         ...f,
         ...saved,
-        logo: null,
+        logo_url: absolutize(saved.logo_url || ""), // usa URL absoluta recibida
+        logo: null, // limpia File para que se vea el logo real
         social_links: saved.social_links ?? [],
         footer_blocks: saved.footer_blocks ?? [],
       }));
@@ -172,7 +190,7 @@ export default function SiteSettings() {
         <h1 className="text-2xl md:text-3xl font-semibold">
           Configuración del sitio
         </h1>
-        <p className="text-sm text-neutral-600">
+        <p className="text-sm text-muted">
           Logo, datos de contacto, redes y footer.
         </p>
       </header>
@@ -180,28 +198,34 @@ export default function SiteSettings() {
       <section className="grid md:grid-cols-[280px,1fr] gap-6">
         {/* Logo */}
         <div className="space-y-3">
-          <div className="border rounded-2xl p-4">
+          <div className="card card-pad">
             <h3 className="font-medium mb-3">Logo</h3>
             <div className="flex items-center gap-4">
-              <div className="w-28 h-28 rounded-xl border bg-white flex items-center justify-center overflow-hidden">
+              <div className="logo-box">
                 {form.logo ? (
                   <img
+                    key="preview-local"
                     src={URL.createObjectURL(form.logo)}
                     alt="preview"
                     className="object-contain w-full h-full"
                   />
-                ) : form.logo_url ? (
+                ) : resolvedLogoUrl ? (
                   <img
-                    src={form.logo_url}
+                    key={resolvedLogoUrl} // fuerza remonte cuando cambia URL
+                    src={resolvedLogoUrl}
                     alt="logo"
                     className="object-contain w-full h-full"
+                    onError={() =>
+                      setForm((f) => ({ ...f, logo_url: "" }))
+                    }
                   />
                 ) : (
-                  <span className="text-xs text-neutral-400">Sin logo</span>
+                  <span className="text-xs text-muted">Sin logo</span>
                 )}
               </div>
+
               <div className="space-x-2">
-                <label className="inline-flex items-center px-3 py-1.5 rounded-lg border cursor-pointer">
+                <label className="btn btn-outline cursor-pointer">
                   <input
                     type="file"
                     className="hidden"
@@ -214,7 +238,7 @@ export default function SiteSettings() {
                   <button
                     type="button"
                     onClick={removeLogo}
-                    className="btn-danger"
+                    className="btn btn-danger"
                   >
                     Quitar logo
                   </button>
@@ -225,8 +249,9 @@ export default function SiteSettings() {
         </div>
 
         {/* Datos básicos */}
-        <div className="border rounded-2xl p-4 space-y-3">
+        <div className="card card-pad space-y-3">
           <h3 className="font-medium">Datos de la empresa</h3>
+
           <input
             className="input"
             placeholder="Nombre del sitio / empresa"
@@ -235,6 +260,7 @@ export default function SiteSettings() {
               setForm((f) => ({ ...f, site_name: e.target.value }))
             }
           />
+
           <div className="grid sm:grid-cols-2 gap-3">
             <input
               className="input"
@@ -253,6 +279,7 @@ export default function SiteSettings() {
               }
             />
           </div>
+
           <input
             className="input"
             placeholder="Dirección"
@@ -265,13 +292,13 @@ export default function SiteSettings() {
       </section>
 
       <section className="grid md:grid-cols-2 gap-6">
-        <div className="border rounded-2xl p-4">
+        <div className="card card-pad">
           <SocialLinksEditor
             value={form.social_links}
             onChange={(v) => setForm((f) => ({ ...f, social_links: v }))}
           />
         </div>
-        <div className="border rounded-2xl p-4">
+        <div className="card card-pad">
           <FooterBlocksEditor
             value={form.footer_blocks}
             onChange={(v) => setForm((f) => ({ ...f, footer_blocks: v }))}
@@ -281,7 +308,7 @@ export default function SiteSettings() {
 
       <div className="flex justify-end gap-3">
         {errors && (
-          <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+          <div className="rounded-lg border border-[hsl(var(--destructive))] bg-[hsl(var(--destructive)/0.08)] p-3 text-sm text-[hsl(var(--destructive))]">
             <ul className="list-disc pl-5 space-y-1">
               {Object.entries(errors).map(([field, msgs]) =>
                 (msgs || []).map((m, i) => <li key={field + i}>{m}</li>)
@@ -292,10 +319,7 @@ export default function SiteSettings() {
         <button
           type="submit"
           disabled={saving}
-          className={cx(
-            "px-4 py-2 rounded-lg text-white",
-            saving ? "bg-neutral-400" : "bg-black hover:opacity-90"
-          )}
+          className={cx("btn btn-primary", saving && "opacity-60")}
         >
           {saving ? "Guardando..." : "Guardar cambios"}
         </button>

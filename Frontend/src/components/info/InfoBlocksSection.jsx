@@ -5,22 +5,9 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 
-const byOrder = (order = [], a, b) => {
-  const pos = (k) => {
-    const i = order.indexOf(String(k || "").toLowerCase());
-    return i === -1 ? Number.POSITIVE_INFINITY : i;
-  };
-  const ao = pos(a.key), bo = pos(b.key);
-  if (ao !== bo) return ao - bo;
-  const ap = a.position ?? 0, bp = b.position ?? 0;
-  if (ap !== bp) return ap - bp;
-  return (a.id ?? 0) - (b.id ?? 0);
-};
-
 export default function InfoCardsGrid({
   title = "Nosotros",
   subtitle = "Conoce nuestra identidad institucional",
-  order = ["mision", "vision", "valores"],
   className = "",
 }) {
   const [items, setItems] = useState([]);
@@ -43,10 +30,10 @@ export default function InfoCardsGrid({
     })();
   }, []);
 
+  // 🔽 Ordenar por id ascendente
   const sorted = useMemo(() => {
-    const norm = (order || []).map((s) => String(s).toLowerCase());
-    return [...items].sort((a, b) => byOrder(norm, a, b));
-  }, [items, order]);
+    return [...items].sort((a, b) => (a?.id ?? 0) - (b?.id ?? 0));
+  }, [items]);
 
   const containerVariants = prefersReduced
     ? {}
@@ -79,11 +66,7 @@ export default function InfoCardsGrid({
 
   return (
     <motion.section
-      className={cx(
-        // Centrado del bloque completo
-        "w-full mx-auto max-w-6xl px-4 sm:px-6 lg:px-8",
-        className
-      )}
+      className={cx("w-full mx-auto max-w-6xl px-4 sm:px-6 lg:px-8", className)}
       variants={containerVariants}
       initial="hidden"
       whileInView="show"
@@ -94,42 +77,34 @@ export default function InfoCardsGrid({
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-2 text-[hsl(var(--fg))/0.7] max-w-2xl mx-auto">
+          <p className="mt-2 text-muted max-w-2xl mx-auto">
             {subtitle}
           </p>
         )}
       </header>
 
       {err && (
-        <div
-          role="alert"
-          className="mb-6 rounded-xl border px-3 py-2 text-sm border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--destructive))]"
-        >
-          {err}
+        <div role="alert" className="mb-6 card card-pad">
+          <p className="text-[hsl(var(--destructive))] text-sm">{err}</p>
         </div>
       )}
 
       <motion.div
-        // Grilla centrada y fluida (cards se centran solas)
         className={cx(
           "grid gap-5 justify-center",
-          // auto-fit + minmax para que se centre solo
           "grid-cols-[repeat(auto-fit,minmax(260px,1fr))]"
         )}
       >
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 max-w-md w-full mx-auto"
-            >
+            <div key={i} className="card card-pad max-w-md w-full mx-auto">
               <div className="h-5 w-2/5 rounded bg-[hsl(var(--muted))] mb-3 animate-pulse" />
               <div className="h-4 w-full rounded bg-[hsl(var(--muted))] mb-2 animate-pulse" />
               <div className="h-4 w-5/6 rounded bg-[hsl(var(--muted))] animate-pulse" />
             </div>
           ))
         ) : sorted.length === 0 ? (
-          <p className="text-[hsl(var(--fg))/0.7] text-center col-span-full">
+          <p className="text-muted text-center col-span-full">
             No hay información publicada.
           </p>
         ) : (
@@ -144,28 +119,22 @@ export default function InfoCardsGrid({
                 whileHover={
                   prefersReduced
                     ? undefined
-                    : {
-                        y: -2,
-                        // sombra suave al elevarse
-                        boxShadow: "0 12px 28px rgba(0,0,0,0.08)",
-                      }
+                    : { y: -2, boxShadow: "0 12px 28px rgba(0,0,0,0.08)" }
                 }
                 className={cx(
-                  "group relative rounded-2xl border transition max-w-md w-full mx-auto",
-                  "border-[hsl(var(--border))] bg-[hsl(var(--card))]"
+                  "group relative card max-w-md w-full mx-auto",
+                  "transition-[transform,box-shadow,border-color] focus-within:shadow-md"
                 )}
                 itemScope
                 itemType="https://schema.org/CreativeWork"
               >
-                <header className="border-b border-[hsl(var(--border))] px-5 py-4 text-center">
-                  <h3
-                    className="text-lg font-semibold leading-tight"
-                    itemProp="name"
-                  >
+                <header className="border-b border-token px-5 py-4 text-center">
+                  <h3 className="text-lg font-semibold leading-tight" itemProp="name">
                     {b.title}
                   </h3>
                 </header>
-                <div className="px-5 py-4">
+
+                <div className="card-pad pt-4">
                   <div
                     className="text-[hsl(var(--fg))/0.9] leading-relaxed whitespace-pre-line"
                     itemProp="text"
@@ -173,6 +142,8 @@ export default function InfoCardsGrid({
                     {b.body}
                   </div>
                 </div>
+
+                <span className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-[hsl(var(--accent))]/70 opacity-0 group-hover:opacity-1 transition-opacity" />
               </motion.article>
             ))}
           </AnimatePresence>

@@ -1,62 +1,392 @@
 @import "tailwindcss";
 
-/* Dark variant al estilo Sebas */
-@custom-variant dark (&:where(.dark, .dark *));
+/* =================== FUENTES =================== */
+/* Archivos esperados (ajusta si difieren):
+   /public/fonts/MinionVariableConcept.woff2
+   /public/fonts/MinionVariableConcept-Italic.woff2   (opcional)
+   /public/fonts/AvenirNext-Variable.woff2
+*/
 
-/* ======== Tokens (HSL para soportar /opacidad) ======== */
-:root {
-  /* Base */
-  --bg: 40 20% 98%;
-  --fg: 230 24% 12%;
-
-  --card: 0 0% 100%;
-  --muted: 40 15% 92%;
-  --border: 30 10% 80%;
-  --ring: 40 30% 40%;
-
-  /* Marca y CTA */
-  --brand: 210 28% 20%;
-  --brand-contrast: 48 32% 92%;
-
-  --cta: 40 70% 45%;
-  --cta-contrast: 230 24% 12%;
-
-  /* Semánticos */
-  --success: 164 34% 36%;
-  --warning: 38 92% 48%;
-  --destructive: 0 62% 45%;
-
-  /* Aliases */
-  --primary: var(--brand);
-  --primary-foreground: var(--brand-contrast);
-  --accent: var(--cta);
-  --accent-foreground: var(--cta-contrast);
+/* Minion Variable Concept (display / cuerpo) */
+@font-face {
+  font-family: "Minion VC";
+  src: url("/fonts/MinionVariableConcept.woff2") format("woff2-variations");
+  font-weight: 200 900;
+  font-stretch: 75% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion VC";
+  src: url("/fonts/MinionVariableConcept-Italic.woff2")
+    format("woff2-variations");
+  font-weight: 200 900;
+  font-stretch: 75% 125%;
+  font-style: italic;
+  font-display: swap;
 }
 
-/* ======== Overrides en dark ======== */
+/* Avenir Next (variable) */
+@font-face {
+  font-family: "Avenir Next Var";
+  src: url("/fonts/AvenirNext-Variable.woff2") format("woff2-variations");
+  font-weight: 300 800;
+  font-stretch: 75% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* =================== VARIABLES DE FUENTE =================== */
+:root {
+  --font-display: "Minion VC", "Minion Variable Concept", Georgia,
+    "Times New Roman", serif;
+  --font-body: var(--font-display); /* Minion también para texto general */
+  --font-subtitle: "Avenir Next Var", "Avenir Next", "Avenir", "Segoe UI",
+    "Inter", system-ui, -apple-system, sans-serif;
+
+  font-optical-sizing: auto;
+}
+
+/* =================== UTILIDADES DE TIPOGRAFÍA =================== */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .font-subtitle {
+    font-family: var(--font-subtitle);
+  }
+}
+
+/* =================== DARK VARIANT (estilo Sebas) =================== */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* =================== TOKENS (HSL para /opacidad) =================== */
+/* Paleta modo CLARO (tu set)
+   Primario:   #0D1B3A → hsl(221 63% 14%)
+   Secundario: #759FBC → hsl(205 35% 60%)
+   Fondo:      #FCF6EE → hsl(34 70% 96%)
+   Terciario:  #828891 → hsl(216 6% 54%)
+   Especial:   #BE7D23 → hsl(35 69% 44%)
+*/
+:root {
+  /* Base */
+  --bg: 34 70% 96%; /* FCF6EE */
+  --fg: 221 63% 14%; /* Texto principal */
+  --card: 0 0% 100%; /* Blanco */
+  --muted: 34 30% 92%; /* Fondo suave cálido */
+  --border: 216 6% 75%; /* Borde neutro tibio */
+  --ring: 35 69% 44%; /* Enfoque/acento (dorado) */
+
+  /* Marca */
+  --primary: 221 63% 14%; /* #0D1B3A */
+  --primary-foreground: 0 0% 100%; /* Blanco */
+  --secondary: 205 35% 60%; /* #759FBC */
+  --secondary-foreground: 221 63% 14%;
+  --tertiary: 216 6% 54%; /* #828891 */
+  --tertiary-foreground: 0 0% 100%;
+
+  /* CTA / Especial (navbar, botones destacados) */
+  --accent: 35 69% 44%; /* #BE7D23 */
+  --accent-foreground: 0 0% 100%;
+
+  /* Semánticos */
+  --success: 162 36% 40%;
+  --warning: 38 92% 48%;
+  --destructive: 0 68% 48%;
+}
+
+/* ======== Overrides en modo OSCURO ======== */
 .dark {
-  --bg: 220 20% 6%;
+  --bg: 220 28% 7%;
   --fg: 210 20% 92%;
 
-  --card: 220 20% 9%;
+  --card: 220 20% 10%;
   --muted: 220 12% 16%;
-  --border: 220 12% 22%;
-  --ring: 40 70% 55%;
+  --border: 220 12% 26%;
+  --ring: 35 80% 52%;
 
-  --brand: 210 18% 85%;
-  --brand-contrast: 230 28% 10%;
+  /* En dark, subo luminancia para botones legibles y mantengo armonía */
+  --primary: 206 33% 75%;
+  --primary-foreground: 230 28% 10%;
+  --secondary: 205 28% 70%;
+  --secondary-foreground: 230 28% 10%;
+  --tertiary: 216 6% 62%;
+  --tertiary-foreground: 230 28% 10%;
 
-  --cta: 40 72% 52%;
-  --cta-contrast: 230 28% 10%;
+  --accent: 35 78% 50%;
+  --accent-foreground: 230 28% 10%;
 
-  --success: 164 38% 46%;
+  --success: 162 40% 46%;
   --warning: 38 100% 54%;
   --destructive: 0 62% 56%;
 }
 
-/* ======== Base mínimos ======== */
-html, body {
+/* =================== BASE MÍNIMOS =================== */
+html,
+body {
   background: hsl(var(--bg));
   color: hsl(var(--fg));
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+}
+.subtitle,
+.eyebrow,
+small,
+figcaption {
+  font-family: var(--font-subtitle);
+}
+
+/* =================== HELPERS DE COLOR =================== */
+.text-muted {
+  color: hsl(var(--fg) / 0.65);
+}
+.text-soft {
+  color: hsl(var(--fg) / 0.8);
+}
+.bg-card {
+  background: hsl(var(--card));
+}
+.bg-muted {
+  background: hsl(var(--muted));
+}
+.border-token {
+  border-color: hsl(var(--border));
+}
+
+/* =================== COMPONENTES =================== */
+
+/* ---- Card ---- */
+.card {
+  @apply rounded-2xl shadow-sm;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  transition: box-shadow 200ms ease, transform 200ms ease,
+    border-color 200ms ease;
+}
+.card-pad {
+  @apply p-4 md:p-5;
+}
+.card:hover {
+  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.35);
+}
+.card.interactive:hover {
+  transform: translateY(-2px);
+  border-color: hsl(var(--ring));
+}
+
+/* ---- Input ---- */
+.input {
+  @apply w-full rounded-lg px-3 py-2 text-sm outline-none transition;
+  background: hsl(var(--card));
+  color: hsl(var(--fg));
+  border: 1px solid hsl(var(--border));
+}
+.input::placeholder {
+  color: hsl(var(--fg) / 0.5);
+}
+.input:focus {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.25);
+}
+.input[disabled] {
+  @apply opacity-60 pointer-events-none;
+}
+
+/* ---- Botones base ---- */
+.btn {
+  @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition select-none;
+  gap: 0.5rem;
+  line-height: 1.2;
+}
+.btn:disabled {
+  @apply opacity-60 pointer-events-none;
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px hsl(var(--ring) / 0.3);
+}
+
+/* ---- Variantes de botón ---- */
+.btn-primary {
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--primary));
+  border: 1px solid hsl(var(--primary) / 0.15);
+}
+.btn-primary:hover {
+  filter: brightness(0.96);
+}
+.btn-primary:active {
+  transform: translateY(0.5px);
+}
+
+.btn-secondary {
+  color: hsl(var(--secondary-foreground));
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--secondary) / 0.15);
+}
+.btn-secondary:hover {
+  filter: brightness(0.97);
+}
+.btn-secondary:active {
+  transform: translateY(0.5px);
+}
+
+.btn-accent {
+  color: hsl(var(--accent-foreground));
+  background: hsl(var(--accent));
+  border: 1px solid hsl(var(--accent) / 0.15);
+}
+.btn-accent:hover {
+  filter: brightness(0.97);
+}
+.btn-accent:active {
+  transform: translateY(0.5px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: hsl(var(--fg));
+  border: 1px solid hsl(var(--border));
+}
+.btn-outline:hover {
+  background: hsl(var(--muted));
+}
+.btn-outline:active {
+  transform: translateY(0.5px);
+}
+
+.btn-danger {
+  color: white;
+  background: hsl(var(--destructive));
+  border: 1px solid hsl(var(--destructive) / 0.15);
+}
+.btn-danger:hover {
+  filter: brightness(0.96);
+}
+.btn-danger:active {
+  transform: translateY(0.5px);
+}
+
+/* ---- Badges / Chips ---- */
+.badge {
+  @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+  background: hsl(var(--muted));
+  color: hsl(var(--fg) / 0.9);
+  border: 1px solid hsl(var(--border));
+}
+.badge-primary {
+  background: hsl(var(--primary) / 0.12);
+  color: hsl(var(--primary));
+  border-color: hsl(var(--primary) / 0.25);
+}
+.badge-accent {
+  background: hsl(var(--accent) / 0.12);
+  color: hsl(var(--accent));
+  border-color: hsl(var(--accent) / 0.25);
+}
+
+/* ---- Links con énfasis ---- */
+.link {
+  color: hsl(var(--primary));
+  text-underline-offset: 3px;
+}
+.link:hover {
+  color: hsl(var(--accent));
+}
+
+/* ---- Focus utilities ---- */
+.focus-ring {
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.25);
+}
+.outline-none {
+  outline: none;
+}
+
+/* ---- Contenedor de preview/logo ---- */
+.logo-box {
+  @apply flex items-center justify-center overflow-hidden rounded-xl;
+  width: 7rem; /* 28 */
+  height: 7rem;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+}
+
+/* =================== UTILIDADES EXTRA (opcionales) =================== */
+@layer utilities {
+  .bg-primary {
+    background-color: hsl(var(--primary));
+  }
+  .bg-secondary {
+    background-color: hsl(var(--secondary));
+  }
+  .bg-accent {
+    background-color: hsl(var(--accent));
+  }
+  .bg-tertiary {
+    background-color: hsl(var(--tertiary));
+  }
+
+  .text-primary {
+    color: hsl(var(--primary));
+  }
+  .text-secondary {
+    color: hsl(var(--secondary));
+  }
+  .text-accent {
+    color: hsl(var(--accent));
+  }
+  .text-tertiary {
+    color: hsl(var(--tertiary));
+  }
+
+  .border-primary {
+    border-color: hsl(var(--primary));
+  }
+  .border-secondary {
+    border-color: hsl(var(--secondary));
+  }
+  .border-accent {
+    border-color: hsl(var(--accent));
+  }
+  .border-tertiary {
+    border-color: hsl(var(--tertiary));
+  }
+}
+
+/* =================== NAVBAR SUGERIDO (ejemplo de uso) =================== */
+/* Aplica las clases Tailwind y usa tokens si quieres forzar colores en CSS */
+.navbar {
+  @apply w-full flex items-center justify-between px-4 md:px-6 py-3 rounded-xl;
+  background: hsl(var(--accent)); /* Dorado en claro; en dark se ajusta */
+  color: hsl(var(--accent-foreground));
+  border: 1px solid hsl(var(--accent) / 0.2);
+}
+.navbar-ghost {
+  background: transparent;
+  color: hsl(var(--fg));
+  border: 1px solid hsl(var(--border));
+}
+
+/* =================== FORM STATES (éxito / alerta / error) =================== */
+.input-success {
+  border-color: hsl(var(--success));
+  box-shadow: 0 0 0 3px hsl(var(--success) / 0.2);
+}
+.input-warning {
+  border-color: hsl(var(--warning));
+  box-shadow: 0 0 0 3px hsl(var(--warning) / 0.2);
+}
+.input-error {
+  border-color: hsl(var(--destructive));
+  box-shadow: 0 0 0 3px hsl(var(--destructive) / 0.2);
+}

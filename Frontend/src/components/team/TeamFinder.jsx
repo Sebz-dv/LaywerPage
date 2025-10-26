@@ -20,7 +20,8 @@ const slugify = (s = "") =>
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 // ✅ ORIGIN para archivos estáticos
 const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? "http://localhost:8000";
-const resolveUrl = (u) => (!u ? "" : u.startsWith("http") ? u : `${API_ORIGIN}${u}`);
+const resolveUrl = (u) =>
+  !u ? "" : u.startsWith("http") ? u : `${API_ORIGIN}${u}`;
 
 // ✅ Fallback imagen
 const FALLBACK_AVATAR =
@@ -93,7 +94,9 @@ export default function TeamFinder({
           areas: meta?.facets?.areas ?? [],
           ciudades: meta?.facets?.ciudades ?? [],
         });
-        setItems((prev) => (page === 1 ? data ?? [] : [...prev, ...(data ?? [])]));
+        setItems((prev) =>
+          page === 1 ? data ?? [] : [...prev, ...(data ?? [])]
+        );
       })
       .catch((e) => {
         if (e.name !== "AbortError") setError(e.message || "Error");
@@ -133,14 +136,14 @@ export default function TeamFinder({
     hover: prefersReduced
       ? {}
       : {
-        y: -3,
-        transition: { duration: 0.18 },
-      },
+          y: -3,
+          transition: { duration: 0.18 },
+        },
   };
 
   return (
     <section className={cx("w-full", className)}>
-      {/* ===== Tabs con indicador animado (layoutId) */}
+      {/* ===== Tabs con indicador azul (primary) ===== */}
       <div className="mt-4 inline-flex relative rounded-xl border border-[hsl(var(--border))] p-1 bg-[hsl(var(--card))]">
         {[
           { id: "juridico", label: "Jurídico" },
@@ -155,14 +158,15 @@ export default function TeamFinder({
               className={cx(
                 "relative px-3 py-1.5 text-sm rounded-lg transition-colors z-10",
                 active
-                  ? "text-[hsl(var(--fg))]"
+                  ? "text-[hsl(var(--primary-foreground))]"
                   : "text-[hsl(var(--fg))/0.85] hover:text-[hsl(var(--fg))]"
               )}
             >
               {active && (
                 <motion.span
                   layoutId="tabIndicator"
-                  className="absolute inset-0 rounded-lg bg-[hsl(var(--muted))]"
+                  className="absolute inset-0 rounded-lg"
+                  style={{ background: "hsl(var(--primary))" }}
                   transition={{ type: "spring", stiffness: 500, damping: 40 }}
                   aria-hidden
                 />
@@ -173,7 +177,7 @@ export default function TeamFinder({
         })}
       </div>
 
-      {/* ===== Filtros + Ajuste imagen */}
+      {/* ===== Filtros + Ajuste imagen ===== */}
       <motion.div
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
@@ -181,31 +185,45 @@ export default function TeamFinder({
         className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
       >
         <div className="group">
-          <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7]">Nombre</label>
+          <label className="block text-xs mb-1 text-muted">Nombre</label>
           <input
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             placeholder="Ej. Ana, Andrés…"
-            className="w-full rounded-xl px-3 py-2 border outline-none bg-[hsl(var(--card))] text-[hsl(var(--fg))]
-                       border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--ring))] transition-shadow"
+            className="input"
           />
         </div>
 
-        <Select label="CARGO" value={cargo} onChange={setCargo} options={facets.cargos} />
-        <Select label="ÁREA" value={area} onChange={setArea} options={facets.areas} />
-        <Select label="CIUDAD" value={ciudad} onChange={setCiudad} options={facets.ciudades} />
+        <Select
+          label="CARGO"
+          value={cargo}
+          onChange={setCargo}
+          options={facets.cargos}
+        />
+        <Select
+          label="ÁREA"
+          value={area}
+          onChange={setArea}
+          options={facets.areas}
+        />
+        <Select
+          label="CIUDAD"
+          value={ciudad}
+          onChange={setCiudad}
+          options={facets.ciudades}
+        />
 
         {/* Ajuste imagen (cover/contain) */}
         <div className="flex flex-col">
-          <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7]">Ajuste imagen</label>
+          <label className="block text-xs mb-1 text-muted">Ajuste imagen</label>
           <div className="inline-flex rounded-lg border border-[hsl(var(--border))] overflow-hidden">
             <button
               onClick={() => setImageFit("cover")}
               className={cx(
-                "px-3 py-2 text-xs",
+                "px-3 py-2 text-xs transition-colors",
                 imageFit === "cover"
-                  ? "bg-[hsl(var(--muted))] text-[hsl(var(--fg))]"
-                  : "text-[hsl(var(--fg))/0.8] hover:bg-[hsl(var(--muted))]"
+                  ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                  : "text-[hsl(var(--fg))/0.85] hover:bg-[hsl(var(--muted))]"
               )}
               aria-pressed={imageFit === "cover"}
             >
@@ -214,10 +232,10 @@ export default function TeamFinder({
             <button
               onClick={() => setImageFit("contain")}
               className={cx(
-                "px-3 py-2 text-xs",
+                "px-3 py-2 text-xs transition-colors",
                 imageFit === "contain"
-                  ? "bg-[hsl(var(--muted))] text-[hsl(var(--fg))]"
-                  : "text-[hsl(var(--fg))/0.8] hover:bg-[hsl(var(--muted))]"
+                  ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                  : "text-[hsl(var(--fg))/0.85] hover:bg-[hsl(var(--muted))]"
               )}
               aria-pressed={imageFit === "contain"}
             >
@@ -227,7 +245,7 @@ export default function TeamFinder({
         </div>
       </motion.div>
 
-      {/* ===== Grid de resultados */}
+      {/* ===== Grid de resultados ===== */}
       <motion.div
         variants={gridVariants}
         initial="hidden"
@@ -256,11 +274,12 @@ export default function TeamFinder({
         </AnimatePresence>
 
         {/* Skeletons iniciales */}
-        {loading && items.length === 0 &&
+        {loading &&
+          items.length === 0 &&
           Array.from({ length: pageSize }).map((_, k) => (
             <div
               key={`skeleton-${k}`}
-              className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 overflow-hidden relative"
+              className="card card-pad overflow-hidden relative"
             >
               <div className="aspect-[4/3] w-full rounded-lg bg-[hsl(var(--muted))] relative overflow-hidden" />
               <div className="mt-4 h-4 w-2/3 bg-[hsl(var(--muted))] rounded" />
@@ -271,43 +290,40 @@ export default function TeamFinder({
           ))}
       </motion.div>
 
-      {/* ===== Vacío / error */}
+      {/* ===== Vacío / error ===== */}
       {!loading && items.length === 0 && (
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mt-6 text-sm text-[hsl(var(--fg))/0.7]"
+          className="mt-6 text-sm text-muted"
         >
-          {error ? `Error: ${error}` : "Sin resultados para los filtros actuales."}
+          {error
+            ? `Error: ${error}`
+            : "Sin resultados para los filtros actuales."}
         </motion.p>
       )}
 
-      {/* ===== Cargar más */}
+      {/* ===== Cargar más ===== */}
       {items.length > 0 && (
         <div className="mt-6 flex justify-center">
           {canLoad ? (
             <button
               onClick={() => setPage((p) => p + 1)}
               disabled={loading}
-              className={cx(
-                "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium border",
-                "bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))]",
-                "hover:bg-[hsl(var(--muted))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]",
-                "transition-colors"
-              )}
+              className="btn btn-outline"
               aria-busy={loading}
             >
               {loading ? (
                 <>
                   <Spinner />
-                  Cargando…
+                  <span className="ml-2">Cargando…</span>
                 </>
               ) : (
                 "Cargar más"
               )}
             </button>
           ) : (
-            <p className="text-sm text-[hsl(var(--fg))/0.7]">No hay más resultados.</p>
+            <p className="text-sm text-muted">No hay más resultados.</p>
           )}
         </div>
       )}
@@ -317,7 +333,16 @@ export default function TeamFinder({
 
 /* ===================== Subcomponentes ===================== */
 
-function TeamCard({ imgSrc, nombre, cargo, area, ciudad, href, variants, imageFit }) {
+function TeamCard({
+  imgSrc,
+  nombre,
+  cargo,
+  area,
+  ciudad,
+  href,
+  variants,
+  imageFit,
+}) {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgError, setImgError] = useState(false);
   const prefersReduced = useReducedMotion();
@@ -328,13 +353,22 @@ function TeamCard({ imgSrc, nombre, cargo, area, ciudad, href, variants, imageFi
       whileHover="hover"
       whileTap={{ scale: prefersReduced ? 1 : 0.995 }}
       layout
-      className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 shadow-sm group transition-shadow hover:shadow-[0_6px_24px_-12px_rgba(0,0,0,0.35)]"
+      className={[
+        "rounded-xl p-5 shadow-sm group transition-shadow",
+        // borde base neutro + hover con tinte azul
+        "border border-[hsl(var(--border))] bg-[hsl(var(--card))]",
+        "hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.35)]",
+        "hover:border-[hsl(var(--primary)/0.55)]",
+      ].join(" ")}
     >
       {/* Imagen con animación de carga (blur + shimmer) */}
       <div
         className={cx(
           "relative aspect-[4/3] w-full rounded-lg overflow-hidden",
-          imageFit === "contain" ? "bg-[hsl(var(--card))]" : "bg-[hsl(var(--muted))]"
+          imageFit === "contain"
+            ? "bg-[hsl(var(--card))]"
+            : // tinte azul MUY leve cuando se llena
+              "bg-[hsl(var(--primary)/0.06)]"
         )}
       >
         {!imgLoaded && (
@@ -360,7 +394,11 @@ function TeamCard({ imgSrc, nombre, cargo, area, ciudad, href, variants, imageFi
             }}
             initial={{ opacity: 0, scale: imageFit === "cover" ? 1.015 : 1 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={prefersReduced ? { duration: 0.2 } : { duration: 0.35, ease: [0.22, 0.61, 0.36, 1] }}
+            transition={
+              prefersReduced
+                ? { duration: 0.2 }
+                : { duration: 0.35, ease: [0.22, 0.61, 0.36, 1] }
+            }
             className={cx(
               "absolute inset-0 h-full w-full object-center",
               imageFit === "cover" ? "object-cover" : "object-contain",
@@ -376,8 +414,8 @@ function TeamCard({ imgSrc, nombre, cargo, area, ciudad, href, variants, imageFi
           </span>
         )}
 
-        {/* borde sutil al hover */}
-        <span className="pointer-events-none absolute inset-0 ring-0 group-hover:ring-2 ring-[hsl(var(--ring))/0.25] transition-all rounded-lg" />
+        {/* halo azul al hover */}
+        <span className="pointer-events-none absolute inset-0 ring-0 group-hover:ring-2 ring-[hsl(var(--primary))/0.35] transition-all rounded-lg" />
       </div>
 
       <motion.h3
@@ -397,12 +435,12 @@ function TeamCard({ imgSrc, nombre, cargo, area, ciudad, href, variants, imageFi
       <div className="mt-4">
         <Link
           to={href}
-          className={cx(
-            "inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium border",
-            "bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))]",
-            "hover:bg-[hsl(var(--muted))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]",
-            "transition-colors"
-          )}
+          className={[
+            "inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium border transition-colors",
+            // CTA en azul
+            "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-transparent",
+            "hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))/0.5]",
+          ].join(" ")}
         >
           Ver Perfil
           <motion.svg
@@ -430,7 +468,9 @@ function TeamCard({ imgSrc, nombre, cargo, area, ciudad, href, variants, imageFi
 function Select({ label, value, onChange, options = [] }) {
   return (
     <div className="group">
-      <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7]">{label}</label>
+      <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7]">
+        {label}
+      </label>
       <div className="relative">
         <select
           value={value}
@@ -460,9 +500,26 @@ function Select({ label, value, onChange, options = [] }) {
 
 function Spinner() {
   return (
-    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" opacity="0.25" />
-      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" fill="none" />
+    <svg
+      className="h-4 w-4 animate-spin"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="3"
+        fill="none"
+        opacity="0.25"
+      />
+      <path
+        d="M22 12a10 10 0 0 1-10 10"
+        stroke="currentColor"
+        strokeWidth="3"
+        fill="none"
+      />
     </svg>
   );
 }

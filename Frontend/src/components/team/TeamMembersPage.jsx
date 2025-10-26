@@ -41,12 +41,10 @@ export default function TeamMembersPage() {
   const [fotoFile, setFotoFile] = useState(null);
   const [fotoPreview, setFotoPreview] = useState(null);
 
-  // Carga inicial
   const load = useCallback(async (abortSignal) => {
     try {
       setLoading(true);
       const res = await teamService.search({ perPage: 50, signal: abortSignal });
-      // Soporta {data: []} y [] plano
       const rows = Array.isArray(res) ? res : res?.data ?? [];
       setItems(rows);
       setError("");
@@ -66,12 +64,8 @@ export default function TeamMembersPage() {
   // Preview al seleccionar archivo
   const handleFile = useCallback((file) => {
     setFotoFile(file || null);
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setFotoPreview(url);
-    } else {
-      setFotoPreview(null);
-    }
+    if (file) setFotoPreview(URL.createObjectURL(file));
+    else setFotoPreview(null);
   }, []);
 
   // Abrir crear
@@ -117,8 +111,7 @@ export default function TeamMembersPage() {
   const handleSubmit = useCallback(async () => {
     try {
       const payload = { ...form };
-      // el backend espera key 'foto' para el File
-      if (fotoFile) payload.foto = fotoFile;
+      if (fotoFile) payload.foto = fotoFile; // key que espera el backend
 
       if (isEditing && currentSlug) {
         const saved = await teamService.update(currentSlug, payload);
@@ -144,7 +137,7 @@ export default function TeamMembersPage() {
     }
   }, []);
 
-  // Abrir/Cerrar Perfil
+  // Perfil
   const openProfile = useCallback((slug) => {
     setProfileSlug(slug);
     setProfileOpen(true);
@@ -160,7 +153,7 @@ export default function TeamMembersPage() {
       {
         label: "Tipo de Miembro",
         options: [
-          { value: "", label: "— Selecciona un tipo —" }, // placeholder
+          { value: "", label: "— Selecciona un tipo —" },
           { value: "juridico", label: "Jurídico" },
           { value: "no-juridico", label: "No Jurídico" },
         ],
@@ -172,25 +165,32 @@ export default function TeamMembersPage() {
   return (
     <div className="space-y-4">
       {/* Header + CTA */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Equipo</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-semibold">Equipo</h1>
+          <p className="text-sm text-muted">Gestiona miembros, perfiles y fotos.</p>
+        </div>
         <button
           onClick={openCreate}
-          className="rounded-lg px-4 py-2 text-sm font-medium border bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--border))/0.25] hover:bg-[hsl(var(--primary))/0.92]"
+          className="btn btn-primary"
         >
           Nuevo miembro
         </button>
       </div>
 
-      {/* Tabla */}
-      <MembersTable
-        items={items}
-        loading={loading}
-        error={error}
-        onEdit={openEdit}
-        onDelete={handleDelete}
-        onOpenProfile={openProfile}
-      />
+      {/* Tabla (deja sus estilos internos, la envolvemos si quieres card) */}
+      <div className="card card-pad">
+        <MembersTable
+          items={items}
+          loading={loading}
+          error={error}
+          onEdit={openEdit}
+          onDelete={handleDelete}
+          onOpenProfile={openProfile}
+          resolveUrl={resolveUrl}
+          fallbackAvatar={FALLBACK_AVATAR}
+        />
+      </div>
 
       {/* Modal CRUD */}
       <Modal
@@ -213,18 +213,13 @@ export default function TeamMembersPage() {
 
       {/* Modal Perfil */}
       <Modal open={profileOpen} onClose={closeProfile} ariaLabel="Editar perfil">
-        {profileSlug && (
-          <ProfileEditor
-            slug={profileSlug} 
-          />
-        )}
+        {profileSlug && <ProfileEditor slug={profileSlug} />}
       </Modal>
     </div>
   );
 }
 
-/** Modal accesible, sin dependencias. Escape cierra.
- *  Overlay usa onMouseDown para evitar cierre accidental por click fantasma. */
+/** Modal accesible estilizado con tus tokens */
 function Modal({ open, onClose, ariaLabel, children }) {
   useEffect(() => {
     if (!open) return;
@@ -242,27 +237,38 @@ function Modal({ open, onClose, ariaLabel, children }) {
       aria-modal="true"
       aria-label={ariaLabel}
     >
-      {/* Overlay */}
+      {/* Overlay con tokens */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-[1px]"
+        className="absolute inset-0 bg-[hsl(var(--fg)/0.45)] backdrop-blur-[2px]"
         onMouseDown={onClose}
       />
+
       {/* Contenido */}
       <div
         className="relative z-10 w-full max-w-xl"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="relative rounded-xl border bg-[hsl(var(--card))] border-[hsl(var(--border))] shadow-xl">
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute right-2 top-2 rounded-md px-2 py-1 text-sm border bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
-            aria-label="Cerrar modal"
-            title="Cerrar"
-          >
-            ×
-          </button>
-          <div className="p-4">{children}</div>
+        <div className="card">
+          {/* Header del modal */}
+          <div className="flex items-center justify-between card-pad pb-0">
+            <h2 className="text-base font-semibold">
+              {ariaLabel}
+            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn btn-outline px-2 py-1"
+              aria-label="Cerrar modal"
+              title="Cerrar"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="card-pad pt-3">
+            {children}
+          </div>
         </div>
       </div>
     </div>
