@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
-            $table->string('site_name')->default('Mi Empresa');
+            $table->string('site_name')->default('Blanco & Ramírez');
             $table->string('logo_path')->nullable();         // storage path
             $table->string('email')->nullable();
             $table->string('phone')->nullable();

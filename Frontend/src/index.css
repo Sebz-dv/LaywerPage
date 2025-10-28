@@ -57,68 +57,63 @@
   }
 }
 
+
 /* =================== DARK VARIANT (estilo Sebas) =================== */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* =================== TOKENS (HSL para /opacidad) =================== */
-/* Paleta modo CLARO (tu set)
-   Primario:   #0D1B3A → hsl(221 63% 14%)
-   Secundario: #759FBC → hsl(205 35% 60%)
-   Fondo:      #FCF6EE → hsl(34 70% 96%)
-   Terciario:  #828891 → hsl(216 6% 54%)
-   Especial:   #BE7D23 → hsl(35 69% 44%)
+/* ========= PALETA BASE (modo claro) =========
+Primario:   #0D1B3A → hsl(221 63% 14%)
+Secundario: #759FBC → hsl(205 35% 60%)
+Fondo:      #FAFAFA → hsl(0 0% 98%)
+Terciario:  #828891 → hsl(216 6% 54%)
+Especial:   #BE7D23 → hsl(35 69% 44%)
 */
 :root {
   /* Base */
-  --bg: 34 70% 96%; /* FCF6EE */
-  --fg: 221 63% 14%; /* Texto principal */
-  --card: 0 0% 100%; /* Blanco */
-  --muted: 34 30% 92%; /* Fondo suave cálido */
-  --border: 216 6% 75%; /* Borde neutro tibio */
-  --ring: 35 69% 44%; /* Enfoque/acento (dorado) */
+  --bg: 0 0% 98%; /* Fondo */
+  --fg: 221 63% 14%; /* Texto principal: usa el primario oscuro */
+  --card: 0 0% 100%;
+  --muted: 0 0% 96%; /* Neutro frío suave (sin beige) */
+  --border: 216 10% 80%; /* Borde gris frío, legible en claro */
+  --ring: 35 69% 44%; /* Igual al Especial (enfoques/acentos) */
 
   /* Marca */
   --primary: 221 63% 14%; /* #0D1B3A */
-  --primary-foreground: 0 0% 100%; /* Blanco */
+  --primary-foreground: 0 0% 100%;
   --secondary: 205 35% 60%; /* #759FBC */
   --secondary-foreground: 221 63% 14%;
   --tertiary: 216 6% 54%; /* #828891 */
   --tertiary-foreground: 0 0% 100%;
 
-  /* CTA / Especial (navbar, botones destacados) */
+  /* Acento/Esp. */
   --accent: 35 69% 44%; /* #BE7D23 */
   --accent-foreground: 0 0% 100%;
 
-  /* Semánticos */
+  /* Semánticos (neutros) */
   --success: 162 36% 40%;
   --warning: 38 92% 48%;
   --destructive: 0 68% 48%;
 }
 
-/* ======== Overrides en modo OSCURO ======== */
+/* ========= Modo oscuro (derivado de la misma paleta) ========= */
 .dark {
-  --bg: 220 28% 7%;
-  --fg: 210 20% 92%;
+  --bg: 221 33% 7%; /* Navy muy oscuro */
+  --fg: 210 20% 96%; /* Texto claro */
+  --card: 221 28% 10%;
+  --muted: 221 20% 14%;
+  --border: 221 16% 24%;
+  --ring: 35 78% 50%; /* Dorado un poco más luminoso */
 
-  --card: 220 20% 10%;
-  --muted: 220 12% 16%;
-  --border: 220 12% 26%;
-  --ring: 35 80% 52%;
-
-  /* En dark, subo luminancia para botones legibles y mantengo armonía */
-  --primary: 206 33% 75%;
-  --primary-foreground: 230 28% 10%;
-  --secondary: 205 28% 70%;
-  --secondary-foreground: 230 28% 10%;
+  /* Marca en dark: elevamos luminancia para contraste */
+  --primary: 205 30% 72%; /* Primario aclarado para botones/links */
+  --primary-foreground: 221 63% 12%;
+  --secondary: 205 35% 65%;
+  --secondary-foreground: 221 63% 12%;
   --tertiary: 216 6% 62%;
-  --tertiary-foreground: 230 28% 10%;
+  --tertiary-foreground: 221 63% 12%;
 
-  --accent: 35 78% 50%;
-  --accent-foreground: 230 28% 10%;
-
-  --success: 162 40% 46%;
-  --warning: 38 100% 54%;
-  --destructive: 0 62% 56%;
+  --accent: 35 78% 54%;
+  --accent-foreground: 221 63% 12%;
 }
 
 /* =================== BASE MÍNIMOS =================== */
@@ -389,4 +384,21 @@ figcaption {
 .input-error {
   border-color: hsl(var(--destructive));
   box-shadow: 0 0 0 3px hsl(var(--destructive) / 0.2);
+}
+
+/* Fondo global con capas (aplícalo a body o a un wrapper) */
+.bg-app {
+  background:
+    radial-gradient(1000px 600px at 10% -10%, hsl(205 35% 65% / .18), transparent 60%),
+    radial-gradient(800px 520px at 90% 10%, hsl(221 63% 14% / .12), transparent 60%),
+    hsl(var(--bg));
+  position: relative;
+}
+.bg-app::after {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none;
+  opacity: .12; mix-blend-mode: overlay;
+  background:
+    linear-gradient(to right, rgba(0,0,0,.35) 1px, transparent 1px) 0 0/28px 28px,
+    linear-gradient(to bottom, rgba(0,0,0,.35) 1px, transparent 1px) 0 0/28px 28px;
 }
