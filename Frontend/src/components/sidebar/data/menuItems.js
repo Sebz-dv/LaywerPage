@@ -8,6 +8,7 @@ import {
   FaBookmark,
   FaArchway,
   FaBookMedical,
+  FaImages 
 } from "react-icons/fa";
 
 export const menuItems = [
@@ -22,6 +23,12 @@ export const menuItems = [
     label: "Miembros",
     link: "/dash/members",
     icon: FaUserFriends,
+  },
+  {
+    key: "carrusel",
+    label: "Carrusel",
+    link: "/dash/carousel",
+    icon: FaImages,
   },
   {
     key: "areas",
@@ -41,7 +48,6 @@ export const menuItems = [
     link: "/dash/articles",
     icon: FaBookmark,
   },
-
   {
     key: "ajustes",
     label: "Ajustes",

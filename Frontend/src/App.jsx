@@ -20,6 +20,7 @@ import BlogArticle from "./pages/public/blog/BlogArticle.jsx";
 import SiteSettings from "./components/settings/SiteSettings.jsx";
 import InfoBlocksManager from "./components/info/InfoBlocksManager.jsx";
 import AboutUs from "./pages/public/AboutUs.jsx";
+import CarouselManager from "./components/images/CarouselManager.jsx";
 
 function Shell() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="/dash/articles/:id/edit" element={<ArticleForm />} />
           <Route path="/dash/settings" element={<SiteSettings />} />
           <Route path="/dash/info" element={< InfoBlocksManager/>} />
+          <Route path="/dash/carousel" element={<CarouselManager/>} />
         </Route>
       </Route>
 

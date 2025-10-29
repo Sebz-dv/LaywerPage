@@ -7,15 +7,16 @@
    /public/fonts/AvenirNext-Variable.woff2
 */
 
-/* Minion Variable Concept (display / cuerpo) */
+/* Minion Variable Concept (display / cuerpo) Titulos y textos*/
 @font-face {
   font-family: "Minion VC";
-  src: url("/fonts/MinionVariableConcept.woff2") format("woff2-variations");
+  src: url("/fonts/MinionVariableConcept.woff2") format("woff2-variations"); 
   font-weight: 200 900;
   font-stretch: 75% 125%;
   font-style: normal;
   font-display: swap;
 }
+
 @font-face {
   font-family: "Minion VC";
   src: url("/fonts/MinionVariableConcept-Italic.woff2")
@@ -26,7 +27,7 @@
   font-display: swap;
 }
 
-/* Avenir Next (variable) */
+/* Avenir Next (variable) subtitulos, resaltar, nombres, etc*/
 @font-face {
   font-family: "Avenir Next Var";
   src: url("/fonts/AvenirNext-Variable.woff2") format("woff2-variations");
@@ -88,6 +89,7 @@ Especial:   #BE7D23 → hsl(35 69% 44%)
   /* Acento/Esp. */
   --accent: 35 69% 44%; /* #BE7D23 */
   --accent-foreground: 0 0% 100%;
+  --accent-special: 36 82% 50%; /* Un dorado más vibrante */
 
   /* Semánticos (neutros) */
   --success: 162 36% 40%;
