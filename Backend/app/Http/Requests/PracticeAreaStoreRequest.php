@@ -50,7 +50,7 @@ class PracticeAreaStoreRequest extends FormRequest
             'featured'  => ['nullable', 'boolean'],
             'active'    => ['nullable', 'boolean'],
             'order'     => ['nullable', 'integer', 'min:0'], 
-            'icon'      => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg', 'max:4096'],
+            'icon'      => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg'],
             'icon_url'  => ['nullable', 'url'],
         ];
     }

@@ -73,9 +73,7 @@ export default function IntroPage() {
     target: rootRef,
     offset: ["start start", "end start"],
   });
-  const backdropY = useTransform(scrollYProgress, [0, 1], ["0%", "-10%"]);
-  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "-4%"]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0.92]);
+  const backdropY = useTransform(scrollYProgress, [0, 1], ["0%", "-10%"]); 
   const MotionDiv = motion.div;
   return (
     <div ref={rootRef}>
@@ -85,33 +83,7 @@ export default function IntroPage() {
         <Backdrop />
       </motion.div>
 
-      {/* Hero visual: carrusel full-bleed */}
-      <Section
-        id="hero"
-        className="mt-[-90px]"
-        fullBleed
-        variants={fadeUp}
-        amount={0.12}
-      >
-        <motion.div
-          style={{ y: heroY, opacity: heroOpacity }}
-          variants={fadeUp}
-        >
-          <CarouselViewer
-            className="w-full ring-1 ring-[hsl(var(--border))]/60 bg-[hsl(var(--card))] shadow-sm"
-            aspect="16/9"
-            rounded="rounded-2xl"
-            autoplay
-            interval={4500}
-            loop
-            showDots
-            showArrows
-            showThumbs
-            slideFit="cover"
-          />
-        </motion.div>
-      </Section>
-
+     
       {/* Nuestra organización */}
       <Section id="org">
         <motion.div className="mt-[-90px]" variants={staggerWrap}>

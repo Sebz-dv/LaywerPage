@@ -8,6 +8,7 @@ use App\Http\Requests\PracticeAreaStoreRequest;
 use App\Http\Requests\PracticeAreaUpdateRequest;
 use App\Http\Resources\PracticeAreaResource;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PracticeAreaController extends Controller
 {
@@ -43,13 +44,20 @@ class PracticeAreaController extends Controller
         return PracticeAreaResource::collection($paginator);
     }
 
-    // En tu controlador
+    // ... arriba igual
+
     private function normalizeBullets(array &$data): void
     {
         if (array_key_exists('bullets', $data)) {
+            // Si viene como string "[]", intentamos decodificar
             if (is_string($data['bullets'])) {
                 $decoded = json_decode($data['bullets'], true);
-                $data['bullets'] = is_array($decoded) ? $decoded : [];
+                if (is_array($decoded)) {
+                    $data['bullets'] = $decoded;
+                } else {
+                    // Si viene texto plano, lo tratamos como una sola línea
+                    $data['bullets'] = trim($data['bullets']) === '' ? [] : [$data['bullets']];
+                }
             }
             if (is_array($data['bullets'])) {
                 $data['bullets'] = array_values(array_filter(array_map(function ($s) {
@@ -63,18 +71,25 @@ class PracticeAreaController extends Controller
     {
         $data = $request->validated();
 
-        // Files/icon...
+        // Si se sube archivo, prioriza path y anula url
         if ($request->hasFile('icon')) {
             $path = $request->file('icon')->store('practice-areas', 'public');
             $data['icon_path'] = $path;
             unset($data['icon_url']);
         }
 
-        $this->normalizeBullets($data);  // <- aquí
+        $this->normalizeBullets($data);
+
+        // Slug automático si no viene
+        if (empty($data['slug']) && !empty($data['title'])) {
+            $data['slug'] = Str::slug($data['title']);
+        }
 
         $area = PracticeArea::create($data);
         return new PracticeAreaResource($area);
     }
+
+
 
     public function show(PracticeArea $practice_area)
     {

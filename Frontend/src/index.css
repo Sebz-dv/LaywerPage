@@ -10,7 +10,7 @@
 /* Minion Variable Concept (display / cuerpo) Titulos y textos*/
 @font-face {
   font-family: "Minion VC";
-  src: url("/fonts/MinionVariableConcept.woff2") format("woff2-variations"); 
+  src: url("/fonts/MinionVariableConcept.woff2") format("woff2-variations");
   font-weight: 200 900;
   font-stretch: 75% 125%;
   font-style: normal;
@@ -57,7 +57,6 @@
     font-family: var(--font-subtitle);
   }
 }
-
 
 /* =================== DARK VARIANT (estilo Sebas) =================== */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -358,6 +357,11 @@ figcaption {
   .border-tertiary {
     border-color: hsl(var(--tertiary));
   }
+  .bleed-x {
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    width: 100vw;
+  }
 }
 
 /* =================== NAVBAR SUGERIDO (ejemplo de uso) =================== */
@@ -390,17 +394,32 @@ figcaption {
 
 /* Fondo global con capas (aplícalo a body o a un wrapper) */
 .bg-app {
-  background:
-    radial-gradient(1000px 600px at 10% -10%, hsl(205 35% 65% / .18), transparent 60%),
-    radial-gradient(800px 520px at 90% 10%, hsl(221 63% 14% / .12), transparent 60%),
+  background: radial-gradient(
+      1000px 600px at 10% -10%,
+      hsl(205 35% 65% / 0.18),
+      transparent 60%
+    ),
+    radial-gradient(
+      800px 520px at 90% 10%,
+      hsl(221 63% 14% / 0.12),
+      transparent 60%
+    ),
     hsl(var(--bg));
   position: relative;
 }
 .bg-app::after {
   content: "";
-  position: fixed; inset: 0; pointer-events: none;
-  opacity: .12; mix-blend-mode: overlay;
-  background:
-    linear-gradient(to right, rgba(0,0,0,.35) 1px, transparent 1px) 0 0/28px 28px,
-    linear-gradient(to bottom, rgba(0,0,0,.35) 1px, transparent 1px) 0 0/28px 28px;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.12;
+  mix-blend-mode: overlay;
+  background: linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0.35) 1px,
+        transparent 1px
+      )
+      0 0/28px 28px,
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 1px, transparent 1px) 0 0/28px
+      28px;
 }

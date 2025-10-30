@@ -1,209 +1,178 @@
-// src/pages/Dashboard.jsx
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useAuth } from "../../context/useAuth.js";
-import usePageReady from "../../hooks/usePageReady.js";
-import { teamService } from "../../services/teamService.js";
-import ProfileModal from "../../components/team/ProfileModal.jsx";
-import { MemberForm } from "../../components/team/MemberForm.jsx";
-import { MembersTable } from "../../components/team/MembersTable.jsx";
-import BrowserTabs from "../../components/navigation/BrowserTabs.jsx";
-import CarouselManager from "../../components/images/CarouselManager.jsx";
-import InfoBlocksManager from "../../components/info/InfoBlocksManager.jsx";
-import SiteSettings from "../../components/settings/SiteSettings.jsx";
+import React from "react";
+import { Link } from "react-router-dom";
+import {
+  FiSettings,
+  FiUsers,
+  FiFileText,
+  FiLayers,
+  FiImage,
+  FiEdit3,
+  FiInfo,
+  FiExternalLink,
+} from "react-icons/fi";
 
-function cx(...xs) { return xs.filter(Boolean).join(" "); }
+const cx = (...xs) => xs.filter(Boolean).join(" ");
 
-const EMPTY = { nombre:"", cargo:"", area:"", ciudad:"", tipo:"juridico", foto_url:"" };
+function Stat({ label, value, hint }) {
+  return (
+    <div className="rounded-2xl border border-token bg-card p-5">
+      <div className="text-sm text-muted">{label}</div>
+      <div className="mt-1 text-2xl font-semibold">{value}</div>
+      {hint ? <div className="mt-1 text-xs text-muted">{hint}</div> : null}
+    </div>
+  );
+}
 
-export default function Dashboard() {
-  const { user } = useAuth();
-  const { className: pageClass } = usePageReady();
-
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [form, setForm] = useState(EMPTY);
-  const [editingSlug, setEditingSlug] = useState(null);
-  const [search, setSearch] = useState("");
-  const [fotoFile, setFotoFile] = useState(null);
-  const [fotoPreview, setFotoPreview] = useState(null);
-  const [profileFor, setProfileFor] = useState(null);
-
-  const perPage = 20;
-
-  const load = useCallback(async (query = "") => {
-    setLoading(true); setError("");
-    try {
-      const { data } = await teamService.search({ nombre: query, perPage, sort: "latest" });
-      setItems(Array.isArray(data) ? data : []);
-    } catch (e) {
-      setError(e?.message || "Error");
-    } finally { setLoading(false); }
-  }, [perPage]);
-
-  useEffect(() => { load(); }, [load]);
-
-  useEffect(() => () => { if (fotoPreview) URL.revokeObjectURL(fotoPreview); }, [fotoPreview]);
-
-  const revokePreview = () => { if (fotoPreview) URL.revokeObjectURL(fotoPreview); };
-  const onFile = (file) => {
-    revokePreview();
-    setFotoFile(file || null);
-    setFotoPreview(file ? URL.createObjectURL(file) : null);
-  };
-  const resetForm = () => {
-    setForm(EMPTY);
-    setEditingSlug(null);
-    revokePreview();
-    setFotoFile(null);
-    setFotoPreview(null);
-  };
-
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      const fields = { ...form };
-      delete fields.foto_url;
-      const payload = { ...fields, ...(fotoFile ? { foto: fotoFile } : {}) };
-
-      if (editingSlug) {
-        const { data: updated } = await teamService.update(editingSlug, payload);
-        setItems((prev) => prev.map((it) => (it.slug === editingSlug ? updated : it)));
-      } else {
-        const { data: created } = await teamService.create(payload);
-        if (!search || created.nombre.toLowerCase().includes(search.toLowerCase())) {
-          setItems((prev) => [created, ...prev]);
-        }
-      }
-      resetForm();
-    } catch (e) {
-      alert(e?.response?.data?.message || e.message || "Error guardando");
-    } finally { setLoading(false); }
-  };
-
-  const onEdit = (m) => {
-    setEditingSlug(m.slug);
-    setForm({
-      nombre: m.nombre ?? "",
-      cargo: m.cargo ?? "",
-      area: m.area ?? "",
-      ciudad: m.ciudad ?? "",
-      tipo: m.tipo ?? "juridico",
-      foto_url: m.foto_url ?? "",
-    });
-    onFile(null);
-    if (m.foto_url) {
-      const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? "http://localhost:8000";
-      setFotoPreview(m.foto_url.startsWith("http") ? m.foto_url : API_ORIGIN + m.foto_url);
-    }
-    document.getElementById("crud-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const onDelete = async (m) => {
-    if (!confirm(`¿Eliminar a ${m.nombre}?`)) return;
-    try {
-      setLoading(true);
-      await teamService.remove(m.slug);
-      if (editingSlug === m.slug) resetForm();
-      setItems((prev) => prev.filter((it) => it.slug !== m.slug));
-    } catch (e) {
-      alert(e?.response?.data?.message || e.message || "Error eliminando");
-    } finally { setLoading(false); }
-  };
-
-  // --- Tabs (solo tabla/otros módulos dentro) ---
-  const MiembrosListTab = useMemo(() => (
-    <section className="rounded-xl border bg-[hsl(var(--card))] border-[hsl(var(--border))] p-6" key="miembros-list">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-        <h2 className="font-semibold">Miembros</h2>
-        <div className="sm:ml-auto">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre…"
-            className="w-full sm:w-72 rounded-lg px-3 py-2 border bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))] focus:ring-2 focus:ring-[hsl(var(--ring))] outline-none"
-          />
-          <button
-            onClick={() => load(search)}
-            className="ml-2 rounded-lg px-3 py-2 text-sm font-medium border bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
-          >
-            Buscar
-          </button>
+function Tile({ to, icon, title, desc, cta = "Abrir" }) {
+  const Icon = icon;
+  return (
+    <Link
+      to={to}
+      className={cx(
+        "group rounded-2xl border border-token bg-card p-5 hover:shadow-lg transition-shadow",
+        "hover:border-[hsl(var(--ring))]"
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <div className="grid h-11 w-11 place-items-center rounded-xl border border-token bg-muted">
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <h3 className="text-lg font-semibold leading-tight">{title}</h3>
+          <p className="mt-1 text-sm text-muted">{desc}</p>
+          <div className="mt-3 inline-flex items-center text-sm text-primary">
+            {cta}
+            <FiExternalLink className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </div>
         </div>
       </div>
-      <MembersTable
-        items={items}
-        loading={loading}
-        error={error}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onOpenProfile={(slug) => setProfileFor(slug)}
-      />
-      {profileFor && (
-        <ProfileModal slug={profileFor} onClose={() => setProfileFor(null)} />
-      )}
-    </section>
-  ), [items, loading, error, search, profileFor , load , onEdit, onDelete]);
+    </Link>
+  );
+}
 
-  const CarruselTab = useMemo(() => (
-    <section className="rounded-xl border bg-[hsl(var(--card))] border-[hsl(var(--border))] p-6" key="banner">
-      <CarouselManager />
-    </section>
-  ), []);
-
-  const InfoTab = useMemo(() => (
-    <section className="rounded-xl border bg-[hsl(var(--card))] border-[hsl(var(--border))] p-6" key="empresa">
-      <InfoBlocksManager />
-    </section>
-  ), []);
-  const SettingTab = useMemo(() => (
-    <section className="rounded-xl border bg-[hsl(var(--card))] border-[hsl(var(--border))] p-6" key="empresa">
-      <SiteSettings />
-    </section>
-  ), []);
-
-  const tabs = useMemo(() => ([
-    { id: "miembros", label: "Miembros", element: MiembrosListTab },
-    { id: "banner", label: "Imagenes del Banner", element: CarruselTab },
-    { id: "empresa", label: "¿Quienes somos?", element: InfoTab },
-    { id: "settings", label: "Configuracion de Empresa", element: SettingTab },
-  ]), [MiembrosListTab, CarruselTab, InfoTab, SettingTab]);
-
+export default function Dashboard() {
   return (
-    <div className={cx("p-6 space-y-6", pageClass)}>
-      <header>
-        <h1 className="text-2xl font-semibold">Hola, {user?.name} 👋</h1>
-        <p className="text-[hsl(var(--fg))/0.8]">Estás dentro. Email: {user?.email}</p>
+    <main className="mx-auto w-full max-w-7xl px-4 md:px-6 py-6">
+      {/* Header */}
+      <header className="rounded-3xl border overflow-hidden">
+        <div className="h-1 w-full bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))]" />
+        <div className="p-6 md:p-7">
+          <h1 className="text-2xl md:text-3xl font-semibold leading-tight">
+            Panel de administración
+          </h1>
+          <p className="mt-2 text-sm md:text-base text-muted">
+            Gestiona el contenido del sitio y la configuración visual.{" "}
+            <span className="font-medium text-foreground">
+              Los cambios publicados se reflejan en la aplicación pública
+              automáticamente.
+            </span>{" "}
+            (tu navegador podría cachear imágenes por unos segundos).
+          </p>
+
+          {/* Callouts de comportamiento */}
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-token bg-muted/60 p-3 text-xs">
+              <span className="font-semibold">Borradores: </span>
+              crea o edita con tranquilidad; no aparecen públicamente hasta que
+              actives <span className="font-medium">Publicado</span>.
+            </div>
+            <div className="rounded-xl border border-token bg-muted/60 p-3 text-xs">
+              <span className="font-semibold">Destacados: </span>
+              marca áreas o artículos como <span className="font-medium">featured</span> para
+              priorizarlos en la página principal.
+            </div>
+            <div className="rounded-xl border border-token bg-muted/60 p-3 text-xs">
+              <span className="font-semibold">Imágenes y archivos: </span>
+              se suben a <span className="font-medium">/storage</span>; si no las ves al instante,
+              refresca con <span className="font-medium">Ctrl/Cmd + Shift + R</span>.
+            </div>
+          </div>
+        </div>
       </header>
 
-      {/* 🔒 Form SIEMPRE montado */}
-      <section className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
-          <MemberForm
-            key="member-form-sticky"
-            form={form}
-            setForm={setForm}
-            isEditing={Boolean(editingSlug)}
-            onSubmit={onSubmit}
-            onCancel={resetForm}
-            onFile={onFile}
-            fotoPreview={fotoPreview}
-            FALLBACK_AVATAR={'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23e5e7eb"/></svg>'}
-            extraTipoGroups={[
-              { label: "Tipo de miembro", options: [
-                { label: "Jurídico", value: "juridico" },
-                { label: "No Jurídico", value: "no-juridico" },
-              ]}
-            ]}
+      {/* Quick stats (dummy place-holders; conecta a tu API si quieres) */}
+      <section className="mt-6 grid gap-4 md:grid-cols-3">
+        <Stat label="Áreas de práctica" value="—" hint="Activas / Destacadas" />
+        <Stat label="Publicaciones" value="—" hint="Publicadas / Borradores" />
+        <Stat label="Integrantes" value="—" hint="Visibles en /equipo" />
+      </section>
+
+      {/* Acciones principales */}
+      <section className="mt-6">
+        <h2 className="text-lg md:text-xl font-semibold">Contenido</h2>
+        <div className="mt-3 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Tile
+            to="/dash/areas"
+            icon={FiLayers}
+            title="Áreas de práctica"
+            desc="Crea/edita áreas, define orden, activa publicación y 'destacado'. Se reflejan en /servicios."
+          />
+          <Tile
+            to="/dash/articles"
+            icon={FiFileText}
+            title="Publicaciones"
+            desc="Gestiona artículos del blog. Usa portada, categorías y estado publicado/borrador."
+          />
+          <Tile
+            to="/dash/members"
+            icon={FiUsers}
+            title="Equipo"
+            desc="Administra integrantes y perfiles extendidos. Se muestran en /equipo."
           />
         </div>
+      </section>
 
-        {/* Paneles en 2 columnas */}
-        <div className="lg:col-span-2">
-          <BrowserTabs tabs={tabs} storageKey="dashboard:tabs" />
+      <section className="mt-6">
+        <h2 className="text-lg md:text-xl font-semibold">Marca y apariencia</h2>
+        <div className="mt-3 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Tile
+            to="/dash/carousel"
+            icon={FiImage}
+            title="Carrusel"
+            desc="Sube/ordena imágenes destacadas para la portada. Los cambios son inmediatos."
+          />
+          <Tile
+            to="/dash/info"
+            icon={FiInfo}
+            title="Bloques informativos"
+            desc="Gestiona secciones rápidas (cards/banners) que aparecen en páginas públicas."
+          />
+          <Tile
+            to="/dash/settings"
+            icon={FiSettings}
+            title="Configuración del sitio"
+            desc="Logo, colores, metadatos y ajustes generales. Se aplican al instante."
+          />
         </div>
       </section>
-    </div>
+
+      {/* Notas operativas rápidas */}
+      <section className="mt-8">
+        <div className="rounded-2xl border border-token bg-card p-5">
+          <h3 className="text-base md:text-lg font-semibold flex items-center gap-2">
+            <FiEdit3 className="h-5 w-5" />
+            Flujo recomendado de edición
+          </h3>
+          <ol className="mt-3 list-decimal pl-5 text-sm md:text-[15px] space-y-2 text-soft">
+            <li>
+              Crea o edita el contenido en su sección (ej. un área o un
+              artículo) y guarda como <span className="font-medium">borrador</span>.
+            </li>
+            <li>
+              Revisa la vista pública (usa el enlace de previsualización si tu
+              módulo lo expone).
+            </li>
+            <li>
+              Activa <span className="font-medium">Publicado</span> y, si aplica, marca como{" "}
+              <span className="font-medium">Destacado</span>.
+            </li>
+            <li>
+              Refresca la página pública. Si aún ves lo viejo, fuerza recarga
+              con <span className="font-medium">Ctrl/Cmd + Shift + R</span>.
+            </li>
+          </ol>
+        </div>
+      </section>
+    </main>
   );
 }

@@ -1,5 +1,6 @@
-// components/intro/FeaturesGrid.jsx
-import React from "react";
+"use client";
+import React, { useMemo } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   FaShieldAlt,
   FaGavel,
@@ -8,13 +9,13 @@ import {
   FaChalkboardTeacher,
   FaHandHoldingUsd,
 } from "react-icons/fa";
+import heroDefault from "../../assets/about/justice.jpg"; // opcional para fondo
 
-function cx(...xs) {
-  return xs.filter(Boolean).join(" ");
-}
+/* ================= Utils ================= */
+const cx = (...xs) => xs.filter(Boolean).join(" ");
 
 /** Estructura:
- * { t: string, bullets: string[], icon?: ReactNode }
+ * { t: string, bullets?: string[], d?: string, icon?: ReactNode }
  */
 const DEFAULT_FEATURES = [
   {
@@ -70,82 +71,177 @@ const DEFAULT_FEATURES = [
   },
 ];
 
+/* ================= Animations ================= */
+function useFadeUpSlow() {
+  const prefersReduced = useReducedMotion();
+  return useMemo(
+    () => ({
+      hidden: { opacity: 0, y: 24, filter: "blur(4px)" },
+      show: {
+        opacity: 1,
+        y: 0,
+        filter: "blur(0)",
+        transition: prefersReduced
+          ? { duration: 0.3 }
+          : { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
+      },
+    }),
+    [prefersReduced]
+  );
+}
+const staggerSlow = (delay = 0.1) => ({
+  hidden: {},
+  show: { transition: { staggerChildren: delay, when: "beforeChildren" } },
+});
+
+/* ================= Component ================= */
 export default function FeaturesGrid({
   features = DEFAULT_FEATURES,
   title = "Servicios Jurídicos",
   subtitle = "Nuestro conocimiento, a su servicio.",
   className = "",
-  // Si algún día quieres forzarlo a full-bleed otra vez: pasa fullBg={false} y manejas fuera
-  fullBg = true,
+  // Estilo Backdrop
+  bgSrc = heroDefault, // pasa null para color plano
+  tint = "linear-gradient(135deg, rgba(13,27,58,.85) 0%, rgba(117,159,188,.45) 100%)",
+  height = "",
 }) {
+  const fade = useFadeUpSlow();
+  const prefersReduced = useReducedMotion();
+
   return (
-    <section
-      id="features"
-      className={cx(
-        "w-full",
-        fullBg && "bg-[hsl(var(--primary))]",
-        className
+    <section id="features" className={cx("relative overflow-hidden", className)}>
+      {/* ===== Fondo estilo Backdrop (opcional) ===== */}
+      {bgSrc ? (
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <img
+            src={bgSrc}
+            alt=""
+            aria-hidden
+            className="h-full w-full object-cover object-left md:object-center"
+            loading="lazy"
+            decoding="async"
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 mix-blend-multiply" style={{ background: tint }} />
+          {!prefersReduced && (
+            <motion.span
+              aria-hidden
+              className="pointer-events-none absolute top-0 bottom-0 -left-1/3 w-1/3"
+              style={{
+                background:
+                  "linear-gradient(90deg, transparent 0%, rgba(255,255,255,.38) 45%, rgba(255,255,255,.52) 50%, rgba(255,255,255,.32) 55%, transparent 100%)",
+                filter: "blur(10px)",
+                mixBlendMode: "soft-light",
+              }}
+              animate={{ x: ["0%", "200%"] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="absolute inset-0 z-0 bg-[hsl(var(--primary))]" />
       )}
-    >
-      {/* Contenido ajustado */}
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+
+      {/* ===== Contenido ===== */}
+      <motion.div
+        variants={staggerSlow(0.08)}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.2 }}
+        className={cx(
+          "relative z-10 text-white font-display",
+          height,
+          "mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-14"
+        )}
+      >
         <header className="max-w-3xl">
-          <h2 className="text-2xl sm:text-3xl font-semibold font-display tracking-tight text-[hsl(var(--bg))]">
+          <motion.h2
+            variants={fade}
+            className="text-3xl sm:text-4xl font-semibold tracking-[0.03em] drop-shadow-[0_8px_24px_rgba(0,0,0,.25)]"
+            style={{ letterSpacing: "0.03em" }}
+          >
             {title}
-          </h2>
-          <p className="mt-2 text-[hsl(var(--bg))] opacity-90">{subtitle}</p>
+          </motion.h2>
+          {subtitle && (
+            <motion.p
+              variants={fade}
+              className="mt-2 text-white/90 font-subtitle"
+            >
+              {subtitle}
+            </motion.p>
+          )}
         </header>
 
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <motion.div
+          variants={staggerSlow(0.1)}
+          className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+        >
           {features.map((f, i) => (
-            <article
-              key={i}
-              className={cx(
-                "group relative rounded-2xl p-5 border transition",
-                "bg-[hsl(var(--card))] border-[hsl(var(--border))]",
-                // sintaxis segura para shadow con color y alpha
-                "hover:shadow-[0_12px_28px_-16px_hsl(var(--primary)_/_0.35)]",
-                "hover:border-[hsl(var(--ring))]"
-              )}
-            >
-              {/* Icono */}
-              <div
-                className={cx(
-                  "h-11 w-11 rounded-xl grid place-items-center",
-                  "border border-[hsl(var(--border))]",
-                  "bg-[hsl(var(--accent))] text-[hsl(var(--bg))]"
-                )}
-              >
-                {f.icon ?? <FaShieldAlt className="h-5 w-5" />}
-              </div>
-
-              {/* Título */}
-              <h3 className="mt-4 font-semibold text-[hsl(var(--fg))] text-lg leading-snug">
-                {f.t}
-              </h3>
-
-              {/* Bullets / descripción */}
-              {Array.isArray(f.bullets) ? (
-                <ul className="mt-2 space-y-1.5 text-sm text-[hsl(var(--fg)/0.8)]">
-                  {f.bullets.map((b, k) => (
-                    <li key={k} className="flex gap-2">
-                      <span className="mt-[7px] h-[6px] w-[6px] rounded-full bg-[hsl(var(--primary))] shrink-0" />
-                      <span>{b}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-2 text-sm text-[hsl(var(--fg)/0.8)] whitespace-pre-line">
-                  {f.d}
-                </p>
-              )}
-
-              {/* Divider */}
-              <div className="mt-4 h-px bg-[hsl(var(--border))] group-hover:bg-[hsl(var(--fg)/0.2)] transition-colors" />
-            </article>
-          ))}
-        </div>
-      </div>
+            <FeatureCard key={i} {...f} fade={fade} />)
+          )}
+        </motion.div>
+      </motion.div>
     </section>
+  );
+}
+
+/* ================= Cards ================= */
+function FeatureCard({ t, bullets, d, icon, fade }) {
+  const prefersReduced = useReducedMotion();
+  return (
+    <motion.article
+      variants={fade}
+      whileHover={
+        prefersReduced ? undefined : { y: -3, boxShadow: "0 18px 44px -22px hsl(var(--primary)/.55)" }
+      }
+      className={cx(
+        "group relative rounded-2xl overflow-hidden",
+        "border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--fg))]",
+        "transition-[transform,box-shadow,border-color]"
+      )}
+    >
+      {/* top accent bar */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-[linear-gradient(90deg,hsl(var(--primary)),hsl(var(--accent)))]"
+      />
+
+      <div className="p-5">
+        {/* Icono */}
+        <div
+          className={cx(
+            "h-11 w-11 rounded-xl grid place-items-center",
+            "border border-[hsl(var(--border))]",
+            "bg-[hsl(var(--accent))] text-[hsl(var(--bg))]"
+          )}
+        >
+          {icon ?? <FaShieldAlt className="h-5 w-5" />}
+        </div>
+
+        <h3 className="mt-4 font-semibold text-lg leading-snug">{t}</h3>
+
+        {Array.isArray(bullets) ? (
+          <ul className="mt-2 space-y-1.5 text-sm text-[hsl(var(--fg)/0.85)]">
+            {bullets.map((b, k) => (
+              <li key={k} className="flex gap-2">
+                <span className="mt-[7px] h-[6px] w-[6px] rounded-full bg-[hsl(var(--primary))] shrink-0" />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          d && (
+            <p className="mt-2 text-sm text-[hsl(var(--fg)/0.85)] whitespace-pre-line">{d}</p>
+          )
+        )}
+      </div>
+
+      {/* glow al hover */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        style={{ background: "radial-gradient(600px 200px at 50% -20%, rgba(255,255,255,.12), transparent 70%)" }}
+      />
+    </motion.article>
   );
 }

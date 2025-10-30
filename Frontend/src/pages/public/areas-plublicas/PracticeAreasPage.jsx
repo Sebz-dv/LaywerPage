@@ -1,4 +1,3 @@
-// src/pages/PracticeAreasPage.jsx
 import React, { useEffect, useRef, useState } from "react";
 import {
   motion,
@@ -7,13 +6,13 @@ import {
   useReducedMotion,
 } from "framer-motion";
 import { Link } from "react-router-dom";
-import { practiceAreasService as svc } from "../../services/practiceAreasService.js";
-import FeaturedAreas from "../../components/practice/FeaturedAreas.jsx";
-import SectionBlock from "../../components/practice/SectionBlock.jsx";
+import { practiceAreasService as svc } from "../../../services/practiceAreasService.js";
+import FeaturedAreas from "../../../components/practice/FeaturedAreas.jsx";
+import SectionBlock from "../../../components/practice/SectionBlock.jsx";
 import {
   FeaturedSkeleton,
   GridSkeleton,
-} from "../../components/practice/Skeletons.jsx";
+} from "../../../components/practice/Skeletons.jsx";
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
@@ -24,54 +23,47 @@ const asArray = (res) =>
   Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
 
 const mapFeatured = (it) => ({
+  id: it.id,
   key: it.slug ?? String(it.id ?? ""),
+  slug: it.slug ?? String(it.id ?? ""), // asegura slug para FeaturedAreas
   title: it.title ?? "",
   subtitle: it.subtitle ?? "",
   bullets: Array.isArray(it.bullets) ? it.bullets : [],
-  to: it.slug ? `/areas/${it.slug}` : "#",
-  icon: it.icon ?? null,
+  // 👇 incluimos el id como query param para fallback en el detalle
+  to: it.slug ? `/servicios/${it.slug}?id=${it.id}` : "#",
+  icon: it.icon ?? it.icon_url ?? null, // fallback seguro
   cover: it.cover ?? it.image ?? null,
 });
 
 const mapOthers = (it) => ({
+  id: it.id,
   slug: it.slug ?? String(it.id ?? ""),
   title: it.title ?? "",
   subtitle: it.subtitle ?? "",
   excerpt: it.excerpt ?? "",
-  to: it.slug ? `/areas/${it.slug}` : "#",
-  icon: it.icon ?? null,
+  // 👇 incluimos el id como query param para fallback en el detalle
+  to: it.slug ? `/servicios/${it.slug}?id=${it.id}` : "#",
+  icon: it.icon ?? it.icon_url ?? null, // fallback seguro
 });
 
-/* ================== Hero ================== */
+/* ================== Hero (estilo Backdrop) ================== */
 function Hero({ title, subtitle, image, alt = "" }) {
-  const reduceMotion = useReducedMotion();
+  const prefersReduced = useReducedMotion();
   const heroRef = useRef(null);
 
-  // Parallax con scroll global
+  // Parallax global suave
   const { scrollYProgress } = useScroll();
-  const yHero = useTransform(
-    scrollYProgress,
-    [0, 1],
-    [0, reduceMotion ? 0 : -120]
-  );
+  const yHero = useTransform(scrollYProgress, [0, 1], [0, prefersReduced ? 0 : -120]);
 
-  // Ken Burns suave
-  const imgInitial = { opacity: 0, scale: reduceMotion ? 1 : 1.06 };
+  // Ken Burns sutil
+  const imgInitial = { opacity: 0, scale: prefersReduced ? 1 : 1.06 };
   const imgAnimate = { opacity: 1, scale: 1 };
   const imgTransition = { duration: 1.1, ease: "easeOut" };
 
-  // Animación del cuadro (card)
-  const boxInitial = { opacity: 0, y: 14, scale: reduceMotion ? 1 : 0.995 };
-  const boxAnimate = { opacity: 1, y: 0, scale: 1 };
-  const boxTransition = { duration: 0.55, ease: "easeOut" };
-
   return (
-    <section ref={heroRef} className="relative overflow-hidden">
-      {/* Imagen con parallax */}
-      <motion.div
-        style={{ y: yHero }}
-        className="absolute inset-0 will-change-transform"
-      >
+    <section ref={heroRef} className={cx("relative overflow-hidden font-display text-white")}>
+      {/* Fondo con imagen + tinte + shine */}
+      <motion.div style={{ y: yHero }} className="absolute inset-0 will-change-transform">
         {image && (
           <motion.img
             src={image}
@@ -86,50 +78,62 @@ function Hero({ title, subtitle, image, alt = "" }) {
             sizes="100vw"
           />
         )}
-        {/* Gradiente para legibilidad */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/35 to-transparent" />
+        {/* Tinte para legibilidad */}
+        <div
+          className="absolute inset-0 mix-blend-multiply"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(13,27,58,.85) 0%, rgba(117,159,188,.45) 100%)",
+          }}
+        />
+        {/* Shine barrido */}
+        {!prefersReduced && (
+          <motion.span
+            aria-hidden
+            className="pointer-events-none absolute top-0 bottom-0 -left-1/3 w-1/3"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent 0%, rgba(255,255,255,.38) 45%, rgba(255,255,255,.52) 50%, rgba(255,255,255,.32) 55%, transparent 100%)",
+              filter: "blur(10px)",
+              mixBlendMode: "soft-light",
+            }}
+            animate={{ x: ["0%", "200%"] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          />
+        )} 
       </motion.div>
 
-      {/* Espaciador para la altura del hero */}
-      <div className="h-[58svh] md:h-[68svh] lg:h-[76svh]" />
+      {/* Contenedor del texto */}
+      <div className="relative z-10">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="h-[58svh] md:h-[68svh] lg:h-[76svh] grid place-items-center text-center">
+            <div className="max-w-4xl">
+              <motion.h1
+                initial={{ opacity: 0, y: 26, filter: "blur(4px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0)" }}
+                transition={{ duration: 0.95, ease: [0.16, 1, 0.3, 1] }}
+                className={cx(
+                  "text-4xl md:text-6xl font-semibold leading-[1.15] tracking-[0.02em] text-balance",
+                  "drop-shadow-[0_8px_24px_rgba(0,0,0,.35)]"
+                )}
+                style={{ letterSpacing: "0.02em", fontKerning: "normal", fontOpticalSizing: "auto", textRendering: "optimizeLegibility" }}
+              >
+                {title}
+              </motion.h1>
 
-      {/* Card con título + subtítulo */}
-      <div className="relative z-10 max-w-6xl mx-auto -mt-[22svh] md:-mt-[26svh] lg:-mt-[30svh] px-4">
-        <motion.div
-          initial={boxInitial}
-          animate={boxAnimate}
-          transition={boxTransition}
-          className={cx(
-            "max-w-3xl rounded-2xl p-5 md:p-7",
-            // Fondo semitransparente + blur (si está disponible)
-            "bg-background/80 supports-[backdrop-filter]:backdrop-blur-md",
-            // Tipografía y contrastes
-            "text-foreground",
-            // Borde y sombra sutiles
-            "border border-border/60 shadow-xl mb-2 text-white"
-          )}
-        >
-          <div className="relative">
-             
-            <h1 className="text-3xl md:text-5xl font-semibold leading-tight tracking-tight">
-              {title}
-            </h1>
+              {subtitle && (
+                <motion.p
+                  initial={{ opacity: 0, y: 18, filter: "blur(2px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0)" }}
+                  transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
+                  className="mt-4 md:mt-6 mx-auto max-w-3xl text-lg md:text-xl text-white/92 leading-relaxed font-subtitle"
+                >
+                  {subtitle}
+                </motion.p>
+              )}
+            </div>
           </div>
-
-          {subtitle ? (
-            <p
-              className="mt-2 md:mt-3 text-base md:text-lg text-muted-foreground"
-              style={{
-                display: "-webkit-box",
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              {subtitle}
-            </p>
-          ) : null}
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -150,25 +154,17 @@ export default function PracticeAreasPage({ data }) {
   const [err, setErr] = useState(null);
 
   useEffect(() => {
-    const ac = new AbortController();
     (async () => {
       try {
         setLoading(true);
         setErr(null);
         const [resFeat, resOther] = await Promise.all([
-          svc.list(
-            { featured: 1, active: 1, sort: "order", per_page: 60 },
-            { signal: ac.signal }
-          ),
-          svc.list(
-            { featured: 0, active: 1, sort: "order,title", per_page: 100 },
-            { signal: ac.signal }
-          ),
+          svc.list({ featured: 1, active: 1, sort: "order", per_page: 60 }),
+          svc.list({ featured: 0, active: 1, sort: "order,title", per_page: 100 }),
         ]);
         setFeatured(asArray(resFeat).map(mapFeatured));
         setOthers(asArray(resOther).map(mapOthers));
       } catch (e) {
-        if (ac.signal.aborted) return;
         setErr(
           e?.response?.data?.message ||
             e?.message ||
@@ -180,7 +176,9 @@ export default function PracticeAreasPage({ data }) {
             ? prev
             : [
                 {
+                  id: 0,
                   key: "aduanas",
+                  slug: "aduanas",
                   title: "Aduanas",
                   subtitle: "Operaciones y cumplimiento aduanero.",
                   bullets: [
@@ -188,17 +186,16 @@ export default function PracticeAreasPage({ data }) {
                     "Valoración y origen",
                     "Planificación import/export",
                   ],
-                  to: "/areas/aduanas",
+                  to: "/servicios/aduanas?id=0",
                   icon: "https://cdn.jsdelivr.net/gh/tabler/tabler-icons/icons/ship.svg",
                   cover: null,
                 },
               ]
         );
       } finally {
-        if (!ac.signal.aborted) setLoading(false);
+        setLoading(false);
       }
     })();
-    return () => ac.abort();
   }, []);
 
   /* Barra de progreso */

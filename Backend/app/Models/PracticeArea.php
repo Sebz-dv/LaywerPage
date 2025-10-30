@@ -12,9 +12,17 @@ class PracticeArea extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'slug','title','subtitle','excerpt','body',
-        'icon_path','icon_url','bullets',
-        'featured','active','order',
+        'slug',
+        'title',
+        'subtitle',
+        'excerpt',
+        'body',
+        'icon_path',
+        'icon_url',
+        'bullets',
+        'featured',
+        'active',
+        'order',
     ];
 
     protected $casts = [
@@ -43,7 +51,7 @@ class PracticeArea extends Model
                 $slug = $base;
                 $i = 1;
                 while (static::where('slug', $slug)->withTrashed()->exists()) {
-                    $slug = $base.'-'.$i++;
+                    $slug = $base . '-' . $i++;
                 }
                 $m->slug = $slug;
             }
@@ -51,14 +59,14 @@ class PracticeArea extends Model
     }
 
     // Scope de búsqueda simple
-    public function scopeSearch(Builder $q, ?string $term): Builder
+    public function scopeSearch($q, ?string $term)
     {
         if (!$term) return $q;
-        $term = trim($term);
-        return $q->where(function($qq) use ($term) {
-            $qq->where('title', 'like', "%$term%")
-               ->orWhere('subtitle', 'like', "%$term%")
-               ->orWhere('excerpt', 'like', "%$term%");
+        $t = trim($term);
+        return $q->where(function ($qq) use ($t) {
+            $qq->where('title', 'like', "%{$t}%")
+                ->orWhere('subtitle', 'like', "%{$t}%")
+                ->orWhere('excerpt', 'like', "%{$t}%");
         });
     }
 }
