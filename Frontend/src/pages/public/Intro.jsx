@@ -8,6 +8,7 @@ import TeamKpis from "../../components/team/TeamKpis.jsx";
 import CarouselViewer from "../../components/ui/CarouselViewer.jsx";
 import InfoBlocksSection from "../../components/info/InfoBlocksSection.jsx";
 import { motion, useScroll, useTransform } from "framer-motion";
+import TeamFinderMini from "../../components/team/TeamFinderMini.jsx";
 
 /** tiny util */
 function cx(...xs) {
@@ -124,10 +125,9 @@ export default function IntroPage() {
 
       {/* Buscador del equipo */}
       <Section id="team-finder" className="mt-[-70px]">
-        <motion.div className="px-[2px]" variants={staggerWrap}>
-          {/* Entrada “slide-up” suave */}
+        <motion.div className="px-[2px]" variants={staggerWrap}> 
           <motion.div variants={fadeUp} className="mt-6">
-            <TeamFinder />
+            <TeamFinderMini />
           </motion.div>
         </motion.div>
       </Section>

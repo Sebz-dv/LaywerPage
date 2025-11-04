@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence, useInView, useReducedMotion } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  useInView,
+  useReducedMotion,
+} from "framer-motion";
 import { Link } from "react-router-dom";
 
 function cx(...xs) {
@@ -57,16 +62,16 @@ export default function FeaturedAreas({
 
   if (!safeItems.length) {
     return (
-      <div className="text-sm text-muted-foreground">
-        Aún no hay áreas destacadas publicadas.
+      <div className="text-sm text-muted-foreground px-4 md:px-6">
+        Pronto publicaremos nuestras áreas destacadas. ¿Hablamos mientras?
       </div>
     );
   }
 
   return (
-    <div className="relative grid md:grid-cols-2 gap-8 items-start">
+    <div className="relative grid md:grid-cols-2 gap-6 md:gap-8 items-start max-w-none px-0">
       {/* IZQ: sticky tagline */}
-      <div className="md:sticky md:top-20 self-start">
+      <div className="md:sticky md:top-20 self-start px-4 md:px-6">
         <motion.div
           variants={vContainer(0.06)}
           initial={reduceMotion ? undefined : "hidden"}
@@ -76,12 +81,14 @@ export default function FeaturedAreas({
         >
           <motion.p
             variants={vItem}
-            className="text-[clamp(1rem,1.2vw+0.9rem,1.4rem)] leading-snug text-foreground font-medium"
+            className="text-[hsl(var(--primary))] leading-snug text-foreground font-medium"
           >
-            <span className="block text-left">
-              Estrategia legal inteligente, adaptada a cada
+            <span className="block text-left text-4xl md:text-5xl font-bold">
+              Donde hay un reto, trazamos la estrategia para ganarlo.
             </span>
-            <span className="block text-left">movimiento empresarial.</span>
+            <span className="block text-left mt-6 md:mt-8 text-base md:text-lg">
+              Asesoría legal precisa, diseñada para cada decisión empresarial.
+            </span>
           </motion.p>
           <motion.hr
             variants={vItem}
@@ -91,15 +98,13 @@ export default function FeaturedAreas({
       </div>
 
       {/* DER: pila progresiva */}
-      <div>
+      <div className="px-4 md:px-6">
         <AnimatePresence initial={false} mode="popLayout">
           {safeItems.slice(0, visibleCount).map((it, idx, arr) => {
             const isFirst = idx === 0;
             const isLast = idx === arr.length - 1;
             const key = it.key ?? it.slug ?? `${it.title ?? "item"}-${idx}`;
 
-            // ✅ URL preferida: it.to (ya viene con ?id=)
-            // Fallback: si no hay `to`, construimos con slug/key y añadimos ?id= si existe
             const href =
               it.to ??
               (it.slug || it.key
@@ -119,49 +124,44 @@ export default function FeaturedAreas({
                   "border-[hsl(var(--border))]",
                   isFirst && "rounded-t-none md:rounded-t-none border-t",
                   "border-x border-y-0",
-                  isLast ? "border-b rounded-b-none md:rounded-b-none" : "border-b-0"
+                  isLast
+                    ? "border-b rounded-b-none md:rounded-b-none"
+                    : "border-b-0"
                 )}
               >
-                <div className="flex gap-4 md:gap-5">
-                  <div className="relative w-40 md:w-56 aspect-[4/3] shrink-0 rounded-xl overflow-hidden">
-                    {it.cover ? (
-                      <img
-                        src={it.cover}
-                        alt={it.title ? `Imagen de ${it.title}` : ""}
-                        className="absolute inset-0 w-full h-full object-cover"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : it.icon ? (
-                      <div className="absolute inset-0 grid place-items-center">
-                        <img
-                          src={it.icon}
-                          alt=""
-                          className="object-cover opacity-90 rounded-md max-h-[70%] max-w-[70%]"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </div>
-                    ) : (
-                      <div className="absolute inset-0 bg-[hsl(var(--muted))]" />
-                    )}
-                  </div>
+                {(it.cover || it.icon) && (
+                  <img
+                    src={it.cover || it.icon}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
 
-                  <div className="min-w-0">
-                    <h3 className="text-2xl font-semibold leading-tight">
+                <div className="absolute inset-0 bg-black/20 md:bg-black/15" />
+
+                <div className="relative z-10">
+                  <div
+                    className={cx(
+                      "rounded-xl border",
+                      "bg-white/5 border-white/10",
+                      "backdrop-blur-sm",
+                      "px-4 py-3 md:px-5 md:py-4"
+                    )}
+                  >
+                    <h3 className="text-2xl font-semibold leading-tight text-white">
                       {it.title}
                     </h3>
 
-                    {it.subtitle && (
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {it.subtitle}
-                      </p>
-                    )}
+                    <p className="text-sm mt-1 text-white/80">
+                      {it.subtitle || "Experiencia técnica, criterio práctico."}
+                    </p>
 
                     {Array.isArray(it.bullets) && it.bullets.length > 0 && (
                       <ul className="mt-3 grid sm:grid-cols-2 gap-2">
                         {it.bullets.slice(0, 6).map((b, i) => (
-                          <li key={i} className="text-sm text-foreground/80">
+                          <li key={i} className="text-sm text-white/80">
                             • {b}
                           </li>
                         ))}
@@ -171,15 +171,16 @@ export default function FeaturedAreas({
                     <div className="mt-3 flex justify-end">
                       <Link
                         to={href}
-                        aria-label={`Conocer más sobre ${it.title ?? "el área"}`}
+                        aria-label={`Conocer el servicio: ${it.title ?? "Área"}`}
                         className={cx(
                           "group inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium",
-                          "border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--fg)/0.9)]",
-                          "hover:bg-[hsl(var(--accent)/0.08)] hover:text-[hsl(var(--accent))]",
-                          "focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
+                          "border-white/20 bg-white/5 text-white/90",
+                          "hover:bg-white/10 hover:border-white/30",
+                          "focus:outline-none focus:ring-2 focus:ring-white/30",
+                          "backdrop-blur-sm transition-colors duration-200"
                         )}
                       >
-                        <span>Conocer más</span>
+                        <span>Conocer el servicio</span>
                         <span className="transition-transform duration-200 group-hover:translate-x-0.5">
                           →
                         </span>
@@ -192,7 +193,6 @@ export default function FeaturedAreas({
           })}
         </AnimatePresence>
 
-        {/* Sentinel para ir revelando */}
         {safeItems.length > visibleCount && (
           <div ref={sentinelRef} className="h-10 w-full" />
         )}
