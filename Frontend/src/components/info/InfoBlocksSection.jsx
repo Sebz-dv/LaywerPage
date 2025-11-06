@@ -83,21 +83,14 @@ export default function InfoCardsGrid({
 
   return (
     <motion.section
-      className={cx("w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8", className)}
+      className={cx("w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-20", className)}
       variants={staggerSlow(0.08)}
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, amount: 0.15 }}
     >
       {/* Header */}
-      <header className="mb-10 text-center">
-        <motion.p
-          variants={fade}
-          className={cx(T.kicker, "text-primary font-subtitle")}
-          style={{ letterSpacing: "0.22em" }}
-        >
-          Identidad
-        </motion.p>
+      <header className="mb-10 text-center">  
         <motion.h1
           variants={fade}
           className={cx(T.h1, "font-semibold tracking-[0.03em]")}

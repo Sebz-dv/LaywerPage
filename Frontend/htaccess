@@ -1,0 +1,41 @@
+# 1) SPA fallback (excluye /api y archivos reales)
+RewriteEngine On
+# No reescribir si existe archivo o directorio
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -f [OR]
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -d
+RewriteRule ^ - [L]
+# No tocar la API
+RewriteCond %{REQUEST_URI} !^/api/
+# Todo lo demás -> index.html
+RewriteRule ^ /index.html [L]
+
+# 2) Expiración por tipo (solo si mod_expires está activo)
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType image/* "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+# 3) Headers consistentes (no rompas lo de arriba)
+<IfModule mod_headers.c>
+  # HTML: siempre fresco
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # Estáticos versionados (JS/CSS/IMG/WOFF2): cache fuerte
+  <FilesMatch "\.(js|css|png|jpg|jpeg|gif|svg|ico|webp|woff2)$">
+    Header unset Pragma
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
+
+# 4) PHP handler (cPanel)
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php81___lsphp .php .php8 .phtml
+</IfModule>

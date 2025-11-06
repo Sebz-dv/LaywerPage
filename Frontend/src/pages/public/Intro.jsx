@@ -9,6 +9,8 @@ import CarouselViewer from "../../components/ui/CarouselViewer.jsx";
 import InfoBlocksSection from "../../components/info/InfoBlocksSection.jsx";
 import { motion, useScroll, useTransform } from "framer-motion";
 import TeamFinderMini from "../../components/team/TeamFinderMini.jsx";
+import DataView from "../../components/intro/dataView.jsx";
+import WhyUs from "../../components/intro/WhyUs.jsx";
 
 /** tiny util */
 function cx(...xs) {
@@ -74,58 +76,23 @@ export default function IntroPage() {
     target: rootRef,
     offset: ["start start", "end start"],
   });
-  const backdropY = useTransform(scrollYProgress, [0, 1], ["0%", "-10%"]); 
+  const backdropY = useTransform(scrollYProgress, [0, 1], ["0%", "-10%"]);
   const MotionDiv = motion.div;
   return (
     <div ref={rootRef}>
       {/* Fondo con parallax */}
 
-      <motion.div style={{ y: backdropY }}>
-        <Backdrop />
-      </motion.div>
+      <Backdrop />
 
-     
-      {/* Nuestra organización */}
-      <Section id="org">
-        <motion.div className="mt-[-90px]" variants={staggerWrap}>
-          <motion.div className="mt-8" variants={fadeUp}>
-            <InfoBlocksSection
-              title=""
-              subtitle=""
-              order={["mision", "vision"]}
-              layout="stack"
-              showAnchors
-              titleClassName="hidden"
-            />
-          </motion.div>
-        </motion.div>
-      </Section>
+      <DataView />
 
-      {/* Equipo: hero + KPIs */}
-      <Section id="team" className="mt-[-90px]">
-        <motion.div
-          className="px-[2px] grid gap-8 md:gap-10"
-          variants={staggerWrap}
-        >
-          {/* Sugerencia: si TeamKpis ya cuenta números, este reveal da entrada limpia */}
-          <motion.div variants={fadeUp}>
-            <TeamKpis className="mt-2" />
-          </motion.div>
+      <WhyUs />
 
-          <motion.div
-            variants={fadeIn}
-            className="border-t border-[hsl(var(--border))]"
-          />
-        </motion.div>
-      </Section>
-
-      <motion.div variants={fadeUp}>
-        <TeamHero />
-      </motion.div>
+      <TeamHero />
 
       {/* Buscador del equipo */}
       <Section id="team-finder" className="mt-[-70px]">
-        <motion.div className="px-[2px]" variants={staggerWrap}> 
+        <motion.div className="px-[2px]" variants={staggerWrap}>
           <motion.div variants={fadeUp} className="mt-6">
             <TeamFinderMini />
           </motion.div>
@@ -133,7 +100,7 @@ export default function IntroPage() {
       </Section>
 
       {/* Features / cierre */}
-      <motion.div variants={fadeUp} >
+      <motion.div variants={fadeUp}>
         <FeaturesGrid />
       </motion.div>
     </div>

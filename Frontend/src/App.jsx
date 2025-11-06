@@ -1,5 +1,6 @@
+// src/App.jsx
 import React from "react";
-import { Routes, Route, Outlet } from "react-router-dom";
+import { Routes, Route, Outlet, useLocation } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import Login from "./pages/public/Login.jsx";
 import Register from "./pages/public/Register.jsx";
@@ -22,6 +23,16 @@ import InfoBlocksManager from "./components/info/InfoBlocksManager.jsx";
 import AboutUs from "./pages/public/AboutUs.jsx";
 import CarouselManager from "./components/images/CarouselManager.jsx";
 
+// Sube al tope en cada cambio de ruta
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  React.useEffect(() => {
+    // Evita “recuerdos” raros de scroll en páginas largas (blog)
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [pathname]);
+  return null;
+}
+
 function Shell() {
   return (
     <AppLayout>
@@ -40,47 +51,55 @@ function AdminShell() {
 
 export default function App() {
   return (
-    <Routes>
-      {/* Públicas SIN AppLayout (sin navbar) */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+    <>
+      <ScrollToTop />
 
-      {/* Públicas CON AppLayout (navbar) */}
-      <Route element={<Shell />}>
-        <Route path="/" element={<Intro />} />
-        <Route path="/equipo/:slug" element={<TeamProfile />} />
-        <Route path="/equipo" element={<TeamIndex />} />
+      <Routes>
+        {/* Públicas SIN AppLayout */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-        {/* Listado de áreas */}
-        <Route path="/servicios" element={<PracticeAreasPage />} />
+        {/* Públicas CON AppLayout */}
+        <Route element={<Shell />}>
+          <Route path="/" element={<Intro />} />
 
-        {/* Detalle por SLUG (principal) — soporta ?id= para fallback */}
-        <Route path="/servicios/:slug" element={<ServiceDetail />} />
+          {/* Team */}
+          <Route path="/equipo/:slug" element={<TeamProfile />} />
+          <Route path="/equipo" element={<TeamIndex />} />
 
-        {/* Detalle por ID (legacy/compatibilidad directa) */}
-        <Route path="/servicios/id/:id" element={<ServiceDetail />} />
+          {/* Áreas */}
+          <Route path="/servicios" element={<PracticeAreasPage />} />
+          {/* Detalle por SLUG (principal) — soporta ?id= para fallback */}
+          <Route path="/servicios/:slug" element={<ServiceDetail />} />
+          {/* Detalle por ID (compatibilidad directa) */}
+          <Route path="/servicios/id/:id" element={<ServiceDetail />} />
 
-        <Route path="/publicaciones" element={<BlogList />} />
-        <Route path="/publicaciones/:slug" element={<BlogArticle />} />
-        <Route path="/about-us" element={<AboutUs />} />
-      </Route>
+          {/* Blog */}
+          <Route path="/publicaciones" element={<BlogList />} />
+          {/* ✅ SOLO POR ID */}
+          <Route path="/publicaciones/:id" element={<BlogArticle />} />
 
-      {/* Protegidas (Admin con layout propio) */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AdminShell />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dash/members" element={<TeamMembersPage />} />
-          <Route path="/dash/areas" element={<PracticeAreasAdmin />} />
-          <Route path="/dash/articles" element={<ArticlesAdmin />} />
-          <Route path="/dash/articles/new" element={<ArticleForm />} />
-          <Route path="/dash/articles/:id/edit" element={<ArticleForm />} />
-          <Route path="/dash/settings" element={<SiteSettings />} />
-          <Route path="/dash/info" element={<InfoBlocksManager />} />
-          <Route path="/dash/carousel" element={<CarouselManager />} />
+          <Route path="/about-us" element={<AboutUs />} />
         </Route>
-      </Route>
 
-      <Route path="*" element={<div className="p-6">404</div>} />
-    </Routes>
+        {/* Protegidas (Admin) */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AdminShell />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dash/members" element={<TeamMembersPage />} />
+            <Route path="/dash/areas" element={<PracticeAreasAdmin />} />
+            <Route path="/dash/articles" element={<ArticlesAdmin />} />
+            <Route path="/dash/articles/new" element={<ArticleForm />} />
+            <Route path="/dash/articles/:id/edit" element={<ArticleForm />} />
+            <Route path="/dash/settings" element={<SiteSettings />} />
+            <Route path="/dash/info" element={<InfoBlocksManager />} />
+            <Route path="/dash/carousel" element={<CarouselManager />} />
+          </Route>
+        </Route>
+
+        {/* 404 */}
+        <Route path="*" element={<div className="p-6">404</div>} />
+      </Routes>
+    </>
   );
 }

@@ -15,6 +15,7 @@ import {
 import equipo from "../../assets/about/equipo.png";
 import hero from "../../assets/about/hero.jpg";
 import office from "../../assets/about/office.jpeg";
+import InfoBlocksSection from "../../components/info/InfoBlocksSection.jsx";
 
 /* ============ Utils ============ */
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -241,7 +242,7 @@ export default function AboutUs() {
             <BtnInk href="/contacto" variant="secondary">
               Contactar
             </BtnInk>
-            <BtnInk href="/servicios" variant="outline">
+            <BtnInk href="/servicios" variant="secondary">
               Ver servicios
             </BtnInk>
           </motion.div>
@@ -392,107 +393,124 @@ export default function AboutUs() {
         </Container>
       </section>
 
+      <InfoBlocksSection
+        title=""
+        subtitle=""
+        order={["mision", "vision"]}
+        layout="stack"
+        showAnchors
+        titleClassName="hidden"
+      />
       {/* PROPÓSITO — Valores IZQ (2x2), Texto DER */}
-      <section className="relative z-10" aria-labelledby="about-purpose">
-        <Container className="py-18 sm:py-20">
-          <div className="grid gap-12 lg:grid-cols-12 items-start">
-            {/* Texto (Minion) */}
-            <div className="lg:col-span-6 mt-23">
-              <motion.p
-                variants={fade}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.2 }}
-                className={cx(
-                  T.kicker, // Avenir + mayúsculas
-                  "text-primary",
-                  "tracking-[0.22em]", 
-                  "mb-8" // + espaciado entre letras (kicker)
-                )}
-                id="about-purpose"
-                style={{ letterSpacing: "0.22em" }}
-              >
-                Nuestro propósito
-              </motion.p>
+      <section
+  className="relative z-10 mt-[-30px] bg-[hsl(var(--primary))] text-white"
+  aria-labelledby="about-purpose"
+>
+  <Container className="py-18 sm:py-20">
+    <div className="grid gap-12 lg:grid-cols-12 items-start">
+      {/* Texto (Minion) */}
+      <div className="lg:col-span-6 mt-23">
+        <motion.p
+          variants={fade}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          className={cx(
+            T.kicker,
+            "tracking-[0.22em]",
+            "mb-8",
+            "text-white/70" // antes: text-primary
+          )}
+          id="about-purpose"
+          style={{ letterSpacing: "0.22em" }}
+        >
+          Nuestro propósito
+        </motion.p>
 
-              <motion.h2
-                variants={fade}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.2 }}
-                className={cx(
-                  T.h2, // tamaño grande
-                  "font-semibold",
-                  "tracking-[0.03em]" // + espaciado entre letras (título)
-                )}
-                style={{
-                  letterSpacing: "0.03em",
-                  fontKerning: "normal",
-                  fontOpticalSizing: "auto",
-                  textRendering: "optimizeLegibility",
-                }}
-              >
-                Todo se transforma, menos nuestro propósito.
-              </motion.h2>
+        <motion.h2
+          variants={fade}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          className={cx(
+            T.h2,
+            "font-semibold",
+            "tracking-[0.03em]",
+            "text-white" // fuerza blanco sobre cualquier token
+          )}
+          style={{
+            letterSpacing: "0.03em",
+            fontKerning: "normal",
+            fontOpticalSizing: "auto",
+            textRendering: "optimizeLegibility",
+          }}
+        >
+          Todo se transforma, menos nuestro propósito.
+        </motion.h2>
 
-              <motion.blockquote
-                variants={fade}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.2 }}
-                className={cx(
-                  T.pLg,
-                  "mt-6 pl-5 border-l-2 border-token text-soft italic",
-                  "tracking-[0.01em]" // sutil para lectura cómoda en párrafo
-                )}
-                style={{ letterSpacing: "0.01em", lineHeight: 1.7 }}
-              >
-                Movilizamos a las instituciones mediante asesoría legal
-                estratégica para generar desarrollo social y económico con
-                soluciones sostenibles, conscientes y competitivas.
-              </motion.blockquote>
-            </div>
+        <motion.blockquote
+          variants={fade}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          className={cx(
+            T.pLg,
+            "mt-6 pl-5 italic tracking-[0.01em]",
+            "text-white/90",
+            "border-l-2 border-white/30" // antes: border-token
+          )}
+          style={{ letterSpacing: "0.01em", lineHeight: 1.7 }}
+        >
+          Movilizamos a las instituciones mediante asesoría legal estratégica
+          para generar desarrollo social y económico con soluciones
+          sostenibles, conscientes y competitivas.
+        </motion.blockquote>
+      </div>
 
-            {/* Valores (Minion en títulos/descripción) */}
-            <div className="lg:col-span-6">
-              <motion.h3
-                variants={fade}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.2 }}
-                className={cx(T.h2, "font-semibold text-center")}
-              >
-                Nuestros valores
-              </motion.h3>
-              <motion.div
-                variants={staggerSlow(0.12)}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.2 }}
-                className="mt-7 grid gap-7 sm:grid-cols-2"
-              >
-                {values.map((v) => (
-                  <ValueItem
-                    key={v.title}
-                    icon={v.icon}
-                    title={v.title}
-                    desc={v.desc}
-                  />
-                ))}
-              </motion.div>
-            </div>
-          </div>
-        </Container>
-      </section>
+      {/* Valores (Minion en títulos/descripción) */}
+      <div className="lg:col-span-6">
+        <motion.h3
+          variants={fade}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          className={cx(T.h2, "font-semibold text-center", "text-white")}
+        >
+          Nuestros valores
+        </motion.h3>
+
+        <motion.div
+          variants={staggerSlow(0.12)}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          className="mt-7 grid gap-7 sm:grid-cols-2 text-primary"
+        >
+          {values.map((v) => (
+            <ValueItem
+              key={v.title}
+              icon={v.icon}
+              title={v.title}
+              desc={v.desc}
+              // Si tu ValueItem acepta className, mejor aún:
+              // className="text-white"
+            />
+          ))}
+        </motion.div>
+      </div>
+    </div>
+  </Container>
+</section>
+
 
       {/* CTA — Texto IZQ (Minion título / Avenir texto), Imagen DER */}
       <section
-        className="relative z-10 bg-[hsl(var(--primary))]"
+        className="relative z-10 bg-[hsl(var(--bg))]"
         aria-labelledby="about-cta"
       >
         <Container className="py-16">
           <div className="grid items-center gap-12 lg:grid-cols-12">
-            <div className="lg:col-span-6 order-1 text-white">
+            <div className="lg:col-span-6 order-1 text-primary">
               <motion.h3
                 variants={fade}
                 initial="hidden"
@@ -509,7 +527,7 @@ export default function AboutUs() {
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, amount: 0.25 }}
-                className={cx(T.p, "text-white/85 mt-3 font-subtitle")}
+                className={cx(T.p, "text-primary/85 mt-3 font-subtitle")}
               >
                 Un diagnóstico claro, un plan accionable y acompañamiento
                 cercano.
@@ -524,7 +542,7 @@ export default function AboutUs() {
                 <BtnInk href="/contacto" variant="secondary">
                   Contactar
                 </BtnInk>
-                <BtnInk href="/servicios" variant="outline">
+                <BtnInk href="/servicios" variant="secondary">
                   Ver servicios
                 </BtnInk>
               </motion.div>

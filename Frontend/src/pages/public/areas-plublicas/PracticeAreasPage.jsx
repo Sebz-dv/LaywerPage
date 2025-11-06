@@ -72,18 +72,18 @@ function Hero({ title, subtitle, image, alt = "" }) {
   const prefersReduced = useReducedMotion();
   const heroRef = useRef(null);
 
-  // Parallax global suave
+  // Parallax
   const { scrollYProgress } = useScroll();
   const yHero = useTransform(scrollYProgress, [0, 1], [0, prefersReduced ? 0 : -120]);
 
-  // Ken Burns sutil
-  const imgInitial = { opacity: 0, scale: prefersReduced ? 1 : 1.06 };
-  const imgAnimate = { opacity: 1, scale: 1 };
+  // Ken Burns sutil (un poco más de scale por el blur)
+  const imgInitial = { opacity: 0, scale: prefersReduced ? 1.10 : 1.14 };
+  const imgAnimate = { opacity: 1, scale: 1.08 };
   const imgTransition = { duration: 1.1, ease: "easeOut" };
 
   return (
     <section ref={heroRef} className={cx("relative overflow-hidden font-display text-white")}>
-      {/* Fondo con imagen + tinte + shine */}
+      {/* Fondo con imagen + overlay */}
       <motion.div style={{ y: yHero }} className="absolute inset-0 will-change-transform">
         {image && (
           <motion.img
@@ -92,20 +92,25 @@ function Hero({ title, subtitle, image, alt = "" }) {
             initial={imgInitial}
             animate={imgAnimate}
             transition={imgTransition}
-            className="h-[58svh] md:h-[68svh] lg:h-[76svh] w-full object-cover object-center select-none pointer-events-none"
+            className="
+              h-[58svh] md:h-[68svh] lg:h-[76svh] w-full
+              object-cover object-center select-none pointer-events-none
+              blur-[2px]  
+            "
             loading="eager"
             decoding="async"
             fetchPriority="high"
             sizes="100vw"
+            style={{ willChange: "transform, filter" }}
           />
         )}
 
-        {/* Overlay mejorado (más contraste hacia la izquierda) */}
+        {/* Overlays para legibilidad centrada */}
         <div className="absolute inset-0">
-          {/* Vignette izquierda fuerte para legibilidad del texto alineado a la izq */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0d1b3a]/85 via-[#0d1b3a]/50 to-transparent" />
-          {/* Suavizado diagonal */}
-          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[#759FBC]/30 mix-blend-multiply" />
+          {/* Oscurecido base */}
+          <div className="absolute inset-0 bg-black/35 md:bg-black/30" />
+          {/* Vignette periférica (centrado) */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_45%,rgba(0,0,0,0.45)_100%)]" />
           {/* Sombra inferior sutil */}
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/25 to-transparent" />
         </div>
@@ -117,7 +122,7 @@ function Hero({ title, subtitle, image, alt = "" }) {
             className="pointer-events-none absolute top-0 bottom-0 -left-1/3 w-1/3"
             style={{
               background:
-                "linear-gradient(90deg, transparent 0%, rgba(255,255,255,.38) 45%, rgba(255,255,255,.52) 50%, rgba(255,255,255,.32) 55%, transparent 100%)",
+                "linear-gradient(90deg, transparent 0%, rgba(255,255,255,.34) 45%, rgba(255,255,255,.48) 50%, rgba(255,255,255,.28) 55%, transparent 100%)",
               filter: "blur(10px)",
               mixBlendMode: "soft-light",
             }}
@@ -127,21 +132,25 @@ function Hero({ title, subtitle, image, alt = "" }) {
         )}
       </motion.div>
 
-      {/* Contenedor del texto (alineado a la izquierda) */}
+      {/* Contenedor del texto (centrado) */}
       <div className="relative z-10">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="h-[58svh] md:h-[68svh] lg:h-[76svh] grid">
-            <div className="self-center text-left max-w-2xl">
+          <div className="h-[58svh] md:h-[68svh] lg:h-[76svh] grid place-items-center">
+            <div className="text-center max-w-4xl mx-auto">
               <motion.h1
                 initial={{ opacity: 0, y: 28, filter: "blur(4px)" }}
                 animate={{ opacity: 1, y: 0, filter: "blur(0)" }}
                 transition={{ duration: 0.95, ease: [0.16, 1, 0.3, 1] }}
                 className={cx(
-                  // ↑ tamaño aumentado
                   "text-5xl md:text-7xl lg:text-8xl font-semibold leading-[1.07] tracking-[0.005em]",
                   "drop-shadow-[0_10px_28px_rgba(0,0,0,.35)]"
                 )}
-                style={{ letterSpacing: "0.01em", fontKerning: "normal", fontOpticalSizing: "auto", textRendering: "optimizeLegibility" }}
+                style={{
+                  letterSpacing: "0.01em",
+                  fontKerning: "normal",
+                  fontOpticalSizing: "auto",
+                  textRendering: "optimizeLegibility",
+                }}
               >
                 {title}
               </motion.h1>
@@ -151,7 +160,7 @@ function Hero({ title, subtitle, image, alt = "" }) {
                   initial={{ opacity: 0, y: 16, filter: "blur(2px)" }}
                   animate={{ opacity: 1, y: 0, filter: "blur(0)" }}
                   transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
-                  className="mt-5 md:mt-6 text-xl md:text-2xl lg:text-[22px] text-white/92 leading-relaxed font-subtitle max-w-xl"
+                  className="mt-5 md:mt-6 text-xl md:text-2xl lg:text-[22px] text-white/92 leading-relaxed font-subtitle max-w-3xl mx-auto"
                 >
                   {subtitle}
                 </motion.p>

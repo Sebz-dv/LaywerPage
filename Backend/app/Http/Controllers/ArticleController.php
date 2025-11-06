@@ -15,12 +15,8 @@ class ArticleController extends Controller
     public function index(Request $req)
     {
         try {
-            $q = Article::query()->with([
-                'category:id,name,slug',
-                'author', // no limitar columnas (tu tabla puede no tener "name")
-            ]);
+            $q = Article::query()->with(['category:id,name,slug','author']);
 
-            // Filtros robustos
             if ($req->has('published_only')) {
                 $val = filter_var($req->input('published_only'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
                 if ($val !== null) $q->where('is_published', $val);
@@ -41,48 +37,29 @@ class ArticleController extends Controller
                 });
             }
 
-            // Orden permitido
             $sort = $req->input('sort', '-published_at,id');
             foreach (explode(',', $sort) as $ord) {
                 $dir = str_starts_with($ord, '-') ? 'desc' : 'asc';
                 $col = ltrim($ord, '-');
-                if (in_array($col, ['published_at','created_at','title','featured','id'], true)) {
+                if (in_array($col, ['published_at', 'created_at', 'title', 'featured', 'id'], true)) {
                     $q->orderBy($col, $dir);
                 }
             }
 
-            // Paginación
             $perPage   = min(max((int) $req->input('per_page', 12), 1), 100);
             $paginator = $q->paginate($perPage)->appends($req->query());
 
             return ArticleResource::collection($paginator);
         } catch (\Throwable $e) {
-            Log::error('Articles index failed', [
-                'msg' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::error('Articles index failed', ['msg'=>$e->getMessage(),'trace'=>$e->getTraceAsString()]);
             return response()->json(['message' => 'Server error'], 500);
         }
     }
 
+    // Implicit model binding por ID
     public function show(Article $article)
     {
-        $article->load(['category', 'author']);
-        return new ArticleResource($article);
-    }
-
-    public function showBySlug(string $slug)
-    {
-        $article = Article::with(['category','author'])
-            ->where('slug', $slug)
-            ->firstOrFail();
-
-        return new ArticleResource($article);
-    }
-
-    public function showById(int $id)
-    {
-        $article = Article::with(['category','author'])->findOrFail($id);
+        $article->load(['category','author']);
         return new ArticleResource($article);
     }
 
@@ -100,15 +77,11 @@ class ArticleController extends Controller
             }
 
             $article = Article::create($data);
-            $article->load(['category', 'author']);
+            $article->load(['category','author']);
 
             return (new ArticleResource($article))->response()->setStatusCode(201);
         } catch (\Throwable $e) {
-            Log::error('Article store failed', [
-                'msg' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'payload' => $req->all(),
-            ]);
+            Log::error('Article store failed', ['msg'=>$e->getMessage(),'trace'=>$e->getTraceAsString(),'payload'=>$req->all()]);
             return response()->json(['message' => 'Server error'], 500);
         }
     }
@@ -119,7 +92,9 @@ class ArticleController extends Controller
             $data = $req->validated();
 
             if ($req->hasFile('cover')) {
-                if ($article->cover_path) Storage::disk('public')->delete($article->cover_path);
+                if ($article->cover_path && Storage::disk('public')->exists($article->cover_path)) {
+                    Storage::disk('public')->delete($article->cover_path);
+                }
                 $data['cover_path'] = $req->file('cover')->store('articles', 'public');
                 Log::debug('Article cover updated', [
                     'path' => $data['cover_path'],
@@ -128,15 +103,12 @@ class ArticleController extends Controller
             }
 
             $article->update($data);
-            $article->load(['category', 'author']);
+            $article->load(['category','author']);
 
             return new ArticleResource($article);
         } catch (\Throwable $e) {
             Log::error('Article update failed', [
-                'article_id' => $article->id,
-                'msg' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'payload' => $req->all(),
+                'article_id'=>$article->id,'msg'=>$e->getMessage(),'trace'=>$e->getTraceAsString(),'payload'=>$req->all()
             ]);
             return response()->json(['message' => 'Server error'], 500);
         }
@@ -145,17 +117,13 @@ class ArticleController extends Controller
     public function destroy(Article $article)
     {
         try {
-            if ($article->cover_path) {
+            if ($article->cover_path && Storage::disk('public')->exists($article->cover_path)) {
                 Storage::disk('public')->delete($article->cover_path);
             }
             $article->delete();
             return response()->noContent();
         } catch (\Throwable $e) {
-            Log::error('Article destroy failed', [
-                'article_id' => $article->id,
-                'msg' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::error('Article destroy failed', ['article_id'=>$article->id,'msg'=>$e->getMessage(),'trace'=>$e->getTraceAsString()]);
             return response()->json(['message' => 'Server error'], 500);
         }
     }
@@ -167,14 +135,10 @@ class ArticleController extends Controller
             $article->published_at = $article->is_published ? now() : null;
             $article->save();
 
-            $article->load(['category', 'author']);
+            $article->load(['category','author']);
             return new ArticleResource($article);
         } catch (\Throwable $e) {
-            Log::error('Article togglePublish failed', [
-                'article_id' => $article->id,
-                'msg' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::error('Article togglePublish failed', ['article_id'=>$article->id,'msg'=>$e->getMessage(),'trace'=>$e->getTraceAsString()]);
             return response()->json(['message' => 'Server error'], 500);
         }
     }
@@ -185,14 +149,10 @@ class ArticleController extends Controller
             $article->featured = !$article->featured;
             $article->save();
 
-            $article->load(['category', 'author']);
+            $article->load(['category','author']);
             return new ArticleResource($article);
         } catch (\Throwable $e) {
-            Log::error('Article toggleFeatured failed', [
-                'article_id' => $article->id,
-                'msg' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::error('Article toggleFeatured failed', ['article_id'=>$article->id,'msg'=>$e->getMessage(),'trace'=>$e->getTraceAsString()]);
             return response()->json(['message' => 'Server error'], 500);
         }
     }

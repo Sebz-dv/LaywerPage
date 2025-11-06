@@ -6,21 +6,14 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { MdManageAccounts } from "react-icons/md";
 import { useAuth } from "../../context/useAuth";
 import ThemeToggle from "../toggles/ThemeToggle";
-import { settingsService } from "../../services/settingsService";
+import { settingsService } from "../../services/settingsService"; 
+import { menuConfig as navDefaults } from "../../data/menuConfig";
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
 }
 
 export default function NavbarLanding({
-  navItemsPublic = [
-    { to: "/", label: "Inicio", end: true },
-    { to: "/about-us", label: "Sobre nosotros" },
-    { to: "/servicios", label: "Áreas de práctica" },
-    { to: "/equipo", label: "Equipo" },
-    { to: "/publicaciones", label: "Publicaciones" },
-    { to: "/contacto", label: "Contacto" },
-  ],
   ctaHref = "/agenda",
   ctaLabel = "Agenda una consulta",
   open: openProp,
@@ -30,6 +23,9 @@ export default function NavbarLanding({
   const { pathname } = useLocation();
   const isDashboard = pathname.startsWith("/dashboard");
   const isLogin = pathname.startsWith("/login");
+
+  // Siempre usa la config como fuente de verdad
+  const navItemsPublic = navDefaults;
 
   // Menú móvil
   const [openMenu, setOpenMenu] = useState(false);
@@ -48,7 +44,7 @@ export default function NavbarLanding({
   // Cerrar panel móvil con Escape / click fuera
   const panelRef = useRef(null);
   useEffect(() => {
-    if (isDashboard || isLogin) return; // no hay panel en estos casos
+    if (isDashboard || isLogin) return;
     const onEsc = (e) => e.key === "Escape" && setOpen(false);
     const onClick = (e) => {
       if (!open) return;
@@ -80,6 +76,9 @@ export default function NavbarLanding({
       }
     })();
   }, []);
+
+  // 👇 En vez de booleano, guardamos la KEY del mega abierto (por ejemplo i.to)
+  const [megaOpenKey, setMegaOpenKey] = useState(null); // string | null
 
   return (
     <header
@@ -113,11 +112,7 @@ export default function NavbarLanding({
                     decoding="async"
                   />
                 ) : (
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-5 w-5"
-                    aria-hidden="true"
-                  >
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
                     <path
                       d="M12 3v3m-6 4 6-2 6 2M6 10c0 2 2 4 4 4s4-2 4-4"
                       fill="none"
@@ -140,37 +135,183 @@ export default function NavbarLanding({
               </span>
             </Link>
 
-            {/* === NAV DESKTOP mejorado === */}
+            {/* === NAV DESKTOP con mega dropdown === */}
             <ul className="ml-6 hidden lg:flex items-center gap-1">
-              {navItemsPublic.map((i) => (
-                <li key={i.to}>
-                  <NavLink to={i.to} end={i.end}>
-                    {({ isActive }) => (
-                      <span
-                        className={cx(
-                          "relative inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium",
-                          "transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]",
-                          isActive
-                            ? "bg-[hsl(var(--accent-foreground))/0.18] text-[hsl(var(--accent-foreground))] ring-inset ring-1 ring-[hsl(var(--accent-foreground))/0.15]"
-                            : "text-[hsl(var(--accent-foreground))/0.92] hover:bg-[hsl(var(--accent-foreground))/0.12] ring-inset ring-1 ring-transparent hover:ring-[hsl(var(--accent-foreground))/0.08]"
+              {navItemsPublic.map((i) => {
+                const isMega = !!i.mega;
+
+                if (!isMega) {
+                  return (
+                    <li key={i.to}>
+                      <NavLink to={i.to} end={i.end}>
+                        {({ isActive }) => (
+                          <span
+                            className={cx(
+                              "relative inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium",
+                              "transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]",
+                              isActive
+                                ? "bg-[hsl(var(--accent-foreground))/0.18] text-[hsl(var(--accent-foreground))] ring-inset ring-1 ring-[hsl(var(--accent-foreground))/0.15]"
+                                : "text-[hsl(var(--accent-foreground))/0.92] hover:bg-[hsl(var(--accent-foreground))/0.12] ring-inset ring-1 ring-transparent hover:ring-[hsl(var(--accent-foreground))/0.08]"
+                            )}
+                          >
+                            {i.label}
+                            <span
+                              className={cx(
+                                "pointer-events-none absolute left-2 right-2 -bottom-[3px] h-[2px] rounded-full transition-all duration-200",
+                                isActive
+                                  ? "opacity-100 scale-x-100 bg-[hsl(var(--accent-foreground))]"
+                                  : "opacity-0 scale-x-75 bg-transparent"
+                              )}
+                              aria-hidden="true"
+                            />
+                          </span>
                         )}
-                      >
-                        {i.label}
-                        {/* Subrayado animado */}
+                      </NavLink>
+                    </li>
+                  );
+                }
+
+                // Item con mega dropdown (data-driven por i.mega)
+                return (
+                  <li
+                    key={i.to}
+                    className="relative group before:content-[''] before:absolute before:left-0 before:right-0 before:top-full before:h-3"
+                    onMouseEnter={() => setMegaOpenKey(i.to)}
+                    onMouseLeave={() => setMegaOpenKey((k) => (k === i.to ? null : k))}
+                    onFocus={() => setMegaOpenKey(i.to)}
+                    onBlur={(e) => {
+                      const li = e.currentTarget;
+                      if (!li.contains(e.relatedTarget)) setMegaOpenKey((k) => (k === i.to ? null : k));
+                    }}
+                  >
+                    {/* Trigger: el texto principal SÍ navega */}
+                    <NavLink to={i.to} end={i.end} id={`mega-trigger-${i.to}`}>
+                      {({ isActive }) => (
                         <span
                           className={cx(
-                            "pointer-events-none absolute left-2 right-2 -bottom-[3px] h-[2px] rounded-full transition-all duration-200",
+                            "inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium",
+                            "transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]",
                             isActive
-                              ? "opacity-100 scale-x-100 bg-[hsl(var(--accent-foreground))]"
-                              : "opacity-0 scale-x-75 bg-transparent"
+                              ? "bg-[hsl(var(--accent-foreground))/0.18] text-[hsl(var(--accent-foreground))] ring-inset ring-1 ring-[hsl(var(--accent-foreground))/0.15]"
+                              : "text-[hsl(var(--accent-foreground))/0.92] hover:bg-[hsl(var(--accent-foreground))/0.12] ring-inset ring-1 ring-transparent hover:ring-[hsl(var(--accent-foreground))/0.08]"
                           )}
-                          aria-hidden="true"
-                        />
-                      </span>
-                    )}
-                  </NavLink>
-                </li>
-              ))}
+                          tabIndex={0}
+                          aria-expanded={megaOpenKey === i.to}
+                          aria-controls={`mega-panel-${i.to}`}
+                        >
+                          {i.label}
+                          <svg
+                            className={cx(
+                              "w-4 h-4 transition-transform",
+                              megaOpenKey === i.to && "rotate-180"
+                            )}
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </span>
+                      )}
+                    </NavLink>
+
+                    {/* Panel mega: full-width con --bg y --primary (usa i.mega.left/right) */}
+                    <div
+                      id={`mega-panel-${i.to}`}
+                      onMouseEnter={() => setMegaOpenKey(i.to)}
+                      onMouseLeave={() => setMegaOpenKey((k) => (k === i.to ? null : k))}
+                      className={cx(
+                        "fixed inset-x-0 top-16 z-40 transition-all duration-200 ease-out",
+                        megaOpenKey === i.to
+                          ? "pointer-events-auto visible opacity-100 translate-y-0"
+                          : "pointer-events-none invisible opacity-0 -translate-y-1"
+                      )}
+                      role="region"
+                      aria-label={i.mega?.left?.title || "Submenú"}
+                    >
+                      <div className="w-full bg-[hsl(var(--bg))] text-[hsl(var(--primary))] border-t border-[hsl(var(--primary)/0.12)] shadow-xl">
+                        <div className="grid grid-cols-12 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                          {/* IZQ: texto desde config */}
+                          <div className="col-span-12 md:col-span-5 py-6 md:py-8 pr-4 md:pr-8">
+                            {i.mega?.left?.overline && (
+                              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-2 text-[hsl(var(--primary)/0.7)]">
+                                {i.mega.left.overline}
+                              </p>
+                            )}
+                            {i.mega?.left?.title && (
+                              <h2 className="text-2xl md:text-3xl font-bold leading-tight mb-2">
+                                {i.mega.left.title}
+                              </h2>
+                            )}
+                            {i.mega?.left?.text && (
+                              <p className="text-sm leading-relaxed text-[hsl(var(--primary)/0.8)]">
+                                {i.mega.left.text}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* DER: sublinks desde config */}
+                          <div className="col-span-12 md:col-span-7 py-4 md:py-6 pl-4 md:pl-8 border-t md:border-t-0 md:border-l border-[hsl(var(--primary)/0.12)]">
+                            <nav aria-label="Lista" className="w-full">
+                              {(() => {
+                                const rightItems = Array.isArray(i.mega?.right) ? i.mega.right : [];
+                                return (
+                                  <ul className="grid grid-cols-1">
+                                    {rightItems.map((s) => (
+                                      <li key={s.to} className="contents">
+                                        <NavLink
+                                          to={s.to}
+                                          className={({ isActive }) =>
+                                            cx(
+                                              "group flex items-start gap-3 px-3 py-2 rounded-md transition-colors",
+                                              "focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]",
+                                              isActive
+                                                ? "bg-[hsl(var(--primary)/0.08)] font-semibold"
+                                                : "hover:bg-[hsl(var(--primary)/0.05)]"
+                                            )
+                                          }
+                                        >
+                                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[hsl(var(--primary)/0.6)] group-hover:bg-[hsl(var(--primary))] shrink-0" />
+                                          <span className="flex-1 min-w-0">
+                                            <span className="block text-sm leading-5 truncate">
+                                              {s.title}
+                                            </span>
+                                            {s.desc && (
+                                              <span className="block text-[12px] leading-5 text-[hsl(var(--primary)/0.75)] line-clamp-2">
+                                                {s.desc}
+                                              </span>
+                                            )}
+                                          </span>
+                                          <svg
+                                            viewBox="0 0 24 24"
+                                            className="h-4 w-4 mt-1 opacity-60 group-hover:opacity-100 transition-opacity"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            aria-hidden="true"
+                                          >
+                                            <path d="M9 18l6-6-6-6" />
+                                          </svg>
+                                        </NavLink>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                );
+                              })()}
+                            </nav>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
@@ -206,7 +347,6 @@ export default function NavbarLanding({
           ) : (
             <>
               <ThemeToggle />
-
               <Link
                 to={ctaHref}
                 className={cx(
@@ -218,7 +358,6 @@ export default function NavbarLanding({
               >
                 {ctaLabel}
               </Link>
-
               <Link
                 to="/login"
                 onClick={() => setOpen(false)}
@@ -231,7 +370,6 @@ export default function NavbarLanding({
               >
                 <MdManageAccounts />
               </Link>
-
               {/* Mobile toggle */}
               <button
                 id="nav-toggle"
@@ -247,33 +385,11 @@ export default function NavbarLanding({
               >
                 <span className="sr-only">Abrir menú</span>
                 <div className="relative w-5 h-5">
-                  <svg
-                    viewBox="0 0 24 24"
-                    className={cx(
-                      "absolute inset-0 transition-opacity",
-                      open ? "opacity-0" : "opacity-100"
-                    )}
-                  >
-                    <path
-                      d="M4 6h16M4 12h16M4 18h16"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
+                  <svg viewBox="0 0 24 24" className={cx("absolute inset-0 transition-opacity", open ? "opacity-0" : "opacity-100")}>
+                    <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
-                  <svg
-                    viewBox="0 0 24 24"
-                    className={cx(
-                      "absolute inset-0 transition-opacity",
-                      open ? "opacity-100" : "opacity-0"
-                    )}
-                  >
-                    <path
-                      d="M6 6l12 12M18 6 6 18"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
+                  <svg viewBox="0 0 24 24" className={cx("absolute inset-0 transition-opacity", open ? "opacity-100" : "opacity-0")}>
+                    <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </div>
               </button>
@@ -287,10 +403,7 @@ export default function NavbarLanding({
         <div
           id="mobile-panel"
           ref={panelRef}
-          className={cx(
-            "lg:hidden overflow-hidden transition-[max-height] duration-300",
-            open ? "max-h-96" : "max-h-0"
-          )}
+          className={cx("lg:hidden overflow-hidden transition-[max-height] duration-300", open ? "max-h-96" : "max-h-0")}
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-4">
             <ul className="grid gap-1 pt-2">
@@ -312,7 +425,6 @@ export default function NavbarLanding({
                   </NavLink>
                 </li>
               ))}
-              {/* CTA abajo tal como lo tenías */}
             </ul>
           </div>
         </div>

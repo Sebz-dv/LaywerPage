@@ -80,30 +80,31 @@ export function MemberForm({
 
   return (
     <form
-      id="crud-form"
-      onSubmit={handleSubmit}
-      className="rounded-xl border bg-[hsl(var(--card))] border-[hsl(var(--border))] p-4 space-y-3"
-      onKeyDown={(e) => e.stopPropagation()}
-    >
-      <h2 className="font-semibold">
-        {isEditing ? "Editar miembro" : "Crear miembro"}
-      </h2>
+  id="crud-form"
+  onSubmit={handleSubmit}
+  className="rounded-xl border bg-[hsl(var(--card))] border-[hsl(var(--border))] p-4 sm:p-5 space-y-4 max-w-5xl w-full"
+  onKeyDown={(e) => e.stopPropagation()}
+>
 
-      <Input
-        label="Nombre"
-        value={safe(form?.nombre)}
-        onChange={patch("nombre")}
-        required
-        autoComplete="name"
-      />
-      <Input
-        label="Cargo"
-        value={safe(form?.cargo)}
-        onChange={patch("cargo")}
-        required
-      />
+  {/* GRID RESPONSIVE: 1 col en mobile, 2 col en md+ */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <Input
+      label="Nombre"
+      value={safe(form?.nombre)}
+      onChange={patch("nombre")}
+      required
+      autoComplete="name"
+    />
 
-      {/* Áreas multiline → array */}
+    <Input
+      label="Cargo"
+      value={safe(form?.cargo)}
+      onChange={patch("cargo")}
+      required
+    />
+
+    {/* Áreas (textarea) → ocupa 2 columnas */}
+    <div className="md:col-span-2">
       <Textarea
         label="Áreas"
         value={areasText}
@@ -118,8 +119,16 @@ export function MemberForm({
         ].join("\n")}
         required
       />
+
       {hasAreas ? (
-        <ul className="flex flex-wrap gap-2">
+        <ul
+          className="
+            mt-2 flex flex-wrap gap-2
+            [&>*]:shrink-0
+            max-h-28 overflow-y-auto pr-1
+            md:max-h-none md:overflow-visible
+          "
+        >
           {form.areas.map((a, i) => (
             <li key={`${a}-${i}`} className="badge">
               {a}
@@ -141,29 +150,31 @@ export function MemberForm({
           ))}
         </ul>
       ) : (
-        <p className="text-xs text-muted">
+        <p className="mt-1 text-xs text-muted">
           Escribe cada área en una línea. También se aceptan <code>;</code>,{" "}
           <code>,</code>, <code>|</code> y <code>" - "</code> (con espacios).
         </p>
       )}
+    </div>
 
-      <Input
-        label="Ciudad"
-        value={safe(form?.ciudad)}
-        onChange={patch("ciudad")}
-        required
-        autoComplete="address-level2"
-      />
+    <Input
+      label="Ciudad"
+      value={safe(form?.ciudad)}
+      onChange={patch("ciudad")}
+      required
+      autoComplete="address-level2"
+    />
 
-      <TipoSelector
-        label="Tipo"
-        value={safe(form?.tipo)}
-        onChange={patch("tipo")}
-        required
-        groups={extraTipoGroups}
-      />
+    <TipoSelector
+      label="Tipo"
+      value={safe(form?.tipo)}
+      onChange={patch("tipo")}
+      required
+      groups={extraTipoGroups}
+    />
 
-      {form?.tipo === "otro" && (
+    {form?.tipo === "otro" && (
+      <div className="md:col-span-2">
         <Input
           label="Especifica el tipo"
           value={safe(form?.tipo_otro)}
@@ -171,55 +182,63 @@ export function MemberForm({
           required
           placeholder="Ej. Consultor externo"
         />
-      )}
+      </div>
+    )}
 
-      {/* Foto */}
-      <div>
-        {/* FIX: paréntesis extra eliminado */}
-        <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7]">
-          Foto
-        </label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => onFile?.(e.target.files?.[0] || null)}
-          className="block w-full text-sm file:mr-3 file:rounded-md file:border file:px-3 file:py-1.5 file:bg-[hsl(var(--card))] file:text-[hsl(var(--fg))] file:border-[hsl(var(--border))] hover:file:bg-[hsl(var(--muted))]"
-        />
+    {/* Foto + preview: en mobile vertical, en md+ dos columnas alineadas */}
+    <div className="md:col-span-2">
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-start">
+        <div>
+          <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7]">
+            Foto
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => onFile?.(e.target.files?.[0] || null)}
+            className="block w-full text-sm file:mr-3 file:rounded-md file:border file:px-3 file:py-1.5 file:bg-[hsl(var(--card))] file:text-[hsl(var(--fg))] file:border-[hsl(var(--border))] hover:file:bg-[hsl(var(--muted))]"
+          />
+        </div>
+
         {currentPreview && (
-          <div className="mt-2"> 
+          <div className="sm:justify-self-end">
             <img
               src={currentPreview}
               className="h-24 w-24 object-cover rounded-md border border-[hsl(var(--border))]"
               onError={(e) => {
                 if (FALLBACK_AVATAR) e.currentTarget.src = FALLBACK_AVATAR;
               }}
+              alt="Vista previa de la foto"
             />
           </div>
         )}
       </div>
+    </div>
+  </div>
 
-      <div className="flex items-center gap-2 pt-2">
-        {/* FIX: evita arbitrary alpha conflict en hover */}
-        <button
-          type="submit"
-          disabled={!isValid}
-          className="rounded-lg px-4 py-2 text-sm font-medium border transition-colors
-                     bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]
-                     border-[hsl(var(--border))/0.25]
-                     hover:brightness-95 disabled:opacity-60"
-        >
-          {isEditing ? "Guardar cambios" : "Crear"}
-        </button>
+  {/* Botones: stack en mobile, inline en sm+ */}
+  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2">
+    <button
+      type="submit"
+      disabled={!isValid}
+      className="rounded-lg px-4 py-2 text-sm font-medium border transition-colors
+                 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]
+                 border-[hsl(var(--border))/0.25]
+                 hover:brightness-95 disabled:opacity-60"
+    >
+      {isEditing ? "Guardar cambios" : "Crear"}
+    </button>
 
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-lg px-4 py-2 text-sm font-medium border bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
-        >
-          Cancelar
-        </button>
-      </div>
-    </form>
+    <button
+      type="button"
+      onClick={onCancel}
+      className="rounded-lg px-4 py-2 text-sm font-medium border bg-[hsl(var(--card))] text-[hsl(var(--fg))] border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
+    >
+      Cancelar
+    </button>
+  </div>
+</form>
+
   );
 }
 

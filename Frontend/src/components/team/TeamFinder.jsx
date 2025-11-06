@@ -20,7 +20,8 @@ const slugify = (s = "") =>
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 // ✅ ORIGIN para archivos estáticos
 const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? "http://localhost:8000";
-const resolveUrl = (u) => (!u ? "" : u.startsWith("http") ? u : `${API_ORIGIN}${u}`);
+const resolveUrl = (u) =>
+  !u ? "" : u.startsWith("http") ? u : `${API_ORIGIN}${u}`;
 
 /* ================= Hook: debounce ================= */
 function useDebounce(value, delay = 250) {
@@ -149,7 +150,9 @@ export default function TeamFinder({
 
   const canLoad = page < lastPage;
   const prefersReduced = useReducedMotion();
-  const sentinelRef = useAutoLoadMore(canLoad && !loading, () => setPage((p) => p + 1));
+  const sentinelRef = useAutoLoadMore(canLoad && !loading, () =>
+    setPage((p) => p + 1)
+  );
 
   // ===== Animations =====
   const gridVariants = {
@@ -178,39 +181,47 @@ export default function TeamFinder({
     <section className={cx("w-full", className)}>
       {/* ===== HERO con parallax suave + cristal ===== */}
       <section className="w-screen h-[56svh] md:h-[64svh] relative overflow-hidden left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] mt-[-12px]">
-        {/* Fondo */}
+        {/* Fondo con blur y animación leve */}
         <motion.img
           src={team}
-          alt=""
+          alt="Equipo de Blanco & Ramírez Abogados"
           aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover object-center"
+          className="absolute inset-0 h-full w-full object-cover object-center scale-105 blur-[3px]"
           loading="eager"
           decoding="async"
           fetchPriority="high"
           sizes="100vw"
           initial={false}
           animate={
-            prefersReduced
+            useReducedMotion()
               ? {}
-              : { scale: [1.04, 1.08, 1.04], y: [0, -8, 0] }
+              : { scale: [1.05, 1.1, 1.05], y: [0, -8, 0] }
           }
           transition={
-            prefersReduced ? {} : { duration: 18, repeat: Infinity, ease: "easeInOut" }
+            useReducedMotion()
+              ? {}
+              : { duration: 18, repeat: Infinity, ease: "easeInOut" }
           }
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/30 to-black/45" />
 
-        {/* Contenido con cristal */}
-        <div className="relative h-full flex items-center">
-          <div className="w-full px-4 sm:px-6 lg:px-8">
-            <header className="max-w-3xl rounded-2xl p-6 sm:p-8 backdrop-blur-md bg-white/10 border border-white/20 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.45)]">
-              <h1 className="font-display text-3xl sm:text-4xl font-semibold tracking-[0.02em] text-white drop-shadow">
-                {title}
-              </h1>
-              <p className="mt-2 text-white/85 font-subtitle">{description}</p>
-              <div className="mt-4 h-px w-24 bg-white/25" />
-            </header>
-          </div>
+        {/* Capa oscura sutil para contraste */}
+        <div className="absolute inset-0 bg-black/35" />
+
+        {/* Contenido centrado */}
+        <div className="absolute inset-0 grid place-items-center px-4 text-center">
+          <header className="max-w-4xl mx-auto">
+            <h1 className="font-display text-white text-4xl sm:text-5xl md:text-6xl font-bold tracking-[0.08em] leading-tight drop-shadow-[0_3px_6px_rgba(0,0,0,0.45)]">
+              {title}
+            </h1>
+            <p className="mt-4 text-white/90 text-lg md:text-xl leading-relaxed font-subtitle max-w-3xl mx-auto">
+              En Blanco &amp; Ramírez Abogados creemos que el verdadero impacto
+              nace del trabajo colaborativo y del conocimiento compartido.
+              Nuestro equipo combina experiencia pública, privada y académica
+              para ofrecer soluciones integrales, éticas y sostenibles que
+              generan confianza y resultados duraderos.
+            </p>
+            <div className="mt-6 mx-auto h-[2px] w-24 bg-white/80" />
+          </header>
         </div>
       </section>
 
@@ -268,12 +279,29 @@ export default function TeamFinder({
               aria-label="Filtrar por nombre"
             />
           </div>
-          <Select label="CARGO" value={cargo} onChange={setCargo} options={cargosOpts} />
-          <Select label="ÁREA" value={area} onChange={setArea} options={areasOpts} />
-          <Select label="CIUDAD" value={ciudad} onChange={setCiudad} options={ciudadesOpts} />
+          <Select
+            label="CARGO"
+            value={cargo}
+            onChange={setCargo}
+            options={cargosOpts}
+          />
+          <Select
+            label="ÁREA"
+            value={area}
+            onChange={setArea}
+            options={areasOpts}
+          />
+          <Select
+            label="CIUDAD"
+            value={ciudad}
+            onChange={setCiudad}
+            options={ciudadesOpts}
+          />
           {/* Ajuste imagen */}
           <div className="flex flex-col">
-            <label className="block text-xs mb-1 text-muted">Ajuste imagen</label>
+            <label className="block text-xs mb-1 text-muted">
+              Ajuste imagen
+            </label>
             <div className="inline-flex rounded-lg border border-[hsl(var(--border))] overflow-hidden">
               <button
                 onClick={() => setImageFit("cover")}
@@ -378,7 +406,10 @@ export default function TeamFinder({
           {loading &&
             items.length === 0 &&
             Array.from({ length: pageSize }).map((_, k) => (
-              <div key={`skeleton-${k}`} className="card card-pad overflow-hidden relative">
+              <div
+                key={`skeleton-${k}`}
+                className="card card-pad overflow-hidden relative"
+              >
                 <div className="aspect-[4/3] w-full rounded-lg bg-[hsl(var(--muted))] relative overflow-hidden" />
                 <div className="mt-4 h-4 w-2/3 bg-[hsl(var(--muted))] rounded" />
                 <div className="mt-2 h-3 w-1/2 bg-[hsl(var(--muted))] rounded" />
@@ -390,8 +421,14 @@ export default function TeamFinder({
 
         {/* Vacío / error */}
         {!loading && items.length === 0 && (
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6 text-sm text-muted">
-            {error ? `Error: ${error}` : "Sin resultados para los filtros actuales."}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-6 text-sm text-muted"
+          >
+            {error
+              ? `Error: ${error}`
+              : "Sin resultados para los filtros actuales."}
           </motion.p>
         )}
 
@@ -401,7 +438,12 @@ export default function TeamFinder({
             {canLoad ? (
               <>
                 <div ref={sentinelRef} className="h-6" aria-hidden />
-                <button onClick={() => setPage((p) => p + 1)} disabled={loading} className="btn btn-outline" aria-busy={loading}>
+                <button
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={loading}
+                  className="btn btn-outline"
+                  aria-busy={loading}
+                >
                   {loading ? (
                     <>
                       <Spinner />
@@ -421,7 +463,16 @@ export default function TeamFinder({
 }
 
 /* ===================== Subcomponentes ===================== */
-function TeamCard({ imgSrc, nombre, cargo, area, ciudad, href, variants, imageFit }) {
+function TeamCard({
+  imgSrc,
+  nombre,
+  cargo,
+  area,
+  ciudad,
+  href,
+  variants,
+  imageFit,
+}) {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgError, setImgError] = useState(false);
   const prefersReduced = useReducedMotion();
@@ -445,7 +496,9 @@ function TeamCard({ imgSrc, nombre, cargo, area, ciudad, href, variants, imageFi
       <div
         className={cx(
           "relative aspect-[4/3] w-full rounded-lg overflow-hidden",
-          imageFit === "contain" ? "bg-[hsl(var(--card))]" : "bg-[hsl(var(--primary)/0.06)]"
+          imageFit === "contain"
+            ? "bg-[hsl(var(--card))]"
+            : "bg-[hsl(var(--primary)/0.06)]"
         )}
       >
         {!imgLoaded && (
@@ -470,16 +523,24 @@ function TeamCard({ imgSrc, nombre, cargo, area, ciudad, href, variants, imageFi
             }}
             initial={{ opacity: 0, scale: imageFit === "cover" ? 1.015 : 1 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={prefersReduced ? { duration: 0.2 } : { duration: 0.35, ease: [0.22, 0.61, 0.36, 1] }}
+            transition={
+              prefersReduced
+                ? { duration: 0.2 }
+                : { duration: 0.35, ease: [0.22, 0.61, 0.36, 1] }
+            }
             className={cx(
               "absolute inset-0 h-full w-full object-center",
               imageFit === "cover" ? "object-cover" : "object-contain",
               imgLoaded ? "blur-0" : "blur-[6px]",
-              imageFit === "cover" && imgLoaded ? "group-hover:scale-[1.012] transition-transform duration-300 will-change-transform" : ""
+              imageFit === "cover" && imgLoaded
+                ? "group-hover:scale-[1.012] transition-transform duration-300 will-change-transform"
+                : ""
             )}
           />
         ) : (
-          <span className="absolute inset-0 grid place-items-center text-[hsl(var(--fg))/0.5] text-sm">Foto</span>
+          <span className="absolute inset-0 grid place-items-center text-[hsl(var(--fg))/0.5] text-sm">
+            Foto
+          </span>
         )}
         <span className="pointer-events-none absolute inset-0 ring-0 group-hover:ring-2 ring-[hsl(var(--primary))/0.35] transition-all rounded-lg" />
       </div>
@@ -508,8 +569,21 @@ function TeamCard({ imgSrc, nombre, cargo, area, ciudad, href, variants, imageFi
           ].join(" ")}
         >
           Ver Perfil
-          <motion.svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true" initial={false} whileHover={{ x: 2 }} transition={{ duration: 0.18 }}>
-            <path d="M7 12h10M13 6l6 6-6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" fill="none" />
+          <motion.svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            aria-hidden="true"
+            initial={false}
+            whileHover={{ x: 2 }}
+            transition={{ duration: 0.18 }}
+          >
+            <path
+              d="M7 12h10M13 6l6 6-6 6"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              fill="none"
+            />
           </motion.svg>
         </Link>
       </div>
@@ -520,7 +594,9 @@ function TeamCard({ imgSrc, nombre, cargo, area, ciudad, href, variants, imageFi
 function Select({ label, value, onChange, options = [] }) {
   return (
     <div className="group">
-      <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7]">{label}</label>
+      <label className="block text-xs mb-1 text-[hsl(var(--fg))/0.7]">
+        {label}
+      </label>
       <div className="relative">
         <select
           value={value}
@@ -535,7 +611,11 @@ function Select({ label, value, onChange, options = [] }) {
             </option>
           ))}
         </select>
-        <motion.span initial={{ rotate: 0 }} animate={{ rotate: value ? 180 : 0 }} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+        <motion.span
+          initial={{ rotate: 0 }}
+          animate={{ rotate: value ? 180 : 0 }}
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"
+        >
           ▾
         </motion.span>
       </div>
@@ -545,9 +625,26 @@ function Select({ label, value, onChange, options = [] }) {
 
 function Spinner() {
   return (
-    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" opacity="0.25" />
-      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" fill="none" />
+    <svg
+      className="h-4 w-4 animate-spin"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="3"
+        fill="none"
+        opacity="0.25"
+      />
+      <path
+        d="M22 12a10 10 0 0 1-10 10"
+        stroke="currentColor"
+        strokeWidth="3"
+        fill="none"
+      />
     </svg>
   );
 }

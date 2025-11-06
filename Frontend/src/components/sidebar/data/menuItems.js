@@ -35,13 +35,7 @@ export const menuItems = [
     label: "Áreas",
     link: "/dash/areas",
     icon: FaAlignCenter,
-  },
-  {
-    key: "products",
-    label: "Productos",
-    link: "/dash/products",
-    icon: FaProductHunt,
-  },
+  }, 
   {
     key: "publicaciones",
     label: "Publicaciones",

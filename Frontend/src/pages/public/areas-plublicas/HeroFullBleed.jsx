@@ -18,8 +18,7 @@ export default function HeroFullBleed({
   eta,                      // string | undefined (ej: "2-3 días")
   primaryCtaHref = "/contacto?topic=cotizacion",
   primaryCtaText = "Solicitar cotización",
-  secondaryCtaHref = "/agenda",
-  secondaryCtaText = "Agendar llamada",
+  secondaryCtaHref = "/agenda", 
   className = "",           // clases extra opcionales para el <section>
 }) {
   return (
@@ -166,13 +165,7 @@ export default function HeroFullBleed({
                 className="btn btn-accent rounded-xl text-base md:text-lg px-4 md:px-5 py-2 md:py-2.5"
               >
                 {primaryCtaText}
-              </a>
-              <a
-                href={secondaryCtaHref}
-                className="btn btn-outline rounded-xl text-base md:text-lg px-4 md:px-5 py-2 md:py-2.5 text-white border-white/70 hover:bg-white/10"
-              >
-                {secondaryCtaText}
-              </a>
+              </a> 
             </div>
           </div>
         </div>

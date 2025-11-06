@@ -1,5 +1,5 @@
 <?php
-// app/Models/Article.php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+// Modelos relacionados
+use App\Models\ArticleCategory;
+use App\Models\TeamMember;
 
 class Article extends Model
 {
@@ -27,14 +31,19 @@ class Article extends Model
     ];
 
     protected $casts = [
-        'featured'      => 'boolean',
-        'is_published'  => 'boolean',
-        'published_at'  => 'datetime',
-        'meta'          => 'array',
+        'featured'     => 'boolean',
+        'is_published' => 'boolean',
+        'published_at' => 'datetime',
+        'meta'         => 'array',
     ];
 
-    // Exponer cover_url como atributo calculado
     protected $appends = ['cover_url'];
+
+    // (opcional) deja claro que el binding es por id
+    public function getRouteKeyName(): string
+    {
+        return 'id';
+    }
 
     protected static function booted(): void
     {
@@ -48,21 +57,16 @@ class Article extends Model
         });
     }
 
-    /** Categoría del artículo */
     public function category(): BelongsTo
     {
-        // Ajusta el FQCN si tu modelo se llama distinto
-        return $this->belongsTo(\App\Models\ArticleCategory::class, 'article_category_id');
+        return $this->belongsTo(ArticleCategories::class, 'article_category_id');
     }
 
-    /** Autor (team member) */
     public function author(): BelongsTo
     {
-        // Ajusta el FQCN si tu modelo se llama distinto
-        return $this->belongsTo(\App\Models\team_members::class, 'author_id');
+        return $this->belongsTo(team_members::class, 'author_id');
     }
 
-    /** URL pública de la portada (deja host/puerto a Resource) */
     public function getCoverUrlAttribute(): ?string
     {
         return $this->cover_path ? Storage::url($this->cover_path) : null;

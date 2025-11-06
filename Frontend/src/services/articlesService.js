@@ -1,13 +1,13 @@
-// src/services/articlesService.js
-import { api } from "../lib/api"; // baseURL: http://localhost:8000/api
+import { api } from "../lib/api";
 
-// Origin real del backend (http://localhost:8000)
 const apiOrigin = (() => {
-  try { return new URL(api.defaults.baseURL, window.location.origin).origin; }
-  catch { return window.location.origin; }
+  try {
+    return new URL(api.defaults.baseURL, window.location.origin).origin;
+  } catch {
+    return window.location.origin;
+  }
 })();
 
-// Normaliza URL (relativa o absoluta con host incorrecto) al origin del API
 const normalizeFromApiOrigin = (pathOrUrl) => {
   if (!pathOrUrl) return pathOrUrl;
   try {
@@ -49,6 +49,14 @@ function toFormData(payload = {}) {
   return fd;
 }
 
+const ensureNumericId = (id) => {
+  const s = String(id ?? "").trim();
+  if (!/^[0-9]+$/.test(s)) {
+    throw new Error(`Article ID inválido: "${id}". Se requiere un número.`);
+  }
+  return s;
+};
+
 export const articlesService = {
   async list(params = {}) {
     const r = await api.get("/articles", { params });
@@ -60,45 +68,46 @@ export const articlesService = {
     return r.data;
   },
 
-  // get inteligente: usa slug si NO es numérico, si es numérico usa id
-  async get(idOrSlug) {
-    const isNumeric = /^[0-9]+$/.test(String(idOrSlug));
-    const url = isNumeric
-      ? `/articles/id/${encodeURIComponent(idOrSlug)}`
-      : `/articles/slug/${encodeURIComponent(idOrSlug)}`;
-    const r = await api.get(url);
+  // ✅ SOLO por ID (endpoint público: GET /articles/{id})
+  async get(id) {
+    const safeId = ensureNumericId(id);
+    const r = await api.get(`/articles/${encodeURIComponent(safeId)}`);
     const data = r.data?.data ?? r.data;
     return normalizeArticle(data);
   },
 
   async create(payload) {
     const fd = toFormData(payload);
-    const r = await api.post("/articles", fd); // NO setees Content-Type
+    const r = await api.post("/articles", fd);
     const data = r.data?.data ?? r.data;
     return normalizeArticle(data);
   },
 
-  // Update vía POST (tu ruta privada acepta POST /articles/{article})
-  async update(idOrSlug, payload) {
+  // ✅ SOLO por ID
+  async update(id, payload) {
+    const safeId = ensureNumericId(id);
     const fd = toFormData(payload);
-    const r = await api.post(`/articles/${encodeURIComponent(idOrSlug)}`, fd);
+    const r = await api.post(`/articles/${encodeURIComponent(safeId)}`, fd);
     const data = r.data?.data ?? r.data;
     return normalizeArticle(data);
   },
 
-  async remove(idOrSlug) {
-    const r = await api.delete(`/articles/${encodeURIComponent(idOrSlug)}`);
+  async remove(id) {
+    const safeId = ensureNumericId(id);
+    const r = await api.delete(`/articles/${encodeURIComponent(safeId)}`);
     return r.data;
   },
 
-  async togglePublish(idOrSlug) {
-    const r = await api.post(`/articles/${encodeURIComponent(idOrSlug)}/toggle-publish`);
+  async togglePublish(id) {
+    const safeId = ensureNumericId(id);
+    const r = await api.post(`/articles/${encodeURIComponent(safeId)}/toggle-publish`);
     const data = r.data?.data ?? r.data;
     return normalizeArticle(data);
   },
 
-  async toggleFeatured(idOrSlug) {
-    const r = await api.post(`/articles/${encodeURIComponent(idOrSlug)}/toggle-featured`);
+  async toggleFeatured(id) {
+    const safeId = ensureNumericId(id);
+    const r = await api.post(`/articles/${encodeURIComponent(safeId)}/toggle-featured`);
     const data = r.data?.data ?? r.data;
     return normalizeArticle(data);
   },
