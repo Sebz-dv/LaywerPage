@@ -7,7 +7,8 @@ import { useParams, useNavigate } from "react-router-dom";
 // util slugify consistente (sin dependencias)
 function slugify(str = "") {
   return String(str)
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quita tildes
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // quita tildes
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
@@ -17,7 +18,8 @@ function slugify(str = "") {
 export default function ArticleForm() {
   const { id } = useParams();
   const nav = useNavigate();
-  const fileRef = useRef(null);
+  const coverRef = useRef(null);
+  const pdfRef = useRef(null);
   const [ReactMarkdown, setReactMarkdown] = useState(null); // carga dinámica para preview
 
   const [authors, setAuthors] = useState([]);
@@ -36,13 +38,20 @@ export default function ArticleForm() {
     featured: false,
     is_published: false,
     meta: { title: "", description: "", keywords: [] },
-    cover: null, // File
+
+    // Archivos / URLs
+    cover: null,       // File nuevo
+    cover_url: null,   // existente (backend)
+    pdf: null,         // File nuevo
+    pdf_url: null,     // existente (backend)
+    external_url: "",  // link externo opcional
   });
 
+  // Preview de la portada NUEVA (si se selecciona archivo); si no, usamos cover_url existente
   const coverPreview = useMemo(() => {
     if (form.cover instanceof File) return URL.createObjectURL(form.cover);
-    return null;
-  }, [form.cover]);
+    return form.cover_url || null;
+  }, [form.cover, form.cover_url]);
 
   // Cargar autores
   useEffect(() => {
@@ -64,7 +73,6 @@ export default function ArticleForm() {
       setError(null);
       try {
         const res = await svc.get(id);
-        // ✅ Evita mezclar ?? con || sin paréntesis
         const a = (res?.data ?? res) || {};
         setForm((f) => ({
           ...f,
@@ -77,7 +85,12 @@ export default function ArticleForm() {
           featured: !!a.featured,
           is_published: !!a.is_published,
           meta: a.meta ?? { title: "", description: "", keywords: [] },
+          // archivos/urls existentes
           cover: null,
+          cover_url: a.cover_url ?? null,
+          pdf: null,
+          pdf_url: a.pdf_url ?? null,
+          external_url: a.external_url ?? "",
         }));
       } catch (e) {
         console.error(e);
@@ -110,6 +123,9 @@ export default function ArticleForm() {
 
     if (name === "cover") {
       return setForm((f) => ({ ...f, cover: files?.[0] ?? null }));
+    }
+    if (name === "pdf") {
+      return setForm((f) => ({ ...f, pdf: files?.[0] ?? null }));
     }
 
     if (name === "title") {
@@ -144,7 +160,10 @@ export default function ArticleForm() {
       e.preventDefault();
       const raw = e.currentTarget.value.trim().replace(/,$/, "");
       if (!raw) return;
-      setMetaField("keywords", Array.from(new Set([...(form.meta.keywords || []), raw])));
+      setMetaField(
+        "keywords",
+        Array.from(new Set([...(form.meta.keywords || []), raw]))
+      );
       e.currentTarget.value = "";
     }
   };
@@ -155,7 +174,7 @@ export default function ArticleForm() {
     );
   };
 
-  // Normaliza payload y decide multipart si hay cover
+  // Normaliza payload y decide multipart si hay archivos
   const buildPayload = () => {
     const base = {
       article_category_id: form.article_category_id || null,
@@ -166,17 +185,22 @@ export default function ArticleForm() {
       body: form.body || null,
       featured: !!form.featured,
       is_published: !!form.is_published,
+      external_url: form.external_url?.trim() || null,
       meta: form.meta || null,
     };
 
-    if (form.cover instanceof File) {
+    const needMultipart = form.cover instanceof File || form.pdf instanceof File;
+
+    if (needMultipart) {
       const fd = new FormData();
       Object.entries(base).forEach(([k, v]) => {
         if (v === null || v === undefined) return;
         if (k === "meta") fd.append("meta", JSON.stringify(v));
+        else if (typeof v === "boolean") fd.append(k, v ? "true" : "false");
         else fd.append(k, String(v));
       });
-      fd.append("cover", form.cover);
+      if (form.cover instanceof File) fd.append("cover", form.cover);
+      if (form.pdf instanceof File) fd.append("pdf", form.pdf);
       return fd; // multipart
     }
     return base; // JSON
@@ -185,7 +209,8 @@ export default function ArticleForm() {
   const onSubmit = async (e) => {
     e.preventDefault();
     if (!form.title?.trim()) return alert("El título es obligatorio.");
-    if (!form.slug?.trim()) setForm((f) => ({ ...f, slug: slugify(f.title) }));
+    if (!form.slug?.trim())
+      setForm((f) => ({ ...f, slug: slugify(f.title) }));
 
     setSaving(true);
     setError(null);
@@ -197,12 +222,11 @@ export default function ArticleForm() {
     } catch (err) {
       const data = err?.response?.data;
       console.log("422 details:", data);
-      // ✅ Evita mezclar ?? con || sin paréntesis
       const msg =
         data?.message ??
-        ((Object.entries(data?.errors ?? {})
+        (Object.entries(data?.errors ?? {})
           .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
-          .join("\n")) || "No se pudo guardar.");
+          .join("\n") || "No se pudo guardar.");
       setError(msg);
       alert(msg);
     } finally {
@@ -210,9 +234,13 @@ export default function ArticleForm() {
     }
   };
 
-  const ResetCover = () => {
+  const resetCover = () => {
     setForm((f) => ({ ...f, cover: null }));
-    if (fileRef.current) fileRef.current.value = "";
+    if (coverRef.current) coverRef.current.value = "";
+  };
+  const resetPdf = () => {
+    setForm((f) => ({ ...f, pdf: null }));
+    if (pdfRef.current) pdfRef.current.value = "";
   };
 
   return (
@@ -237,11 +265,7 @@ export default function ArticleForm() {
           >
             {previewOn ? "Ocultar preview" : "Ver preview"}
           </button>
-          <button
-            className="btn btn-accent"
-            onClick={onSubmit}
-            disabled={saving}
-          >
+          <button className="btn btn-accent" onClick={onSubmit} disabled={saving}>
             {saving ? "Guardando…" : "Guardar"}
           </button>
         </div>
@@ -304,7 +328,7 @@ export default function ArticleForm() {
                   <option value="">— Sin autor —</option>
                   {authors.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.nombre}
+                      {t.nombre || t.name || `${t.first_name ?? ""} ${t.last_name ?? ""}`.trim()}
                     </option>
                   ))}
                 </select>
@@ -391,40 +415,62 @@ export default function ArticleForm() {
           </div>
 
           <div className="card card-pad">
-            <div className="flex gap-6">
-              <label className="inline-flex items-center gap-2">
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-6">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="featured"
+                    checked={form.featured}
+                    onChange={onChange}
+                  />
+                  <span>Destacado</span>
+                </label>
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="is_published"
+                    checked={form.is_published}
+                    onChange={onChange}
+                  />
+                  <span>Publicado</span>
+                </label>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-sm text-soft">Link externo (opcional)</label>
                 <input
-                  type="checkbox"
-                  name="featured"
-                  checked={form.featured}
+                  className="input"
+                  name="external_url"
+                  value={form.external_url}
                   onChange={onChange}
+                  placeholder="https://sitio-externo.com/articulo"
                 />
-                <span>Destacado</span>
-              </label>
-              <label className="inline-flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  name="is_published"
-                  checked={form.is_published}
-                  onChange={onChange}
-                />
-                <span>Publicado</span>
-              </label>
+                {form.external_url?.trim() && (
+                  <a
+                    className="link text-sm"
+                    href={form.external_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Abrir link externo ↗
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Columna derecha (portada + preview) */}
+        {/* Columna derecha (portada + PDF + preview) */}
         <div className="space-y-5">
           <div className="card card-pad space-y-3">
             <label className="block text-sm text-soft">Portada</label>
             <div className="flex items-start gap-4">
               <div className="logo-box">
                 {coverPreview ? (
-                  // preview del archivo nuevo
                   <img
                     src={coverPreview}
-                    alt="Preview portada"
+                    alt="Portada"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -433,20 +479,85 @@ export default function ArticleForm() {
               </div>
               <div className="space-y-2">
                 <input
-                  ref={fileRef}
+                  ref={coverRef}
                   type="file"
                   accept="image/*"
                   name="cover"
                   className="block"
                   onChange={onChange}
                 />
-                {form.cover && (
+                {(form.cover || form.cover_url) && (
+                  <div className="flex items-center gap-2">
+                    {form.cover && (
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        onClick={resetCover}
+                      >
+                        Quitar archivo
+                      </button>
+                    )}
+                    {form.cover_url && !form.cover && (
+                      <a
+                        className="btn btn-outline"
+                        href={form.cover_url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Ver imagen ↗
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="card card-pad space-y-3">
+            <label className="block text-sm text-soft">PDF (opcional)</label>
+            <div className="flex items-start gap-4">
+              <div className="flex-1 space-y-2">
+                <input
+                  ref={pdfRef}
+                  type="file"
+                  accept="application/pdf"
+                  name="pdf"
+                  className="block"
+                  onChange={onChange}
+                />
+                <p className="text-xs text-soft">
+                  Se aceptan archivos .pdf (máx 10MB).
+                </p>
+
+                {/* Acciones para PDF existente */}
+                {form.pdf_url && !form.pdf && (
+                  <div className="flex items-center gap-2">
+                    <a
+                      className="btn btn-outline"
+                      href={form.pdf_url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Ver PDF ↗
+                    </a>
+                    <a
+                      className="btn btn-outline"
+                      href={form.pdf_url}
+                      download
+                    >
+                      Descargar
+                    </a>
+                  </div>
+                )}
+
+                {/* Quitar archivo nuevo seleccionado */}
+                {form.pdf && (
                   <button
                     type="button"
                     className="btn btn-outline"
-                    onClick={ResetCover}
+                    onClick={resetPdf}
                   >
-                    Quitar
+                    Quitar PDF
                   </button>
                 )}
               </div>

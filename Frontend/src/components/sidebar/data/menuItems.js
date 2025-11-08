@@ -4,7 +4,7 @@ import {
   FaCog,
   FaUserFriends,
   FaAlignCenter,
-  FaProductHunt,
+  FaBlogger,
   FaBookmark,
   FaArchway,
   FaBookMedical,
@@ -41,6 +41,12 @@ export const menuItems = [
     label: "Publicaciones",
     link: "/dash/articles",
     icon: FaBookmark,
+  },
+  {
+    key: "post",
+    label: "Blog Post",
+    link: "/dash/post",
+    icon: FaBlogger ,
   },
   {
     key: "ajustes",

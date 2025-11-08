@@ -35,6 +35,7 @@ export const menuConfig = [
   },
 
   { label: "Publicaciones", to: "/publicaciones" },
+  { to: "/public/simple-posts", label: "Blog" },
   { label: "Contacto", to: "/contacto" },
 ];
 

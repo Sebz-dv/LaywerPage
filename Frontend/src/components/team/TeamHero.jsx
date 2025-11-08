@@ -20,7 +20,7 @@ function cx(...xs) {
 /* ================= Componente ================= */
 export default function TeamHero({
   kicker = "Nuestro Equipo",
-  title = " tenemos al mejor talento",
+  title = " Tenemos al mejor talento",
   description = "Nuestro equipo multidisciplinario combina experiencia pública, privada y académica para ofrecer asesoría integral y confiable.",
   align = "left", // 'left' | 'center'
   accent = true, // subrayado bajo el título

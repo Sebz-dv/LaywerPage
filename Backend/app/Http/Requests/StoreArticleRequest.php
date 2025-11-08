@@ -1,6 +1,5 @@
 <?php
 
-// app/Http/Requests/StoreArticleRequest.php
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
@@ -21,7 +20,6 @@ class StoreArticleRequest extends FormRequest
             if (json_last_error() === JSON_ERROR_NONE) {
                 $this->merge(['meta' => $decoded]);
             } else {
-                // si viene vacío o basura, nuléalo
                 $this->merge(['meta' => null]);
             }
         }
@@ -39,6 +37,7 @@ class StoreArticleRequest extends FormRequest
             $this->merge(['published_at' => null]);
         }
 
+        // author_id a int|null
         if ($this->has('author_id')) {
             $aid = $this->input('author_id');
             $this->merge(['author_id' => ($aid === '' || $aid === null) ? null : (int)$aid]);
@@ -49,19 +48,27 @@ class StoreArticleRequest extends FormRequest
     {
         return [
             'article_category_id' => ['nullable', 'exists:article_categories,id'],
-            'author_id' => ['nullable', 'exists:team_members,id'],
-            'title' => ['required', 'string', 'max:255'],
-            'slug'  => ['nullable', 'string', 'max:255', 'unique:articles,slug'],
-            'excerpt' => ['nullable', 'string', 'max:500'],
-            'body' => ['nullable', 'string'],
-            'featured' => ['sometimes', 'boolean'],
-            'is_published' => ['sometimes', 'boolean'],
-            'published_at' => ['nullable', 'date'],
-            'meta' => ['nullable', 'array'],
-            'meta.title' => ['nullable', 'string', 'max:80'],
-            'meta.description' => ['nullable', 'string', 'max:160'],
-            'meta.keywords' => ['nullable', 'array'],
-            'cover' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+            'author_id'           => ['nullable', 'exists:team_members,id'],
+            'title'               => ['required', 'string', 'max:255'],
+            'slug'                => ['nullable', 'string', 'max:255', 'unique:articles,slug'],
+
+            'external_url'        => ['nullable', 'url', 'max:2048'],
+
+            'excerpt'             => ['nullable', 'string', 'max:500'],
+            'body'                => ['nullable', 'string'],
+            'featured'            => ['sometimes', 'boolean'],
+            'is_published'        => ['sometimes', 'boolean'],
+            'published_at'        => ['nullable', 'date'],
+
+            'meta'                => ['nullable', 'array'],
+            'meta.title'          => ['nullable', 'string', 'max:80'],
+            'meta.description'    => ['nullable', 'string', 'max:160'],
+            'meta.keywords'       => ['nullable', 'array'],
+            'meta.keywords.*'     => ['string', 'max:50'],
+
+            // archivos
+            'cover'               => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:8192'],     // 8MB
+            'pdf'                 => ['nullable', 'file', 'mimes:pdf', 'max:10240'],                  // 10MB
         ];
     }
 }

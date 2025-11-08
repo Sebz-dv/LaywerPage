@@ -6,5 +6,6 @@ export const navItemsPublic = [
   { to: "/equipo", label: "Equipo" },
   { to: "/publicaciones", label: "Publicaciones" },
   { to: "/contacto", label: "Contacto" },
+  { to: "/public/simple-posts", label: "Blog" },
 ];
 Object.freeze(navItemsPublic);

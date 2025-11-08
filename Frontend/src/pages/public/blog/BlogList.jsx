@@ -48,6 +48,16 @@ function formatDate(iso) {
   }
 }
 
+const LinkBadges = ({ pdfUrl, externalUrl }) => {
+  if (!pdfUrl && !externalUrl) return null;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {pdfUrl ? <span className="badge">PDF</span> : null}
+      {externalUrl ? <span className="badge">Link externo</span> : null}
+    </div>
+  );
+};
+
 export default function BlogList({
   heroImage = heroFallback,
   heroTitle = "Publicaciones",
@@ -113,9 +123,9 @@ export default function BlogList({
             alt=""
             aria-hidden="true"
             className="
-        absolute inset-0 h-full w-full object-cover object-center
-        blur-[6px] md:blur-[8px] lg:blur-[10px]
-      "
+              absolute inset-0 h-full w-full object-cover object-center
+              blur-[6px] md:blur-[8px] lg:blur-[10px]
+            "
             loading="eager"
             decoding="async"
             fetchPriority="high"
@@ -146,14 +156,14 @@ export default function BlogList({
             <header className="max-w-4xl mx-auto text-center">
               <h1
                 className="
-    font-display 
-    text-3xl sm:text-4xl md:text-5xl lg:text-6xl 
-    font-semibold 
-    tracking-[0.06em] 
-    text-white 
-    drop-shadow-[0_10px_28px_rgba(0,0,0,.35)] 
-    leading-[1.12]
-  "
+                  font-display 
+                  text-3xl sm:text-4xl md:text-5xl lg:text-6xl 
+                  font-semibold 
+                  tracking-[0.06em] 
+                  text-white 
+                  drop-shadow-[0_10px_28px_rgba(0,0,0,.35)] 
+                  leading-[1.12]
+                "
                 style={{
                   letterSpacing: "0.3em",
                   fontKerning: "normal",
@@ -167,15 +177,15 @@ export default function BlogList({
               {heroDescription && (
                 <p
                   className="
-      mt-3 md:mt-4 
-      text-white/92 
-      font-subtitle 
-      text-lg md:text-xl 
-      leading-relaxed 
-      tracking-[0.02em] 
-      drop-shadow-[0_6px_20px_rgba(0,0,0,.35)] 
-      mx-auto
-    "
+                    mt-3 md:mt-4 
+                    text-white/92 
+                    font-subtitle 
+                    text-lg md:text-xl 
+                    leading-relaxed 
+                    tracking-[0.02em] 
+                    drop-shadow-[0_6px_20px_rgba(0,0,0,.35)] 
+                    mx-auto
+                  "
                   style={{ letterSpacing: "0.3em" }}
                 >
                   {heroDescription}
@@ -300,6 +310,7 @@ export default function BlogList({
                     className="w-full h-44 object-cover"
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => (e.currentTarget.style.display = "none")}
                   />
                 ) : (
                   <div className="w-full h-44 bg-muted grid place-items-center">
@@ -326,10 +337,22 @@ export default function BlogList({
 
                   <Link
                     to={`/publicaciones/${encodeURIComponent(id)}`}
-                    className="text-lg font-semibold font-display leading-tight hover:underline underline-offset-4"
+                    className="text-lg font-semibold font-display leading-tight hover:underline underline-offset-4 line-clamp-2"
+                    title={it.title}
                   >
                     {it.title}
                   </Link>
+
+                  {/* Autor + enlaces disponibles */}
+                  <div className="flex items-center justify-between">
+                    {it.author?.name ? (
+                      <span className="text-xs text-muted">
+                        Por {it.author.name}
+                      </span>
+                    ) : <span />}
+
+                    <LinkBadges pdfUrl={it.pdf_url} externalUrl={it.external_url} />
+                  </div>
 
                   {it.excerpt && (
                     <p className="text-soft text-sm line-clamp-3">
@@ -337,14 +360,45 @@ export default function BlogList({
                     </p>
                   )}
 
+                  {/* CTA primaria */}
                   <div className="pt-1">
                     <Link
                       to={`/publicaciones/${encodeURIComponent(id)}`}
-                      className="btn btn-outline"
+                      className="btn btn-outline w-full"
                     >
                       Leer más
                     </Link>
                   </div>
+
+                  {/* Acciones rápidas de lectura (si hay PDF/link) */}
+                  {(it.pdf_url || it.external_url) && (
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {it.pdf_url ? (
+                        <a
+                          className="btn btn-outline"
+                          href={it.pdf_url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Ver PDF ↗
+                        </a>
+                      ) : (
+                        <div />
+                      )}
+                      {it.external_url ? (
+                        <a
+                          className="btn btn-outline"
+                          href={it.external_url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Abrir link ↗
+                        </a>
+                      ) : (
+                        <div />
+                      )}
+                    </div>
+                  )}
                 </div>
               </motion.article>
             );

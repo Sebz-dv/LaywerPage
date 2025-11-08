@@ -22,6 +22,9 @@ import SiteSettings from "./components/settings/SiteSettings.jsx";
 import InfoBlocksManager from "./components/info/InfoBlocksManager.jsx";
 import AboutUs from "./pages/public/AboutUs.jsx";
 import CarouselManager from "./components/images/CarouselManager.jsx";
+import SimplePostsPage from "./pages/admin/post/SimplePostsPage.jsx";
+import PublicPostsGrid from "./pages/public/post/PublicPostsGrid.jsx";
+import PublicPostDetail from "./pages/public/post/PublicPostDetail.jsx";
 
 // Sube al tope en cada cambio de ruta
 function ScrollToTop() {
@@ -80,6 +83,11 @@ export default function App() {
           <Route path="/publicaciones/:id" element={<BlogArticle />} />
 
           <Route path="/about-us" element={<AboutUs />} />
+          <Route path="/public/simple-posts" element={<PublicPostsGrid />} />
+          <Route
+            path="/public/simple-posts/:id"
+            element={<PublicPostDetail />}
+          />
         </Route>
 
         {/* Protegidas (Admin) */}
@@ -94,6 +102,7 @@ export default function App() {
             <Route path="/dash/settings" element={<SiteSettings />} />
             <Route path="/dash/info" element={<InfoBlocksManager />} />
             <Route path="/dash/carousel" element={<CarouselManager />} />
+            <Route path="/dash/post" element={<SimplePostsPage />} />
           </Route>
         </Route>
 

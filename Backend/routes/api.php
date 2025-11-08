@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 
-use App\Models\PracticeArea;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CarouselController;
 use App\Http\Controllers\InfoBlockController;
@@ -12,6 +11,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TeamMemberProfilesController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\PostController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,6 +20,7 @@ use App\Http\Controllers\ArticleController;
 */
 Route::pattern('practice_area', '[0-9]+');
 Route::pattern('article', '[0-9]+');
+Route::pattern('post', '[0-9]+'); // 👈 importante, tu PostController bindea por id
 
 /*
 |--------------------------------------------------------------------------
@@ -63,12 +64,21 @@ Route::middleware(['jwt.cookie', 'auth:api'])->group(function () {
     Route::delete('practice-areas/{practice_area}',      [PracticeAreaController::class, 'destroy'])->name('practice-areas.destroy');
     Route::post('practice-areas/{practice_area}/toggle', [PracticeAreaController::class, 'toggle'])->name('practice-areas.toggle');
 
-    // Articles privadas (ID numérico forzado por pattern)
+    // Articles privadas
     Route::post('articles',                           [ArticleController::class, 'store']);
     Route::post('articles/{article}/toggle-publish',  [ArticleController::class, 'togglePublish']);
     Route::post('articles/{article}/toggle-featured', [ArticleController::class, 'toggleFeatured']);
     Route::post('articles/{article}',                 [ArticleController::class, 'update']);
     Route::delete('articles/{article}',               [ArticleController::class, 'destroy']);
+
+    /* =================== POSTS (PRIVADAS) =================== */
+    // Solo lo que EXISTE en PostController
+    Route::post('posts',          [PostController::class, 'store']);                 // crear
+    Route::match(['post','put','patch'], 'posts/{post}', [PostController::class, 'update']); // actualizar
+
+    /* ===== simple-posts (alias) — PRIVADAS ===== */
+    Route::post('simple-posts',                 [PostController::class, 'store']);   // alias crear
+    Route::match(['post','put','patch'], 'simple-posts/{post}', [PostController::class, 'update']); // alias actualizar
 });
 
 /*
@@ -90,9 +100,17 @@ Route::middleware([])->group(function () {
     Route::get('practice-areas',                 [PracticeAreaController::class, 'index'])->name('practice-areas.index');
     Route::get('practice-areas/{practice_area}', [PracticeAreaController::class, 'show'])->name('practice-areas.show');
 
-    // ARTÍCULOS: listado y detalle SOLO por ID numérico
+    // ARTÍCULOS (por ID numérico)
     Route::get('articles',           [ArticleController::class, 'index']);
-    Route::get('articles/{article}', [ArticleController::class, 'show']); // pattern ya fuerza número
+    Route::get('articles/{article}', [ArticleController::class, 'show']);
+
+    /* =================== POSTS (PÚBLICAS) =================== */
+    Route::get('posts',        [PostController::class, 'index']); // listado
+    Route::get('posts/{post}', [PostController::class, 'show']);  // ver uno por id
+
+    /* ===== simple-posts (alias) — PÚBLICA ===== */
+    Route::get('simple-posts',        [PostController::class, 'index']); // alias listado
+    Route::get('simple-posts/{post}', [PostController::class, 'show']);  // alias ver uno
 });
 
 Route::fallback(fn() => response()->json(['message' => 'Not Found'], 404));

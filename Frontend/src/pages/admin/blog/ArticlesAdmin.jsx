@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { articlesService as svc } from "../../../services/articlesService";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import Loader from "../../../components/loader/Loader.jsx"; // si no existe, quita esta línea y el uso
+import Loader from "../../../components/loader/Loader.jsx"; // si no existe, elimina esta import y el uso
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
@@ -22,6 +22,16 @@ const StatusBadge = ({ published, featured }) => {
   );
 };
 
+const LinkBadges = ({ pdfUrl, externalUrl }) => {
+  if (!pdfUrl && !externalUrl) return null;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {pdfUrl ? <span className="badge">PDF</span> : null}
+      {externalUrl ? <span className="badge">Link externo</span> : null}
+    </div>
+  );
+};
+
 export default function ArticlesAdmin() {
   const nav = useNavigate();
 
@@ -32,7 +42,7 @@ export default function ArticlesAdmin() {
 
   const [q, setQ] = useState("");
   const [filters, setFilters] = useState({ published_only: "", featured: "" });
-  const [sort, setSort] = useState("-id"); // por defecto: más nuevos
+  const [sort, setSort] = useState("-published_at,id"); // por defecto: publicados recientes primero
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(12);
 
@@ -131,7 +141,7 @@ export default function ArticlesAdmin() {
             </select>
 
             <select
-              className="input w-[220px]"
+              className="input w-[240px]"
               value={sort}
               onChange={(e) => {
                 setPage(1);
@@ -139,9 +149,9 @@ export default function ArticlesAdmin() {
               }}
               title="Orden"
             >
+              <option value="-published_at,id">Publicación (reciente)</option>
               <option value="-id">Más nuevos (ID)</option>
               <option value="-created_at">Creación (reciente)</option>
-              <option value="-published_at,id">Publicación (reciente)</option>
               <option value="title">Título (A-Z)</option>
               <option value="-featured,-published_at">
                 Destacados primero
@@ -177,9 +187,7 @@ export default function ArticlesAdmin() {
       {/* Error */}
       {error && (
         <div className="card card-pad border-destructive/40">
-          <div className="text-sm text-red-700">
-            {error}
-          </div>
+          <div className="text-sm text-red-700">{error}</div>
         </div>
       )}
 
@@ -198,7 +206,7 @@ export default function ArticlesAdmin() {
                 </div>
               </div>
             ))}
-            {/* Overlay loader bonito (si existe tu Loader) */}
+            {/* Overlay loader (si tienes Loader) */}
             <div className="fixed inset-0 grid place-items-center bg-black/10 backdrop-blur-sm pointer-events-none">
               <Loader size={44} />
             </div>
@@ -211,7 +219,10 @@ export default function ArticlesAdmin() {
                 Ajusta filtros o crea tu primera publicación.
               </p>
             </div>
-            <button className="btn btn-primary" onClick={() => nav("/dash/articles/new")}>
+            <button
+              className="btn btn-primary"
+              onClick={() => nav("/dash/articles/new")}
+            >
               Crear artículo
             </button>
           </div>
@@ -242,7 +253,9 @@ export default function ArticlesAdmin() {
 
                 <div className="p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="badge">{it.category?.name ?? "—"}</span>
+                    <span className="badge">
+                      {it.category?.name ?? "—"}
+                    </span>
                     {it.author?.name ? (
                       <span className="badge">{it.author.name}</span>
                     ) : null}
@@ -252,12 +265,15 @@ export default function ArticlesAdmin() {
                     {it.title}
                   </h3>
 
-                  <StatusBadge
-                    published={!!it.is_published}
-                    featured={!!it.featured}
-                  />
+                  <div className="flex items-center justify-between">
+                    <StatusBadge
+                      published={!!it.is_published}
+                      featured={!!it.featured}
+                    />
+                    <LinkBadges pdfUrl={it.pdf_url} externalUrl={it.external_url} />
+                  </div>
 
-                  {/* Actions */}
+                  {/* Acciones */}
                   <div className="pt-2 grid grid-cols-2 gap-2">
                     <button
                       className="btn btn-outline"
@@ -291,6 +307,36 @@ export default function ArticlesAdmin() {
                       Eliminar
                     </button>
                   </div>
+
+                  {/* Acciones rápidas de lectura (si hay PDF/link) */}
+                  {(it.pdf_url || it.external_url) && (
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {it.pdf_url ? (
+                        <a
+                          className="btn btn-outline"
+                          href={it.pdf_url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Ver PDF ↗
+                        </a>
+                      ) : (
+                        <div />
+                      )}
+                      {it.external_url ? (
+                        <a
+                          className="btn btn-outline"
+                          href={it.external_url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Abrir link ↗
+                        </a>
+                      ) : (
+                        <div />
+                      )}
+                    </div>
+                  )}
                 </div>
               </motion.article>
             ))}
