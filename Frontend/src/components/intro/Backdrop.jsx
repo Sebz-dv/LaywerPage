@@ -14,39 +14,36 @@ import heroFallback from "../../assets/about/justice.jpg";
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 
 function pickBackendOrigin() {
-  const env = import.meta.env.VITE_API_ORIGIN;
-  if (typeof env === "string" && /^https?:\/\//i.test(env)) {
-    try {
-      return new URL(env).origin;
-    } catch {
-      ("");
+  const envOrigin = import.meta.env.VITE_API_ORIGIN; // opcional
+  const envBase = import.meta.env.VITE_API_BASE_URL; // típico: https://back.../api
+  const baseAxios = api?.defaults?.baseURL;
+
+  const candidates = [envOrigin, envBase, baseAxios];
+
+  for (const c of candidates) {
+    if (typeof c === "string" && /^https?:\/\//i.test(c)) {
+      try {
+        const u = new URL(c);
+        // Si viene .../api, me quedo con el origin puro
+        return `${u.protocol}//${u.host}`;
+      } catch {
+        ""
+      }
     }
   }
-  const base = api?.defaults?.baseURL;
-  if (typeof base === "string" && /^https?:\/\//i.test(base)) {
-    try {
-      return new URL(base).origin;
-    } catch {
-      ("");
-    }
-  }
-  return "http://localhost:8000";
+  // Sin candidatos válidos: NO fuerces localhost, deja relativo
+  return "";
 }
 const BACKEND_ORIGIN = pickBackendOrigin();
 
 function resolveUrl(u) {
   if (!u) return "";
-  if (/^https?:\/\//i.test(u)) return u; // absoluta
+  if (/^https?:\/\//i.test(u)) return u; // ya absoluta
+  if (!BACKEND_ORIGIN) return u; // no sabemos el origin → deja tal cual
   if (u.startsWith("/")) return `${BACKEND_ORIGIN}${u}`; // /storage/...
   return `${BACKEND_ORIGIN}/${u.replace(/^\/+/, "")}`; // storage/...
 }
 
-/* =========================================================
- *  Componente: BackdropCarousel
- *  - Pone el carrusel como FONDO con crossfade
- *  - Texto superpuesto (como Backdrop)
- *  - Opcional: CTA buttons
- * =======================================================*/
 export default function BackdropCarousel({
   title = "Comprometidos con la justicia, la educación y la buena administración pública.",
   subtitle = (
@@ -74,8 +71,8 @@ export default function BackdropCarousel({
   const [err, setErr] = useState("");
   const prefersReduced = useReducedMotion();
   const timerRef = useRef(null);
-  const Motion = motion.div;
-  // Carga de imágenes del carrusel
+
+  // Carga de imágenes
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -100,7 +97,7 @@ export default function BackdropCarousel({
 
   // Autoplay
   useEffect(() => {
-    if (prefersReduced) return; // respeta accesibilidad
+    if (prefersReduced) return;
     if (!slides.length) return;
     clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
@@ -109,7 +106,7 @@ export default function BackdropCarousel({
     return () => clearInterval(timerRef.current);
   }, [slides.length, autoplayMs, prefersReduced]);
 
-  // Preload siguiente slide (suave)
+  // Preload siguiente slide
   const nextSrc = slides[(idx + 1) % Math.max(slides.length, 1)]?.src;
   useEffect(() => {
     if (!nextSrc) return;
@@ -133,6 +130,10 @@ export default function BackdropCarousel({
     [prefersReduced]
   );
 
+  const currentSlides = slides.length
+    ? slides
+    : [{ src: heroFallback, alt: "" }];
+
   return (
     <section
       aria-labelledby="backdrop-carousel-title"
@@ -143,10 +144,10 @@ export default function BackdropCarousel({
         className
       )}
     >
-      {/* Fondo: slides crossfade */}
+      {/* Fondo crossfade */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <AnimatePresence initial={false}>
-          {(slides.length ? slides : [{ src: heroFallback, alt: "" }]).map(
+          {currentSlides.map(
             (s, i) =>
               i === (slides.length ? idx : 0) && (
                 <motion.img
@@ -166,13 +167,13 @@ export default function BackdropCarousel({
           )}
         </AnimatePresence>
 
-        {/* Tinte/overlay */}
+        {/* Tinte */}
         <div
           className="absolute inset-0 mix-blend-multiply"
           style={{ background: tint }}
         />
 
-        {/* Shine barrido suave */}
+        {/* Shine suave */}
         {!prefersReduced && (
           <motion.span
             aria-hidden
@@ -189,7 +190,7 @@ export default function BackdropCarousel({
         )}
       </div>
 
-      {/* Contenido superpuesto */}
+      {/* Contenido */}
       <div className="relative z-10 max-w-5xl mx-auto">
         <motion.h1
           id="backdrop-carousel-title"
@@ -220,6 +221,7 @@ export default function BackdropCarousel({
           </motion.p>
         )}
 
+        {/* CTAs */}
         {showCTAs && (
           <motion.div
             variants={{
@@ -242,7 +244,7 @@ export default function BackdropCarousel({
           </motion.div>
         )}
 
-        {/* Indicadores (opcional) */}
+        {/* Indicadores */}
         {slides.length > 1 && (
           <div className="mt-6 flex items-center justify-center gap-2">
             {slides.map((s, i) => (
@@ -264,7 +266,7 @@ export default function BackdropCarousel({
           </div>
         )}
 
-        {/* Estado/Error minimal */}
+        {/* Error minimal */}
         {err && (
           <div role="alert" className="mt-4 text-sm text-red-200/95">
             {err}
@@ -276,7 +278,7 @@ export default function BackdropCarousel({
 }
 
 /* =========================================================
- *  CTA con "ink fill" (consistente con About)
+ *  CTA
  * =======================================================*/
 function CTA({ href, children, variant = "secondary" }) {
   const base =

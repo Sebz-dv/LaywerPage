@@ -1,10 +1,12 @@
-// components/about/DataView.jsx
+// src/components/about/DataView.jsx
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import br from "../../assets/about/br.png";
 import { settingsService } from "../../services/settingsService";
+import { resolveAssetUrl } from "../../lib/origin";
 
-export default function DataView() {
+// ✅ Renombrado para evitar Sonar javascript:S2137
+export default function BrandDataView() {
   const [brandLogoUrl, setBrandLogoUrl] = useState("");
   const [brandName, setBrandName] = useState("Blanco & Ramírez");
 
@@ -15,10 +17,15 @@ export default function DataView() {
         setBrandLogoUrl(s.logo_url || "");
         setBrandName(s.site_name || "Blanco & Ramírez");
       } catch (e) {
+        // eslint-disable-next-line no-console
         console.warn("No se pudo cargar settings:", e);
       }
     })();
   }, []);
+
+  // Si el back manda "/storage/logos/archivo.png", la convertimos a
+  // "https://back.blancoramirezlegal.com/storage/logos/archivo.png"
+  const logoSrc = brandLogoUrl ? resolveAssetUrl(brandLogoUrl) : br;
 
   return (
     <section className="w-full bg-white text-neutral-900 overflow-hidden">
@@ -33,12 +40,16 @@ export default function DataView() {
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
             <motion.img
-              src={brandLogoUrl || "/Blanco & Ramirez.png"}
+              src={logoSrc}
               alt={brandName}
               width={80}
               height={80}
               className="h-16 w-auto object-contain select-none"
               loading="eager"
+              onError={(e) => {
+                // Si el back no responde la imagen, caemos al asset local
+                e.currentTarget.src = br;
+              }}
             />
             <motion.span
               className="text-xl md:text-2xl font-bold tracking-tight text-[#0C2E63]"

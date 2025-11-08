@@ -1,7 +1,7 @@
 // src/components/team/MembersTable.jsx
 import React, { useMemo } from "react";
 
-const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? "http://localhost:8000";
+const API_ORIGIN = import.meta.env.VITE_API_ORIGIN;
 const resolveUrl = (u) =>
   !u ? "" : u.startsWith("http") ? u : `${API_ORIGIN}${u}`;
 const FALLBACK_AVATAR =
