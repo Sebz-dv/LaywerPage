@@ -237,8 +237,8 @@ export default function Login() {
   const MotionDiv = motion.div;
 
   // Demo defaults
-  const [email, setEmail] = useState("admin@example.com");
-  const [password, setPassword] = useState("Admin12320*");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);

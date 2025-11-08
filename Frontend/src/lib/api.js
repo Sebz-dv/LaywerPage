@@ -2,7 +2,7 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, // ← ahora consistente
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: import.meta.env.VITE_USE_CREDENTIALS === "true",
 });
 
