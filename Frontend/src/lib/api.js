@@ -2,11 +2,10 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL, // ← ya trae /api desde .env
-  withCredentials: true,                 // ← manda/recibe la cookie
+  baseURL: import.meta.env.VITE_API_BASE_URL, // ← ahora consistente
+  withCredentials: import.meta.env.VITE_USE_CREDENTIALS === "true",
 });
 
-// (opcional) verifícalo una vez
 console.info("[api] baseURL =", api.defaults.baseURL);
 
 let isRefreshing = false;
