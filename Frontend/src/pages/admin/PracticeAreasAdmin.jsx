@@ -1,6 +1,6 @@
 // src/pages/admin/PracticeAreasAdmin.jsx
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { practiceAreasService as svc } from "../../services/practiceAreasService"; // baseURL: http://localhost:8000/api
+import { practiceAreasService as svc } from "../../services/practiceAreasService";  
 import { motion, AnimatePresence } from "framer-motion";
 
 /* ================== Utils ================== */

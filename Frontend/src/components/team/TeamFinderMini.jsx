@@ -3,6 +3,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
+import { api } from "../../lib/api"; // ✅ Importar api
+import { resolveAssetUrl } from "../../lib/origin"; // ✅ Importar helper
 
 /* ================= Utils ================= */
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -15,12 +17,6 @@ const slugify = (s = "") =>
     .trim()
     .replace(/\s+/g, "-");
 
-// ✅ API base para JSON
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
-// ✅ ORIGIN para archivos estáticos
-const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? "http://localhost:8000";
-const resolveUrl = (u) => (!u ? "" : u.startsWith("http") ? u : `${API_ORIGIN}${u}`);
-
 // Fallback avatar base64 (gris)
 const FALLBACK_AVATAR =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23e5e7eb"/></svg>';
@@ -32,7 +28,7 @@ export default function TeamFinderMini({
   pageSize = 6,
   ctaHref = "/equipo",
   ctaLabel = "Conoce más de nuestro equipo",
-  imageFit = "cover", // 'cover' | 'contain'
+  imageFit = "cover",
 }) {
   const [items, setItems] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
@@ -43,24 +39,26 @@ export default function TeamFinderMini({
     setLoading(true);
     setError("");
 
-    const params = new URLSearchParams();
-    params.set("per_page", String(pageSize));
-    params.set("page", "1");
-    params.set("order_by", "id");
-    params.set("order", "asc");
-
-    fetch(`${API_URL}/team?${params.toString()}`, { signal: ctrl.signal })
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
+    // ✅ Usar axios en lugar de fetch
+    api
+      .get("/team", {
+        params: {
+          per_page: pageSize,
+          page: 1,
+          order_by: "id",
+          order: "asc",
+        },
+        signal: ctrl.signal,
       })
-      .then((json) => {
-        const data = Array.isArray(json?.data) ? json.data : [];
+      .then((response) => {
+        const data = Array.isArray(response.data?.data) ? response.data.data : [];
         const ordered = data.slice().sort((a, b) => (a?.id ?? 0) - (b?.id ?? 0));
         setItems(ordered.slice(0, pageSize));
       })
       .catch((e) => {
-        if (e.name !== "AbortError") setError(e.message || "Error");
+        if (e.name !== "AbortError" && e.name !== "CanceledError") {
+          setError(e.message || "Error");
+        }
       })
       .finally(() => setLoading(false));
 
@@ -75,7 +73,7 @@ export default function TeamFinderMini({
           {items.map((p, i) => {
             const slug = p.slug ?? slugify(p.nombre);
             const key = p.id ?? slug ?? `row-${i}`;
-            const imgSrc = resolveUrl(p.foto_url);
+            const imgSrc = resolveAssetUrl(p.foto_url); // ✅ Usar helper
             return (
               <MiniTeamCard
                 key={key}

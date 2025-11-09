@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "../../lib/api";
+import { getBackendOrigin, resolveAssetUrl } from "../../lib/origin";
 import { carouselService, filenameFromSrc } from "../../services/carouselService";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "framer-motion";
 
@@ -8,32 +9,12 @@ import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "framer-m
  * =======================================================*/
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 
-function pickBackendOrigin() {
-  const env = import.meta.env.VITE_API_ORIGIN;
-  if (typeof env === "string" && /^https?:\/\//i.test(env)) {
-    try {
-      return new URL(env).origin;
-    } catch {
-      console.error("Invalid VITE_API_ORIGIN:", env);
-    }
-  }
-  const base = api?.defaults?.baseURL;
-  if (typeof base === "string" && /^https?:\/\//i.test(base)) {
-    try {
-      return new URL(base).origin;
-    } catch {
-      console.error("Invalid baseURL:", base);
-    }
-  }
-  return "http://localhost:8000";
-}
-const BACKEND_ORIGIN = pickBackendOrigin();
+// ✅ Usar el helper centralizado
+const BACKEND_ORIGIN = getBackendOrigin();
 
+// ✅ Usar el helper de origin.js
 function resolveUrl(u) {
-  if (!u) return "";
-  if (/^https?:\/\//i.test(u)) return u; // absoluta
-  if (u.startsWith("/")) return `${BACKEND_ORIGIN}${u}`; // /storage/...
-  return `${BACKEND_ORIGIN}/${u.replace(/^\/+/, "")}`; // storage/...
+  return resolveAssetUrl(u);
 }
 
 // 👉 construye la URL de descarga segura (no abre en el navegador)

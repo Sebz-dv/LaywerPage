@@ -1,45 +1,20 @@
 // LawFirmCarousel.jsx
+"use client";
 import React, {
   useCallback,
-  useEffect, 
+  useEffect,
   useRef,
   useState,
 } from "react";
+
+// ✅ Usa tu axios configurado y helper para assets (igual que en TeamFinder)
 import { api } from "../../lib/api";
+import { resolveAssetUrl } from "../../lib/origin";
 import { carouselService } from "../../services/carouselService";
 
 // utils
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 const clampIndex = (n, c) => (c === 0 ? 0 : ((n % c) + c) % c);
-
-function pickBackendOrigin() {
-  const env = import.meta.env?.VITE_API_ORIGIN;
-  if (typeof env === "string" && /^https?:\/\//i.test(env)) {
-    try {
-      return new URL(env).origin;
-    } catch {
-      return env.split("/").slice(0, 3).join("/");
-    }
-  }
-  const base = api?.defaults?.baseURL;
-  if (typeof base === "string" && /^https?:\/\//i.test(base)) {
-    try {
-      return new URL(base).origin;
-    } catch {
-      return base.split("/").slice(0, 3).join("/");
-    }
-  }
-  return "http://localhost:8000";
-}
-const BACKEND_ORIGIN = pickBackendOrigin();
-
-function resolveUrl(u) {
-  if (!u) return "";
-  const s = String(u);
-  if (/^https?:\/\//i.test(s) || /^(data:|blob:)/i.test(s)) return s;
-  if (s.startsWith("/")) return `${BACKEND_ORIGIN}${s}`;
-  return `${BACKEND_ORIGIN}/${s.replace(/^\/+/, "")}`;
-}
 
 function useReducedMotion() {
   const [pref, setPref] = useState(false);
@@ -73,7 +48,7 @@ function useOnScreen(ref, rootMargin = "0px") {
  * Optimizado para imágenes 1920×823 y 2560×1097 (misma relación).
  */
 export default function LawFirmCarousel({
-  className, 
+  className,
   autoplay = true,
   interval = 4500,
   loop = true,
@@ -81,6 +56,7 @@ export default function LawFirmCarousel({
   showArrows = true,
   pauseOnHover = true,
   slideFit = "cover", // "cover" | "contain"
+  aspectRatio = "1920 / 823",
 }) {
   const [items, setItems] = useState([]); // [{ src, alt, title, subtitle }]
   const [loading, setLoading] = useState(false);
@@ -100,26 +76,32 @@ export default function LawFirmCarousel({
   const prefersReduced = useReducedMotion();
   const onScreen = useOnScreen(rootRef, "50px");
 
-  const load = useCallback(async () => {
+  // ✅ Carga usando tu servicio y normalizando con resolveAssetUrl
+  const load = useCallback(async (signal) => {
     setLoading(true);
     setErr("");
     try {
-      const list = await carouselService.list();
+      const list = await carouselService.list({ signal });
       const normalized = (Array.isArray(list) ? list : []).map((it) => ({
         ...it,
-        src: resolveUrl(it.src),
+        src: resolveAssetUrl(it?.src),
       }));
       setItems(normalized);
       setIndex((i) => clampIndex(i, normalized.length));
     } catch (e) {
+      // Ignora aborts
+      if (e?.name === "CanceledError" || e?.name === "AbortError") return;
       setErr(e?.message || "No se pudo cargar el carrusel");
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Montaje + abort seguro
   useEffect(() => {
-    load();
+    const ctrl = new AbortController();
+    load(ctrl.signal);
+    return () => ctrl.abort();
   }, [load]);
 
   const count = items.length;
@@ -186,7 +168,7 @@ export default function LawFirmCarousel({
     const threshold = (trackRef.current.offsetWidth || 300) * 0.15;
     if (deltaX.current < -threshold) next();
     else if (deltaX.current > threshold) prev();
-    // reset transform controlado por estado
+    // reset transform (estado manda)
     trackRef.current.style.transform = `translate3d(-${index * 100}%,0,0)`;
     dragging.current = false;
     deltaX.current = 0;
@@ -216,10 +198,9 @@ export default function LawFirmCarousel({
         </div>
       )}
 
-      {/* wrapper full-bleed con 2px por lado */}
       <div
         ref={rootRef}
-        className="relative w-full   select-none outline-none"
+        className="relative w-full select-none outline-none"
         role="region"
         aria-roledescription="carousel"
         aria-label="Carrusel de la firma"
@@ -233,7 +214,7 @@ export default function LawFirmCarousel({
             "relative w-full overflow-hidden border bg-[hsl(var(--card))]",
             "border-[hsl(var(--border))] shadow-sm"
           )}
-          style={{ aspectRatio: "1920 / 823" }}
+          style={{ aspectRatio }}
         >
           {/* máscara sutil */}
           <div className="pointer-events-none absolute inset-0 [mask-image:radial-gradient(120%_100%_at_50%_50%,#000_65%,transparent_100%)]" />

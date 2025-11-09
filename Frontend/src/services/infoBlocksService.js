@@ -1,4 +1,4 @@
-import { api } from "../lib/api";  // Apunta a http://localhost:8000/api
+import { api } from "../lib/api";  // ✅ Usa baseURL configurado en .env
 
 const BASE = "info-blocks";
 

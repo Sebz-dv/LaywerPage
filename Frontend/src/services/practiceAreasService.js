@@ -1,5 +1,5 @@
 // src/services/practiceAreasService.js
-import { api } from "../lib/api"; // baseURL: http://localhost:8000/api
+import { api } from "../lib/api"; // ✅ Usa baseURL configurado desde VITE_API_BASE_URL
 
 function isFileLike(v) {
   return (
@@ -21,7 +21,7 @@ function toFormData(payload, methodOverride = null) {
       fd.append("bullets", JSON.stringify(Array.isArray(raw) ? raw : []));
       continue;
     }
-    if (k === "icon_url" && hasIconFile) continue; // si hay archivo, ignora la URL
+    if (k === "icon_url" && hasIconFile) continue;
 
     let v = raw;
     if (typeof v === "boolean") v = v ? "1" : "0";
@@ -31,12 +31,10 @@ function toFormData(payload, methodOverride = null) {
 }
 
 export const practiceAreasService = {
-  // ACEPTA config para pasar signal, headers, etc.
   list(params = {}, config = {}) {
     return api.get("/practice-areas", { params, ...config }).then((r) => r.data);
   },
 
-  // ACEPTA config (necesario para AbortController)
   get(idOrSlug, config = {}) {
     return api.get(`/practice-areas/${idOrSlug}`, { ...config }).then((r) => r.data);
   },

@@ -4,15 +4,16 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { teamService } from "../../services/teamService";
 import { teamProfileService } from "../../services/teamProfileService";
+import { resolveAssetUrl } from "../../lib/origin"; // ✅ Importar helper
 
 /* ===================== Utils ===================== */
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
 }
 
-const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? "http://localhost:8000";
-const resolveUrl = (u) =>
-  !u ? "" : u.startsWith("http") ? u : `${API_ORIGIN}${u}`;
+// ✅ Usar helper centralizado
+const resolveUrl = (u) => resolveAssetUrl(u);
+
 const FALLBACK_AVATAR =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="320" height="400" viewBox="0 0 160 200"><rect width="160" height="200" rx="16" fill="%23f1f5f9"/><circle cx="80" cy="70" r="30" fill="%23e2e8f0"/><rect x="28" y="120" width="104" height="52" rx="16" fill="%23e2e8f0"/></svg>';
 
@@ -661,4 +662,3 @@ async function copyToClipboard(text) {
     ta.remove();
   }
 }
-

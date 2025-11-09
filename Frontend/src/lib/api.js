@@ -53,8 +53,10 @@ export const api = axios.create({
   withCredentials: String(import.meta.env?.VITE_USE_CREDENTIALS).toLowerCase() === "true",
 });
 
-console.info("[api] baseURL =", api.defaults.baseURL);
-
+// console.info("[api] baseURL =", api.defaults.baseURL);
+// console.info("[api] baseURL =", api.defaults.baseURL);
+// console.info("[DEBUG] VITE_API_BASE_URL =", import.meta.env.VITE_API_BASE_URL);
+// console.info("[DEBUG] todas las env =", import.meta.env);
 let isRefreshing = false;
 let pendingQueue = [];
 

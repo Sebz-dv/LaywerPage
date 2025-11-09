@@ -1,9 +1,13 @@
-// TeamFinder.jsx
+// src/components/team/TeamFinder.jsx
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import team from "../../assets/about/team.jpg";
+
+// ✅ Usa tu axios configurado y el helper para assets
+import { api } from "../../lib/api";
+import { resolveAssetUrl } from "../../lib/origin";
 
 /* ================= Utils ================= */
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -15,13 +19,6 @@ const slugify = (s = "") =>
     .replace(/[^a-z0-9\s-]/g, "")
     .trim()
     .replace(/\s+/g, "-");
-
-// ✅ API base para JSON
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
-// ✅ ORIGIN para archivos estáticos
-const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? "http://localhost:8000";
-const resolveUrl = (u) =>
-  !u ? "" : u.startsWith("http") ? u : `${API_ORIGIN}${u}`;
 
 /* ================= Hook: debounce ================= */
 function useDebounce(value, delay = 250) {
@@ -93,33 +90,31 @@ export default function TeamFinder({
   }, [imageFit]);
 
   // ===== Query (añadimos pista de orden por id asc) =====
-  const query = useMemo(() => {
-    const p = new URLSearchParams();
-    if (tab !== "todos") p.set("tab", tab);
-    if (debouncedNombre) p.set("nombre", debouncedNombre);
-    if (cargo) p.set("cargo", cargo);
-    if (area) p.set("area", area);
-    if (ciudad) p.set("ciudad", ciudad);
-    p.set("per_page", String(pageSize));
-    p.set("page", String(page));
-    p.set("order_by", "id");
-    p.set("order", "asc");
-    return p.toString();
+  const queryParams = useMemo(() => {
+    const p = {
+      per_page: pageSize,
+      page,
+      order_by: "id",
+      order: "asc",
+    };
+    if (tab !== "todos") p.tab = tab;
+    if (debouncedNombre) p.nombre = debouncedNombre;
+    if (cargo) p.cargo = cargo;
+    if (area) p.area = area;
+    if (ciudad) p.ciudad = ciudad;
+    return p;
   }, [tab, debouncedNombre, cargo, area, ciudad, page, pageSize]);
 
-  // ===== Fetch =====
+  // ===== Fetch (axios + api.defaults.baseURL) =====
   useEffect(() => {
     const ctrl = new AbortController();
     setLoading(true);
     setError("");
 
-    fetch(`${API_URL}/team?${query}`, { signal: ctrl.signal })
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((json) => {
-        const { data, meta } = json || {};
+    api
+      .get("/team", { params: queryParams, signal: ctrl.signal })
+      .then((r) => {
+        const { data, meta } = r?.data || {};
         setLastPage(meta?.last_page ?? 1);
         setFacets({
           cargos: meta?.facets?.cargos ?? [],
@@ -136,14 +131,16 @@ export default function TeamFinder({
         setItems((prev) => (page === 1 ? ordered : [...prev, ...ordered]));
       })
       .catch((e) => {
-        if (e.name !== "AbortError") setError(e.message || "Error");
+        // Ignora cancelaciones
+        if (e?.name === "CanceledError" || e?.name === "AbortError") return;
+        setError(e?.message || "Error");
       })
       .finally(() => setLoading(false));
 
     return () => ctrl.abort();
-  }, [query]); // ← depende solo de query (page ya está en query)
+  }, [queryParams, page]);
 
-  // Reset page al cambiar filtros
+  // Reset page al cambiar filtros “semánticos”
   useEffect(() => {
     setPage(1);
   }, [tab, debouncedNombre, cargo, area, ciudad]);
@@ -214,11 +211,7 @@ export default function TeamFinder({
               {title}
             </h1>
             <p className="mt-4 text-white/90 text-lg md:text-xl leading-relaxed font-subtitle max-w-3xl mx-auto">
-              En Blanco &amp; Ramírez Abogados creemos que el verdadero impacto
-              nace del trabajo colaborativo y del conocimiento compartido.
-              Nuestro equipo combina experiencia pública, privada y académica
-              para ofrecer soluciones integrales, éticas y sostenibles que
-              generan confianza y resultados duraderos.
+              {description}
             </p>
             <div className="mt-6 mx-auto h-[2px] w-24 bg-white/80" />
           </header>
@@ -299,9 +292,7 @@ export default function TeamFinder({
           />
           {/* Ajuste imagen */}
           <div className="flex flex-col">
-            <label className="block text-xs mb-1 text-muted">
-              Ajuste imagen
-            </label>
+            <label className="block text-xs mb-1 text-muted">Ajuste imagen</label>
             <div className="inline-flex rounded-lg border border-[hsl(var(--border))] overflow-hidden">
               <button
                 onClick={() => setImageFit("cover")}
@@ -385,7 +376,7 @@ export default function TeamFinder({
             {items.map((p, i) => {
               const slug = p.slug ?? slugify(p.nombre);
               const key = p.id ?? slug ?? `row-${i}`;
-              const imgSrc = resolveUrl(p.foto_url);
+              const imgSrc = resolveAssetUrl(p.foto_url); // ✅ AHORA desde el back real
               return (
                 <TeamCard
                   key={key}
@@ -625,26 +616,9 @@ function Select({ label, value, onChange, options = [] }) {
 
 function Spinner() {
   return (
-    <svg
-      className="h-4 w-4 animate-spin"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="3"
-        fill="none"
-        opacity="0.25"
-      />
-      <path
-        d="M22 12a10 10 0 0 1-10 10"
-        stroke="currentColor"
-        strokeWidth="3"
-        fill="none"
-      />
+    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" opacity="0.25" />
+      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" fill="none" />
     </svg>
   );
 }

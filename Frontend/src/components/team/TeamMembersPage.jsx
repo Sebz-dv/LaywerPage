@@ -4,9 +4,8 @@ import { MembersTable } from "../../components/team/MembersTable.jsx";
 import { MemberForm } from "../../components/team/MemberForm.jsx";
 import ProfileEditor from "../../components/team/ProfileEditor.jsx";
 import { teamService } from "../../services/teamService.js";
+import { resolveAssetUrl } from "../../lib/origin"; // ✅ usar helper centralizado
 
-const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? "http://localhost:8000";
-const resolveUrl = (u) => (!u ? "" : u.startsWith("http") ? u : `${API_ORIGIN}${u}`);
 const FALLBACK_AVATAR =
   'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="%23e5e7eb"/></svg>';
 
@@ -30,10 +29,10 @@ export default function TeamMembersPage() {
     () => ({
       nombre: "",
       cargo: "",
-      areas: [],       // ← array JSON
+      areas: [], // ← array JSON
       ciudad: "",
       tipo: "",
-      tipo_otro: "",   // ← para "otro"
+      tipo_otro: "", // ← para "otro"
       foto_url: "",
     }),
     []
@@ -96,14 +95,20 @@ export default function TeamMembersPage() {
       nombre: m.nombre ?? "",
       cargo: m.cargo ?? "",
       // compatibilidad: si aún tienes 'area' string en datos viejos
-      areas: Array.isArray(m.areas) ? m.areas : (m.areas ? [m.areas] : (m.area ? [m.area] : [])),
+      areas: Array.isArray(m.areas)
+        ? m.areas
+        : m.areas
+        ? [m.areas]
+        : m.area
+        ? [m.area]
+        : [],
       ciudad: m.ciudad ?? "",
       tipo: m.tipo ?? "",
       tipo_otro: "",
       foto_url: m.foto_url ?? "",
     });
     setFotoFile(null);
-    setFotoPreview(m.foto_url ? resolveUrl(m.foto_url) : null);
+    setFotoPreview(m.foto_url ? resolveAssetUrl(m.foto_url) : null);
     setModalOpen(true);
   }, []);
 
@@ -211,7 +216,7 @@ export default function TeamMembersPage() {
           onEdit={openEdit}
           onDelete={handleDelete}
           onOpenProfile={openProfile}
-          resolveUrl={resolveUrl}
+          resolveUrl={resolveAssetUrl} // ✅ usa helper centralizado (evita localhost)
           fallbackAvatar={FALLBACK_AVATAR}
         />
       </div>
