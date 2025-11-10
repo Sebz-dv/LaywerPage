@@ -28,10 +28,38 @@ const ICONS = {
   default: FaGlobe,
 };
 
+// Colores de marca por plataforma (para iconos)
+const BRAND_COLORS = {
+  instagram: "#E4405F",
+  facebook: "#1877F2",
+  twitter: "#1DA1F2",
+  x: "#1DA1F2",
+  linkedin: "#0A66C2",
+  youtube: "#FF0000",
+  tiktok: "#010101",
+  whatsapp: "#25D366",
+  github: "#181717",
+  default: "#9AA0A6", // gris neutro
+};
+
+function hexToRgba(hex, alpha = 0.15) {
+  const m = String(hex || "").trim().replace(/^#/, "");
+  const h = m.length === 3 ? m.split("").map((c) => c + c).join("") : m;
+  const r = parseInt(h.slice(0, 2), 16) || 0;
+  const g = parseInt(h.slice(2, 4), 16) || 0;
+  const b = parseInt(h.slice(4, 6), 16) || 0;
+  const a = Math.max(0, Math.min(1, alpha));
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
 const PAGES_FROM_ROUTES = [
+  { title: "Inicio", href: "/" },
   { title: "Equipo", href: "/equipo" },
+  { title: "Sobre Nosotros", href: "/about-us" },
   { title: "Áreas de práctica", href: "/servicios" },
   { title: "Publicaciones", href: "/publicaciones" },
+  { title: "Blog", href: "/simple-posts" },
+  { title: "Contactanos", href: "/contacto" },
 ];
 
 /* ========= Aliases ========= */
@@ -172,14 +200,22 @@ const useVariants = () => {
 function SocialIconButton({ item }) {
   const Icon = ICONS[item.platform] ?? ICONS.default;
   const { iconHover } = useVariants();
+  const color = BRAND_COLORS[item.platform] || BRAND_COLORS.default;
+  const borderColor = hexToRgba(color, 0.35);
+  const bg = hexToRgba(color, 0.10);
+  const bgHover = hexToRgba(color, 0.16);
+
   return (
     <motion.a
       href={item.url ? safeUrl(item.url) : "#"}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 backdrop-blur-sm transition"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-sm transition"
       aria-label={item.platform || "Social"}
       title={item.handle ? `${item.platform} · ${item.handle}` : item.platform}
+      style={{ color, border: `1px solid ${borderColor}`, backgroundColor: bg }}
+      whileHover={{ y: -3, backgroundColor: bgHover }}
+      whileTap={{ scale: 0.98 }}
       {...iconHover}
     >
       <Icon className="text-[18px]" />
@@ -188,18 +224,31 @@ function SocialIconButton({ item }) {
 }
 
 function Phones({ phones }) {
-  const raw = Array.isArray(phones) ? phones : String(phones || "").split(/[,;]+/);
-  const items = raw.map((p) => p.trim()).filter(Boolean).map((p) => ({
-    label: p, href: `tel:${p.replace(/[^\d+]/g, "")}`,
-  }));
+  // Acepta array o string. Ejemplo de string: "(+57)3212326760 - (+57)3022795673"
+  // Separamos por comas/semicolones o por guión con espacios alrededor (– o -).
+  const raw = Array.isArray(phones)
+    ? phones
+    : String(phones || "").split(/\s*[;,]\s*|\s+[–-]\s+/);
+
+  const items = raw
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => {
+      // Normalizamos para tel: manteniendo el + si existe
+      const href = `tel:${p.replace(/[^\d+]/g, "")}`;
+      return { label: p, href };
+    });
+
   if (!items.length) return null;
+
+  // ► Uno debajo del otro (línea por línea)
   return (
-    <ul className="flex flex-wrap gap-2 text-sm">
+    <ul className="space-y-2 text-sm">
       {items.map((it, i) => (
-        <li key={i}>
+        <li key={i} className="leading-6">
           <a
             href={it.href}
-            className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs hover:bg-white/15 transition"
+            className="inline-flex items-center rounded-md border border-white/15 bg-white/10 px-3 py-1.5 text-xs hover:bg-white/15 transition"
           >
             {it.label}
           </a>
@@ -211,17 +260,23 @@ function Phones({ phones }) {
 
 function Emails({ emails }) {
   const raw = Array.isArray(emails) ? emails : String(emails || "").split(/[,;]+/);
-  const items = raw.map((e) => e.trim()).filter(Boolean);
+  const items = raw
+    .map((e) => String(e).trim())
+    .filter(Boolean)
+    .map((mail) => ({ label: mail, href: `mailto:${mail}` }));
+
   if (!items.length) return null;
+
+  // Igual estilo que los teléfonos: pills con borde y fondo sutil
   return (
-    <ul className="flex flex-wrap gap-2 text-sm">
-      {items.map((mail, i) => (
-        <li key={i}>
+    <ul className="space-y-2 text-sm">
+      {items.map((it, i) => (
+        <li key={i} className="leading-6">
           <a
-            className="underline underline-offset-2 hover:text-[hsl(var(--accent))]"
-            href={`mailto:${mail}`}
+            className="inline-flex items-center rounded-md border border-white/15 bg-white/10 px-3 py-1.5 text-xs hover:bg-white/15 transition"
+            href={it.href}
           >
-            {mail}
+            {it.label}
           </a>
         </li>
       ))}
@@ -247,9 +302,16 @@ function PagesList({ s, pages }) {
         <ul className="mt-3 grid grid-cols-2 gap-2 text-sm">
           {list.slice(0, 12).map((p, i) => (
             <li key={i}>
-              <a className="text-white/80 hover:text-[hsl(var(--accent))]" href={p.href || "#"}>
-                {p.title || "Página"}
-              </a>
+              <div className="flex items-center justify-between gap-2">
+                <a
+                  className="inline-flex items-center gap-2 text-white/80 hover:text-[hsl(var(--accent))]"
+                  href={p.href || "#"}
+                  aria-label={`Abrir página individual: ${p.title || 'Página'}`}
+                >
+                  <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-white/60" />
+                  <span>{p.title || "Página"}</span>
+                </a> 
+              </div>
             </li>
           ))}
         </ul>
@@ -275,54 +337,51 @@ function PagesList({ s, pages }) {
 
 /** Direcciones */
 function Addresses({ s }) {
+  // Acepta string con separadores "//" o "||" y también array de objetos.
+  const splitAddresses = (input) => {
+    const raw = String(input || "");
+    const temp = raw.split("||").join("//");
+    const parts = temp.split("//").map((p) => p.trim()).filter(Boolean);
+    return parts.map((p) => {
+      const idx = p.indexOf(":");
+      if (idx > -1) {
+        const label = p.slice(0, idx).trim();
+        const address = p.slice(idx + 1).trim();
+        return { label: label || (s?.site_name || "Sede"), address };
+      }
+      return { label: s?.site_name || "Sede", address: p };
+    });
+  };
+
   const list = Array.isArray(s?.addresses)
     ? s.addresses
     : s?.address
-    ? [{ label: s.site_name || "Sede", address: s.address, map_link: s.map_link }]
+    ? splitAddresses(s.address)
     : [];
 
   if (!list.length) return null;
 
-  const hasMap = s?.map_iframe_url || s?.map_embed_url || s?.map_query || s?.address;
-
+  // ► Solo direcciones con botón "Ver en Google Maps" (sin iframes)
   return (
     <div className="space-y-4">
       <ul className="space-y-3 text-[13px] leading-6 text-white/80">
-        {list.slice(0, 4).map((a, i) => (
+        {list.slice(0, 6).map((a, i) => (
           <li key={i}>
-            {a.label ? <div className="text-sm font-semibold text-white">{a.label}</div> : null}
+            {a.label ? (
+              <div className="text-sm font-semibold text-white">{a.label}</div>
+            ) : null}
             <div>{a.address}</div>
-            {(a.map_link || hasMap) && (
-              <a
-                className="mt-1 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs hover:bg-white/15 transition"
-                target="_blank"
-                rel="noopener noreferrer"
-                href={
-                  a.map_link ||
-                  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.address)}`
-                }
-              >
-                Ver en Google Maps
-              </a>
-            )}
+            <a
+              className="mt-1 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs hover:bg-white/15 transition"
+              target="_blank"
+              rel="noopener noreferrer"
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.address)}`}
+            >
+              Ver en Google Maps
+            </a>
           </li>
         ))}
       </ul>
-
-      {/* Mapa pequeño opcional debajo (w-60 h-60) */}
-      {hasMap ? (
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <div className="w-60 h-60 mx-auto overflow-hidden rounded-lg">
-            <iframe
-              src={getMapEmbedUrl(s)}
-              title="Mapa"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="w-60 h-60"
-            />
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -405,22 +464,21 @@ export default function Footer() {
         >
           {/* Col 1: Logo + Páginas */}
           <motion.div variants={fadeInUp} {...hoverLift}>
-            <div className="mb-4">
-              {s?.logo_url ? (
-                <img
-                  src={s.logo_url}
-                  alt={s.site_name ? `${s.site_name} logo` : "Logo"}
-                  className="h-10 md:h-12 object-contain"
-                  loading="lazy"
-                  decoding="async"
-                />
-              ) : (
-                <span className="font-display text-xl">
-                  {s?.site_name || "Tu Sitio"}
-                </span>
-              )}
-            </div>
-            <h4 className="text-sm font-semibold text-white mb-2">Páginas</h4>
+            <div className="mb-4 flex items-center gap-3">
+  {s?.logo_url ? (
+    <img
+      src={s.logo_url}
+      alt={s.site_name ? `${s.site_name} logo` : "Logo"}
+      className="h-10 md:h-12 object-contain shrink-0"
+      loading="lazy"
+      decoding="async"
+    />
+  ) : null}
+  <span className="font-display text-lg md:text-xl font-semibold tracking-tight">
+    {s?.site_name || "Blanco & Ramírez"}
+  </span>
+</div>
+<h4 className="text-sm font-semibold text-white mb-2">Páginas</h4>
             <PagesList s={s} pages={PAGES_FROM_ROUTES} />
           </motion.div>
 

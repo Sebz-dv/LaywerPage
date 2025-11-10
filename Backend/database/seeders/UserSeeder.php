@@ -11,7 +11,7 @@ class UserSeeder extends Seeder
     {
         // Puedes sobreescribir con variables de entorno si quieres
         $name  = env('SEED_ADMIN_NAME', 'Admin');
-        $email = env('SEED_ADMIN_EMAIL', 'admin@example.com');
+        $email = env('SEED_ADMIN_EMAIL', 'admin@blancoramirezlegal.com');
         $pass  = env('SEED_ADMIN_PASS', 'Admin12320*'); // OJO: sin Hash::make si usas cast 'hashed'
 
         $user = User::firstOrCreate(

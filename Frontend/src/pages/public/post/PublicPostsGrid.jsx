@@ -2,7 +2,12 @@
 import React, { useEffect, useMemo, useState, useId } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import postsService from "../../../services/postsService";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
 import fallbackHero from "../../../assets/about/hero.jpg"; // fallback si no hay adjunto
 
 function timeAgo(iso) {
@@ -80,7 +85,7 @@ export default function PublicPostsGrid() {
   return (
     <main className="bg-app min-h-dvh">
       {/* ===== HERO / cabecera de la página ===== */}
-      <section className="relative h-[42svh] min-h-[320px] overflow-hidden">
+      <section className="relative h-[55vh] min-h-[320px] overflow-hidden">
         <motion.div
           style={{ scale: heroScale }}
           className="absolute inset-0 will-change-transform"
@@ -140,7 +145,9 @@ export default function PublicPostsGrid() {
               animate="show"
               className="mt-3 max-w-3xl text-white/95 font-subtitle text-lg md:text-xl"
             >
-              Blog con imagen de portada por post. Scrolla sin culpa.
+              Blog con imagen de portada por post. Scrolla sin
+              culpa.Conocimiento jurídico aplicado: explicamos lo complejo, para
+              que actúes con confianza.
             </motion.p>
 
             <motion.div
@@ -172,7 +179,11 @@ export default function PublicPostsGrid() {
             animate="show"
           >
             {Array.from({ length: 6 }).map((_, i) => (
-              <motion.div key={i} variants={fade} className="card overflow-hidden">
+              <motion.div
+                key={i}
+                variants={fade}
+                className="card overflow-hidden"
+              >
                 <div className="aspect-[16/9] w-full bg-muted" />
                 <div className="p-4">
                   <div className="h-5 w-2/3 bg-muted rounded mb-3" />
@@ -187,7 +198,9 @@ export default function PublicPostsGrid() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="card card-pad text-muted">
-            {q ? "Sin resultados para tu búsqueda." : "No hay publicaciones aún."}
+            {q
+              ? "Sin resultados para tu búsqueda."
+              : "No hay publicaciones aún."}
           </div>
         ) : (
           <motion.div
@@ -197,12 +210,16 @@ export default function PublicPostsGrid() {
             initial="hidden"
             animate="show"
           >
-            <span id={listId} className="sr-only">Lista de publicaciones</span>
+            <span id={listId} className="sr-only">
+              Lista de publicaciones
+            </span>
 
             {filtered.map((it) => {
               // Toma la PRIMERA imagen del arreglo de adjuntos (si existe)
               const cover =
-                it.attachments?.find(a => (a?.mime || "").startsWith("image/"))?.url ||
+                it.attachments?.find((a) =>
+                  (a?.mime || "").startsWith("image/")
+                )?.url ||
                 it.attachments?.[0]?.url ||
                 fallbackHero;
 
@@ -217,7 +234,10 @@ export default function PublicPostsGrid() {
                   tabIndex={0}
                   role="button"
                   onClick={() => navigate(`/public/simple-posts/${it.id}`)}
-                  onKeyDown={(e) => e.key === "Enter" && navigate(`/public/simple-posts/${it.id}`)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" &&
+                    navigate(`/public/simple-posts/${it.id}`)
+                  }
                 >
                   {/* Cover image */}
                   <div className="relative aspect-[16/9] w-full overflow-hidden">
@@ -239,7 +259,9 @@ export default function PublicPostsGrid() {
                       <h3 className="font-display text-xl leading-snug line-clamp-2">
                         {it.title}
                       </h3>
-                      <span className="badge shrink-0">{timeAgo(it.created_at)}</span>
+                      <span className="badge shrink-0">
+                        {timeAgo(it.created_at)}
+                      </span>
                     </div>
 
                     {it.info && (

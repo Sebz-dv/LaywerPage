@@ -277,7 +277,7 @@ export default function PracticeAreasPage({ data }) {
       )}
 
       {/* Destacadas */}
-      <section className="max-w-6xl mx-auto px-4 pt-10 pb-12">
+      <section className="w-full px-2 pt-10 pb-12">
         {loading ? <FeaturedSkeleton /> : <FeaturedAreas items={featured} />}
       </section>
 

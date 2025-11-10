@@ -14,8 +14,8 @@ function cx(...xs) {
 }
 
 export default function NavbarLanding({
-  ctaHref = "/agenda",
-  ctaLabel = "Agenda una consulta",
+  ctaHref = "/contacto",
+  ctaLabel = "Solicita una consulta",
   open: openProp,
   setOpen: setOpenProp,
 }) {

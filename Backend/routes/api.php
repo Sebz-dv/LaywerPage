@@ -11,6 +11,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TeamMemberProfilesController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\PostController;
 
 /*
@@ -111,6 +112,8 @@ Route::middleware([])->group(function () {
     /* ===== simple-posts (alias) — PÚBLICA ===== */
     Route::get('simple-posts',        [PostController::class, 'index']); // alias listado
     Route::get('simple-posts/{post}', [PostController::class, 'show']);  // alias ver uno
+
+    Route::post('/contact', [ContactController::class, 'store']);
 });
 
 Route::fallback(fn() => response()->json(['message' => 'Not Found'], 404));

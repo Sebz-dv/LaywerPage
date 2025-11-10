@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   motion,
   AnimatePresence,
@@ -31,14 +31,206 @@ const vPopCard = {
   exit: { opacity: 0, y: -16, scale: 0.98, transition: { duration: 0.24 } },
 };
 
+/* ============== Utils ============== */
+function chunkBy3(arr = []) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += 3) out.push(arr.slice(i, i + 3));
+  return out;
+}
+
+/* ============== Hook: luminancia de imagen ============== */
+function useImageLuma(src) {
+  const [isLight, setIsLight] = useState(false);
+
+  useEffect(() => {
+    if (!src) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.decoding = "async";
+    img.loading = "eager";
+    img.src = src;
+
+    const onLoad = () => {
+      try {
+        const w = 24,
+          h = 24;
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, w, h);
+        const { data } = ctx.getImageData(0, 0, w, h);
+
+        let sum = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i],
+            g = data[i + 1],
+            b = data[i + 2];
+          // luminancia percibida (sRGB)
+          const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          sum += l;
+        }
+        const avg = sum / (data.length / 4);
+        setIsLight(avg >= 178); // umbral “claro”
+      } catch {
+        setIsLight(false);
+      }
+    };
+
+    const onError = () => setIsLight(false);
+
+    img.addEventListener("load", onLoad);
+    img.addEventListener("error", onError);
+    return () => {
+      img.removeEventListener("load", onLoad);
+      img.removeEventListener("error", onError);
+    };
+  }, [src]);
+
+  return isLight;
+}
+
+/* ============== Subcomponente: Card con overlay adaptable ============== */
+function FeaturedCard({ item, reduceMotion }) {
+  const key = item.key ?? item.slug ?? item.id ?? item.title ?? "item";
+  const href =
+    item.to ??
+    (item.slug || item.key
+      ? `/servicios/${item.slug ?? item.key}${item.id ? `?id=${item.id}` : ""}`
+      : "#");
+
+  const cover = item.cover || item.icon || "";
+  const isLight = useImageLuma(cover);
+
+  // Agrupar “subtítulos/diferenciales” en columnas de 3
+  const bulletGroups = useMemo(() => {
+    const arr = Array.isArray(item.bullets) ? item.bullets : [];
+    return chunkBy3(arr);
+  }, [item.bullets]);
+
+  return (
+    <motion.article
+      key={key}
+      layout
+      variants={vPopCard}
+      initial={reduceMotion ? false : "hidden"}
+      animate={reduceMotion ? false : "show"}
+      exit={reduceMotion ? false : "exit"}
+      className={cx(
+        "relative bg-card overflow-hidden will-change-transform",
+        "border border-[hsl(var(--border))] rounded-xl",
+        "min-h-[260px] md:min-h-[300px]"
+      )}
+    >
+      {/* Imagen de fondo */}
+      {cover && (
+        <img
+          src={cover}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+      )}
+
+      {/* Scrim base (gradiente suave) */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-black/35" />
+
+      {/* Refuerzo si la imagen es clara */}
+      {isLight && (
+        <div className="pointer-events-none absolute inset-0 bg-black/28 mix-blend-normal" />
+      )}
+
+      {/* Contenido */}
+      <div className="relative z-10 flex items-center justify-center w-full h-full p-4">
+        <div
+          className={cx(
+            "rounded-xl border backdrop-blur-sm",
+            "bg-white/5 border-white/10",
+            "w-full max-w-3xl mx-auto px-5 py-6 md:px-7 md:py-8"
+          )}
+        >
+          {/* Título centrado y más grande */}
+          <h3
+            className={cx(
+              "text-5xl md:text-4xl font-semibold leading-tight text-white text-center",
+              "drop-shadow-[0_2px_10px_rgba(0,0,0,0.65)]"
+            )}
+          >
+            {item.title}
+          </h3>
+
+          {/* Subtítulo (si lo usas como tagline corto) alineado a la izquierda */}
+          {item.subtitle && (
+            <p
+              className={cx(
+                "text-xl md:text-base mt-3 text-white/85 text-center",
+                "drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)]"
+              )}
+            >
+              {item.subtitle}
+            </p>
+          )}
+
+          {/* Diferenciales / “subtítulos” en columnas de 3, alineados a la izquierda */}
+          {bulletGroups.length > 0 && (
+            <div
+              className={cx(
+                "mt-4",
+                // contenedor de columnas: se van sumando hacia la derecha
+                "flex flex-wrap md:flex-nowrap gap-x-6 gap-y-3 items-start justify-start"
+              )}
+            >
+              {bulletGroups.map((col, ci) => (
+                <ul key={ci} className="min-w-[12rem] space-y-1">
+                  {col.map((b, i) => (
+                    <li
+                      key={i}
+                      className={cx(
+                        "text-lg md:text-base text-white/85 text-left leading-relaxed",
+                        "drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)]"
+                      )}
+                    >
+                      • {b}
+                    </li>
+                  ))}
+                </ul>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-6 flex justify-center">
+            <Link
+              to={href}
+              aria-label={`Conocer el servicio: ${item.title ?? "Área"}`}
+              className={cx(
+                "group inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs md:text-sm font-medium",
+                "border-white/25 bg-white/10 text-white",
+                "hover:bg-white/15 hover:border-white/35",
+                "focus:outline-none focus:ring-2 focus:ring-white/30",
+                "backdrop-blur-sm transition-colors duration-200"
+              )}
+            >
+              <span>Conocer el servicio</span>
+              <span className="transition-transform duration-200 group-hover:translate-x-0.5">
+                →
+              </span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </motion.article>
+  );
+}
+
 /**
  * FeaturedAreas
  * - Props: items: { key, id, slug, title, subtitle, bullets, to, icon, cover }
  */
 export default function FeaturedAreas({
   items = [],
-  initialCount = 1,
-  step = 1,
+  initialCount = 4, // para ver “dos por dos” de entrada
+  step = 2,
 }) {
   const reduceMotion = useReducedMotion();
   const safeItems = Array.isArray(items) ? items : [];
@@ -69,128 +261,46 @@ export default function FeaturedAreas({
   }
 
   return (
-    <div className="relative grid md:grid-cols-2 gap-6 md:gap-8 items-start max-w-none px-0">
-      {/* IZQ: sticky tagline */}
-      <div className="md:sticky md:top-20 self-start px-4 md:px-6">
+    <div className="relative max-w-none px-0">
+      {/* Arriba, centrado */}
+      <div className="px-4 md:px-6 mb-4 md:mb-6">
         <motion.div
           variants={vContainer(0.06)}
           initial={reduceMotion ? undefined : "hidden"}
           whileInView={reduceMotion ? undefined : "show"}
           viewport={{ once: true, amount: 0.5 }}
-          className="mb-2"
+          className="mx-auto max-w-4xl text-center"
         >
           <motion.p
             variants={vItem}
-            className="text-[hsl(var(--primary))] leading-snug text-foreground font-medium"
+            className="leading-snug font-medium mt-2 text-foreground"
           >
-            <span className="block text-left text-4xl md:text-5xl font-bold">
+            <span className="block text-5xl font-bold tracking-tight">
               Donde hay un reto, trazamos la estrategia para ganarlo.
             </span>
-            <span className="block text-left mt-6 md:mt-8 text-base md:text-lg">
+            <span className="block mt-6 md:mt-8 text-lg text-muted-foreground">
               Asesoría legal precisa, diseñada para cada decisión empresarial.
             </span>
           </motion.p>
           <motion.hr
             variants={vItem}
-            className="mt-3 h-px border-0 bg-border/20"
+            className="mt-4 h-px border-0 bg-border/20"
           />
         </motion.div>
       </div>
 
-      {/* DER: pila progresiva */}
+      {/* Grid de cards (dos por dos) */}
       <div className="px-4 md:px-6">
         <AnimatePresence initial={false} mode="popLayout">
-          {safeItems.slice(0, visibleCount).map((it, idx, arr) => {
-            const isFirst = idx === 0;
-            const isLast = idx === arr.length - 1;
-            const key = it.key ?? it.slug ?? `${it.title ?? "item"}-${idx}`;
-
-            const href =
-              it.to ??
-              (it.slug || it.key
-                ? `/servicios/${it.slug ?? it.key}${it.id ? `?id=${it.id}` : ""}`
-                : "#");
-
-            return (
-              <motion.article
-                key={key}
-                layout
-                variants={vPopCard}
-                initial={reduceMotion ? false : "hidden"}
-                animate={reduceMotion ? false : "show"}
-                exit={reduceMotion ? false : "exit"}
-                className={cx(
-                  "relative bg-card p-4 md:p-5 lg:p-6 overflow-hidden will-change-transform",
-                  "border-[hsl(var(--border))]",
-                  isFirst && "rounded-t-none md:rounded-t-none border-t",
-                  "border-x border-y-0",
-                  isLast
-                    ? "border-b rounded-b-none md:rounded-b-none"
-                    : "border-b-0"
-                )}
-              >
-                {(it.cover || it.icon) && (
-                  <img
-                    src={it.cover || it.icon}
-                    alt=""
-                    className="absolute inset-0 h-full w-full object-cover"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                )}
-
-                <div className="absolute inset-0 bg-black/20 md:bg-black/15" />
-
-                <div className="relative z-10">
-                  <div
-                    className={cx(
-                      "rounded-xl border",
-                      "bg-white/5 border-white/10",
-                      "backdrop-blur-sm",
-                      "px-4 py-3 md:px-5 md:py-4"
-                    )}
-                  >
-                    <h3 className="text-2xl font-semibold leading-tight text-white">
-                      {it.title}
-                    </h3>
-
-                    <p className="text-sm mt-1 text-white/80">
-                      {it.subtitle || "Experiencia técnica, criterio práctico."}
-                    </p>
-
-                    {Array.isArray(it.bullets) && it.bullets.length > 0 && (
-                      <ul className="mt-3 grid sm:grid-cols-2 gap-2">
-                        {it.bullets.slice(0, 6).map((b, i) => (
-                          <li key={i} className="text-sm text-white/80">
-                            • {b}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    <div className="mt-3 flex justify-end">
-                      <Link
-                        to={href}
-                        aria-label={`Conocer el servicio: ${it.title ?? "Área"}`}
-                        className={cx(
-                          "group inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium",
-                          "border-white/20 bg-white/5 text-white/90",
-                          "hover:bg-white/10 hover:border-white/30",
-                          "focus:outline-none focus:ring-2 focus:ring-white/30",
-                          "backdrop-blur-sm transition-colors duration-200"
-                        )}
-                      >
-                        <span>Conocer el servicio</span>
-                        <span className="transition-transform duration-200 group-hover:translate-x-0.5">
-                          →
-                        </span>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </motion.article>
-            );
-          })}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+            {safeItems.slice(0, visibleCount).map((it) => (
+              <FeaturedCard
+                key={it.key ?? it.slug ?? it.id ?? it.title}
+                item={it}
+                reduceMotion={reduceMotion}
+              />
+            ))}
+          </div>
         </AnimatePresence>
 
         {safeItems.length > visibleCount && (

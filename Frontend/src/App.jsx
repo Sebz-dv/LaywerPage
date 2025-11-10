@@ -25,6 +25,7 @@ import CarouselManager from "./components/images/CarouselManager.jsx";
 import SimplePostsPage from "./pages/admin/post/SimplePostsPage.jsx";
 import PublicPostsGrid from "./pages/public/post/PublicPostsGrid.jsx";
 import PublicPostDetail from "./pages/public/post/PublicPostDetail.jsx";
+import Contactenos from "./pages/public/contacto/Contactenos.jsx";
 
 // Sube al tope en cada cambio de ruta
 function ScrollToTop() {
@@ -88,6 +89,7 @@ export default function App() {
             path="/public/simple-posts/:id"
             element={<PublicPostDetail />}
           />
+          <Route path="/contacto" element={<Contactenos />} />
         </Route>
 
         {/* Protegidas (Admin) */}
