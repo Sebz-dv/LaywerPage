@@ -12,8 +12,10 @@ import {
   FeaturedSkeleton,
   GridSkeleton,
 } from "../../../components/practice/Skeletons.jsx";
-import areas from "../../../assets/about/areas.jpg";
-import office from "../../../assets/about/office.jpeg";
+
+// ✅ nuevo: media slots + helper para URLs
+import { mediaService } from "../../../services/mediaService";
+import { resolveAssetUrl } from "../../../lib/origin";
 
 /* ================== Utils ================== */
 function cx(...xs) {
@@ -74,18 +76,33 @@ function Hero({ title, subtitle, image, alt = "" }) {
 
   // Parallax
   const { scrollYProgress } = useScroll();
-  const yHero = useTransform(scrollYProgress, [0, 1], [0, prefersReduced ? 0 : -120]);
+  const yHero = useTransform(
+    scrollYProgress,
+    [0, 1],
+    [0, prefersReduced ? 0 : -120]
+  );
 
   // Ken Burns sutil (un poco más de scale por el blur)
-  const imgInitial = { opacity: 0, scale: prefersReduced ? 1.10 : 1.14 };
+  const imgInitial = { opacity: 0, scale: prefersReduced ? 1.1 : 1.14 };
   const imgAnimate = { opacity: 1, scale: 1.08 };
   const imgTransition = { duration: 1.1, ease: "easeOut" };
 
+  const hasImage = Boolean(image);
+
   return (
-    <section ref={heroRef} className={cx("relative overflow-hidden font-display text-white")}>
+    <section
+      ref={heroRef}
+      className={cx(
+        "relative overflow-hidden font-display text-white",
+        "bg-[hsl(var(--primary))]" // base sólida si no hay imagen
+      )}
+    >
       {/* Fondo con imagen + overlay */}
-      <motion.div style={{ y: yHero }} className="absolute inset-0 will-change-transform">
-        {image && (
+      <motion.div
+        style={{ y: yHero }}
+        className="absolute inset-0 will-change-transform"
+      >
+        {hasImage && (
           <motion.img
             src={image}
             alt={alt}
@@ -105,7 +122,7 @@ function Hero({ title, subtitle, image, alt = "" }) {
           />
         )}
 
-        {/* Overlays para legibilidad centrada */}
+        {/* Overlays para legibilidad centrada (funcionan con o sin imagen) */}
         <div className="absolute inset-0">
           {/* Oscurecido base */}
           <div className="absolute inset-0 bg-black/35 md:bg-black/30" />
@@ -115,8 +132,8 @@ function Hero({ title, subtitle, image, alt = "" }) {
           <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/25 to-transparent" />
         </div>
 
-        {/* Shine barrido */}
-        {!prefersReduced && (
+        {/* Shine barrido sólo si hay imagen */}
+        {hasImage && !prefersReduced && (
           <motion.span
             aria-hidden
             className="pointer-events-none absolute top-0 bottom-0 -left-1/3 w-1/3"
@@ -159,7 +176,11 @@ function Hero({ title, subtitle, image, alt = "" }) {
                 <motion.p
                   initial={{ opacity: 0, y: 16, filter: "blur(2px)" }}
                   animate={{ opacity: 1, y: 0, filter: "blur(0)" }}
-                  transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}
+                  transition={{
+                    duration: 0.7,
+                    ease: "easeOut",
+                    delay: 0.1,
+                  }}
                   className="mt-5 md:mt-6 text-xl md:text-2xl lg:text-[22px] text-white/92 leading-relaxed font-subtitle max-w-3xl mx-auto"
                 >
                   {subtitle}
@@ -173,14 +194,16 @@ function Hero({ title, subtitle, image, alt = "" }) {
   );
 }
 
-
 /* ================== Página ================== */
 export default function PracticeAreasPage({ data }) {
   const heroTitle = data?.heroTitle ?? "Áreas de práctica";
   const heroSubtitle =
     data?.heroSubtitle ??
     "Soluciones legales integrales, diseñadas a la medida de cada decisión empresarial.";
-  const heroImage = areas;
+
+  // ✅ URLs de media slots
+  const [heroImageUrl, setHeroImageUrl] = useState(null); // areas_hero
+  const [ctaImageUrl, setCtaImageUrl] = useState(null); // contact_services
 
   const [featured, setFeatured] = useState([]);
   const [others, setOthers] = useState([]);
@@ -189,10 +212,34 @@ export default function PracticeAreasPage({ data }) {
 
   // Barra de progreso
   const { scrollYProgress } = useScroll();
-  const width = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]); 
+  const width = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
+  // ================== Carga media slots ==================
   useEffect(() => {
-    // Protección contra setState tras unmount
+    (async () => {
+      try {
+        const [areasSlot, contactSlot] = await Promise.all([
+          mediaService.getByKey("areas_hero").catch(() => null),
+          mediaService.getByKey("contact_services").catch(() => null),
+        ]);
+
+        setHeroImageUrl(
+          areasSlot?.url ? resolveAssetUrl(areasSlot.url) : null
+        );
+        setCtaImageUrl(
+          contactSlot?.url ? resolveAssetUrl(contactSlot.url) : null
+        );
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("Error cargando media slots de áreas:", e);
+        setHeroImageUrl(null);
+        setCtaImageUrl(null);
+      }
+    })();
+  }, []);
+
+  // ================== Carga de áreas ==================
+  useEffect(() => {
     let active = true;
 
     (async () => {
@@ -202,7 +249,12 @@ export default function PracticeAreasPage({ data }) {
 
         const [resFeat, resOther] = await Promise.all([
           svc.list({ featured: 1, active: 1, sort: "order", per_page: 60 }),
-          svc.list({ featured: 0, active: 1, sort: "order,title", per_page: 100 }),
+          svc.list({
+            featured: 0,
+            active: 1,
+            sort: "order,title",
+            per_page: 100,
+          }),
         ]);
 
         if (!active) return;
@@ -256,11 +308,11 @@ export default function PracticeAreasPage({ data }) {
         aria-hidden
       />
 
-      {/* HERO */}
+      {/* HERO: usa areas_hero si existe, si no solo color + texto */}
       <Hero
         title={heroTitle}
         subtitle={heroSubtitle}
-        image={heroImage}
+        image={heroImageUrl}
         alt="Áreas de práctica - imagen principal"
       />
 
@@ -294,8 +346,11 @@ export default function PracticeAreasPage({ data }) {
         />
       </div>
 
-      {/* CTA sin dependencias */}
-      <section className="relative z-10 bg-[hsl(var(--primary))] text-white" aria-labelledby="about-cta">
+      {/* CTA */}
+      <section
+        className="relative z-10 bg-[hsl(var(--primary))] text-white"
+        aria-labelledby="about-cta"
+      >
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid items-center gap-12 lg:grid-cols-12">
             <div className="lg:col-span-6 order-1">
@@ -314,17 +369,26 @@ export default function PracticeAreasPage({ data }) {
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.25 }}
-                transition={{ duration: 0.5, ease: "easeOut", delay: 0.06 }}
+                transition={{
+                  duration: 0.5,
+                  ease: "easeOut",
+                  delay: 0.06,
+                }}
                 className="text-white/85 mt-3 text-xl"
               >
-                Cuéntenos su caso, estamos dispuestos a escucharlo y ayudarlo a tomar las mejores decisiones.
+                Cuéntenos su caso, estamos dispuestos a escucharlo y ayudarlo a
+                tomar las mejores decisiones.
               </motion.p>
 
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.25 }}
-                transition={{ duration: 0.5, ease: "easeOut", delay: 0.12 }}
+                transition={{
+                  duration: 0.5,
+                  ease: "easeOut",
+                  delay: 0.12,
+                }}
                 className="mt-7 flex gap-4"
               >
                 <a
@@ -348,16 +412,23 @@ export default function PracticeAreasPage({ data }) {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true, amount: 0.25 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="relative overflow-hidden rounded-2xl"
+                className="relative overflow-hidden rounded-2xl bg-white/5 border border-white/15"
               >
-                <img
-                  src={office}
-                  alt="Colaboración con clientes"
-                  className="w-full h-[280px] sm:h-[340px] lg:h-[380px] object-cover"
-                  loading="lazy"
-                  decoding="async"
-                  sizes="(min-width:1024px) 48vw, 90vw"
-                />
+                {ctaImageUrl ? (
+                  <img
+                    src={ctaImageUrl}
+                    alt="Colaboración con clientes"
+                    className="w-full h-[280px] sm:h-[340px] lg:h-[380px] object-cover"
+                    loading="lazy"
+                    decoding="async"
+                    sizes="(min-width:1024px) 48vw, 90vw"
+                  />
+                ) : (
+                  // Esqueleto si no hay contact_services
+                  <div className="w-full h-[280px] sm:h-[340px] lg:h-[380px] bg-black/10 flex items-center justify-center text-white/60 text-sm">
+                    Imagen de contacto
+                  </div>
+                )}
               </motion.div>
             </div>
           </div>

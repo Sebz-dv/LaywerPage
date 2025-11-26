@@ -8,7 +8,8 @@ import {
   FaBookmark,
   FaArchway,
   FaBookMedical,
-  FaImages 
+  FaImages,
+  FaImage,
 } from "react-icons/fa";
 
 export const menuItems = [
@@ -31,11 +32,17 @@ export const menuItems = [
     icon: FaImages,
   },
   {
+    key: "media",
+    label: "Imagenes de Intro",
+    link: "/dash/media",
+    icon: FaImage,
+  },
+  {
     key: "areas",
     label: "Áreas",
     link: "/dash/areas",
     icon: FaAlignCenter,
-  }, 
+  },
   {
     key: "publicaciones",
     label: "Publicaciones",
@@ -46,7 +53,7 @@ export const menuItems = [
     key: "post",
     label: "Blog Post",
     link: "/dash/post",
-    icon: FaBlogger ,
+    icon: FaBlogger,
   },
   {
     key: "ajustes",

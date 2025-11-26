@@ -3,12 +3,16 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import br from "../../assets/about/br.png";
 import { settingsService } from "../../services/settingsService";
+import { mediaService } from "../../services/mediaService";
 import { resolveAssetUrl } from "../../lib/origin";
 
 // ✅ Renombrado para evitar Sonar javascript:S2137
 export default function BrandDataView() {
   const [brandLogoUrl, setBrandLogoUrl] = useState("");
   const [brandName, setBrandName] = useState("Blanco & Ramírez");
+
+  // 👉 nueva: imagen de fondo para la sección fundadores
+  const [foundersHeroUrl, setFoundersHeroUrl] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -20,12 +24,25 @@ export default function BrandDataView() {
         // eslint-disable-next-line no-console
         console.warn("No se pudo cargar settings:", e);
       }
+
+      // Cargar imagen del slot "fundadores_hero"
+      try {
+        const data = await mediaService.getByKey("fundadores_hero");
+        // si el back ya devuelve URL absoluta, puedes usarla directo
+        const url = data?.url ? resolveAssetUrl(data.url) : "";
+        setFoundersHeroUrl(url);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("No se pudo cargar media slot fundadores_hero:", e);
+      }
     })();
   }, []);
 
-  // Si el back manda "/storage/logos/archivo.png", la convertimos a
-  // "https://back.blancoramirezlegal.com/storage/logos/archivo.png"
+  // Logo: si viene de back, lo resolvemos; si no, fallback local
   const logoSrc = brandLogoUrl ? resolveAssetUrl(brandLogoUrl) : br;
+
+  // Fondo hero: usa el slot fundadores_hero si existe; si no, br
+  const foundersBg = foundersHeroUrl || br;
 
   return (
     <section className="w-full bg-white text-neutral-900 overflow-hidden">
@@ -47,7 +64,7 @@ export default function BrandDataView() {
               className="h-16 w-auto object-contain select-none"
               loading="eager"
               onError={(e) => {
-                // Si el back no responde la imagen, caemos al asset local
+                // Si el back no responde la imagen del logo, caemos al asset local `br`
                 e.currentTarget.src = br;
               }}
             />
@@ -101,11 +118,11 @@ export default function BrandDataView() {
           </motion.p>
         </div>
 
-        {/* Imagen con animación de entrada lateral */}
+        {/* Imagen con animación de entrada lateral - DESKTOP */}
         <motion.div
           className="hidden md:block bg-right bg-cover bg-no-repeat"
           style={{
-            backgroundImage: `url(${br})`,
+            backgroundImage: `url(${foundersBg})`,
             minHeight: "600px",
           }}
           initial={{ opacity: 0, x: 100 }}
@@ -116,7 +133,7 @@ export default function BrandDataView() {
         {/* Imagen móvil */}
         <motion.div
           className="block md:hidden h-72 bg-center bg-cover bg-no-repeat"
-          style={{ backgroundImage: `url(${br})` }}
+          style={{ backgroundImage: `url(${foundersBg})` }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}

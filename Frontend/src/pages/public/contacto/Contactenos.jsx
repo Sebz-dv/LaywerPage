@@ -5,9 +5,7 @@ import { Link } from "react-router-dom";
 import { practiceAreasService } from "../../../services/practiceAreasService";
 import { sendContact } from "../../../services/contactService";
 import { settingsService } from "../../../services/settingsService";
-
-// ⬇️ imagen del hero
-import hero from "../../../assets/about/hero.jpg";
+import { mediaService } from "../../../services/mediaService"; // ⬅️ NUEVO
 
 /* ======== UI base ======== */
 const inputBase =
@@ -89,14 +87,18 @@ function Addresses({ settings }) {
       {list.slice(0, 8).map((a, i) => (
         <li key={i} className="rounded-xl border border-border/60 bg-background/40 p-4">
           {a.label ? (
-            <div className="text-sm font-semibold text-foreground mb-1">{a.label}</div>
+            <div className="text-sm font-semibold text-foreground mb-1">
+              {a.label}
+            </div>
           ) : null}
           <div className="text-muted-foreground">{a.address}</div>
           <a
             className="mt-2 inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/40 px-3 py-1.5 text-xs hover:bg-background/60 transition"
             target="_blank"
             rel="noopener noreferrer"
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.address)}`}
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+              a.address
+            )}`}
           >
             Ver en Google Maps
           </a>
@@ -121,7 +123,11 @@ const fade = {
 };
 
 function Container({ className = "", children }) {
-  return <div className={cx("mx-auto max-w-7xl px-4 md:px-6 lg:px-8", className)}>{children}</div>;
+  return (
+    <div className={cx("mx-auto max-w-7xl px-4 md:px-6 lg:px-8", className)}>
+      {children}
+    </div>
+  );
 }
 
 /* ======== Página ======== */
@@ -136,6 +142,10 @@ export default function Contactenos() {
   const [settings, setSettings] = useState(null);
   const [settingsError, setSettingsError] = useState(null);
 
+  // 🎯 Slot del hero: contact_hero
+  const [heroMedia, setHeroMedia] = useState(null);
+  const [heroLoading, setHeroLoading] = useState(true);
+
   const [form, setForm] = useState({
     nombre: "",
     correo: "",
@@ -149,7 +159,9 @@ export default function Contactenos() {
 
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const [status, setStatus] = useState(/** @type {null|{ok:boolean,msg:string}} */ (null));
+  const [status, setStatus] = useState(
+    /** @type {null|{ok:boolean,msg:string}} */ (null)
+  );
 
   /* Cargar áreas */
   useEffect(() => {
@@ -157,10 +169,16 @@ export default function Contactenos() {
     (async () => {
       try {
         const res = await practiceAreasService.list();
-        const arr = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+        const arr = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res)
+          ? res
+          : [];
         const mapped = arr
           .map((it) =>
-            it && typeof it === "object" ? { slug: it.slug, title: it.title } : null
+            it && typeof it === "object"
+              ? { slug: it.slug, title: it.title }
+              : null
           )
           .filter(Boolean);
         if (!cancelled) setAreas(mapped);
@@ -192,19 +210,49 @@ export default function Contactenos() {
     };
   }, []);
 
+  /* 🔵 Cargar imagen del hero desde el slot `contact_hero` */
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        setHeroLoading(true);
+        const slot = await mediaService.getByKey("contact_hero");
+        if (!active) return;
+        if (slot && slot.url) {
+          setHeroMedia(slot);
+        } else {
+          setHeroMedia(null);
+        }
+      } catch (e) {
+        if (!active) return;
+        console.warn("[Contacto] No se pudo cargar contact_hero:", e);
+        setHeroMedia(null);
+      } finally {
+        if (active) setHeroLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   function setVal(k, v) {
     setForm((s) => ({ ...s, [k]: v }));
   }
 
   const disabled = useMemo(
-    () => submitting || !form.acepta || (form.website ?? "").trim() !== "",
+    () =>
+      submitting ||
+      !form.acepta ||
+      (form.website ?? "").trim() !== "",
     [submitting, form.acepta, form.website]
   );
 
   function validate() {
     const e = {};
     if (!form.nombre.trim()) e.nombre = "Ingresa tu nombre";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo)) e.correo = "Correo inválido";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo))
+      e.correo = "Correo inválido";
 
     const tel = form.telefono.trim();
     const telOk = /^\+?[0-9()\-.\s]{7,25}$/.test(tel);
@@ -275,26 +323,38 @@ export default function Contactenos() {
     <>
       {/* === HERO full-bleed === */}
       <section className="relative">
-        {/* Fondo (imagen + overlay + brillo) */}
+        {/* Fondo (imagen de slot + overlay + brillo).
+            Si NO hay imagen en el slot, solo se ve el degradado de marca. */}
         <motion.div
           className="absolute inset-0 z-0 will-change-transform"
           animate={{ scale: [1.05, 1, 1.05] }}
           transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
         >
-          <img
-            src={hero}
-            alt="Equipo legal trabajando"
-            className="h-full w-full object-cover"
-            loading="eager"
-            decoding="async"
-            fetchPriority="high"
-            sizes="100vw"
+          {heroMedia?.url && (
+            <img
+              src={heroMedia.url}
+              alt={heroMedia.alt || "Equipo legal trabajando"}
+              className="h-full w-full object-cover"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+              sizes="100vw"
+            />
+          )}
+
+          {/* Overlay de color de marca (sirve solo o encima de la foto) */}
+          <div
+            className="absolute inset-0 mix-blend-multiply z-10"
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(var(--primary)/.85) 0%, hsl(var(--accent)/.42) 100%)",
+            }}
           />
 
           {/* Barrido brillante */}
           <motion.span
             aria-hidden
-            className="pointer-events-none absolute top-0 bottom-0 -left-1/3 w-1/3 z-0"
+            className="pointer-events-none absolute top-0 bottom-0 -left-1/3 w-1/3 z-10"
             style={{
               background:
                 "linear-gradient(90deg, transparent 0%, rgba(255,255,255,.35) 45%, rgba(255,255,255,.55) 50%, rgba(255,255,255,.35) 55%, transparent 100%)",
@@ -304,19 +364,10 @@ export default function Contactenos() {
             animate={{ x: ["0%", "200%"] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
           />
-
-          {/* Overlay de color de marca */}
-          <div
-            className="absolute inset-0 mix-blend-multiply z-10"
-            style={{
-              background:
-                "linear-gradient(135deg, hsl(var(--primary)/.85) 0%, hsl(var(--accent)/.42) 100%)",
-            }}
-          />
         </motion.div>
 
         {/* Contenido del hero */}
-        <Container className="relative z-10 py-24 sm:py-28">
+        <Container className="relative z-20 py-24 sm:py-28">
           <motion.p
             variants={fade}
             initial="hidden"
@@ -358,12 +409,13 @@ export default function Contactenos() {
             )}
             style={{ wordSpacing: "0.06em" }}
           >
-            Asesoría especializada, representación judicial y acompañamiento estratégico.
+            Asesoría especializada, representación judicial y acompañamiento
+            estratégico.
           </motion.p>
         </Container>
 
         {/* Degradado al contenido */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background to-transparent z-20" />
       </section>
 
       {/* === CONTENIDO === */}
@@ -415,7 +467,12 @@ export default function Contactenos() {
                 />
               </Field>
 
-              <Field id="telefono" label="Teléfono" error={errors.telefono} required>
+              <Field
+                id="telefono"
+                label="Teléfono"
+                error={errors.telefono}
+                required
+              >
                 <input
                   id="telefono"
                   name="telefono"
@@ -445,7 +502,12 @@ export default function Contactenos() {
                 />
               </Field>
 
-              <Field id="area" label="Área de práctica" error={errors.area} required>
+              <Field
+                id="area"
+                label="Área de práctica"
+                error={errors.area}
+                required
+              >
                 <select
                   id="area"
                   name="area"
@@ -455,7 +517,9 @@ export default function Contactenos() {
                   aria-invalid={!!errors.area}
                 >
                   <option value="" disabled>
-                    {loadingAreas ? "Cargando áreas…" : "Selecciona un área de práctica"}
+                    {loadingAreas
+                      ? "Cargando áreas…"
+                      : "Selecciona un área de práctica"}
                   </option>
                   {areas.map(({ slug, title }) => (
                     <option key={slug} value={slug}>
@@ -465,7 +529,12 @@ export default function Contactenos() {
                 </select>
               </Field>
 
-              <Field id="mensaje" label="Mensaje" error={errors.mensaje} required>
+              <Field
+                id="mensaje"
+                label="Mensaje"
+                error={errors.mensaje}
+                required
+              >
                 <textarea
                   id="mensaje"
                   name="mensaje"
@@ -511,7 +580,8 @@ export default function Contactenos() {
                   >
                     Política de Tratamiento de Datos Personales
                   </Link>{" "}
-                  y autorizo el tratamiento de mis datos con base en la política.
+                  y autorizo el tratamiento de mis datos con base en la
+                  política.
                 </label>
               </div>
               {errors.acepta ? <p className={errorText}>{errors.acepta}</p> : null}
@@ -548,7 +618,9 @@ export default function Contactenos() {
           >
             {/* Direcciones */}
             <section className="rounded-2xl border border-border/60 bg-card/50 p-6 shadow-sm">
-              <h2 className="mb-1 text-xl font-semibold text-foreground">Nuestras oficinas</h2>
+              <h2 className="mb-1 text-xl font-semibold text-foreground">
+                Nuestras oficinas
+              </h2>
               <p className="mb-4 text-sm text-muted-foreground">
                 Tenemos presencia en varias ciudades. Escríbenos o visítanos.
               </p>
@@ -558,16 +630,22 @@ export default function Contactenos() {
                 <p className="text-sm text-muted-foreground">Cargando…</p>
               )}
               {settingsError ? (
-                <p className="mt-2 text-xs text-red-600">No se pudieron cargar las direcciones.</p>
+                <p className="mt-2 text-xs text-red-600">
+                  No se pudieron cargar las direcciones.
+                </p>
               ) : null}
             </section>
 
             {/* Contacto */}
             <section className="rounded-2xl border border-border/60 bg-card/50 p-6 shadow-sm">
-              <h2 className="mb-3 text-xl font-semibold text-foreground">Contacto</h2>
+              <h2 className="mb-3 text-xl font-semibold text-foreground">
+                Contacto
+              </h2>
               {settings?.phone ? (
                 <>
-                  <h5 className="text-sm font-medium text-foreground/90 mb-2">Teléfonos</h5>
+                  <h5 className="text-sm font-medium text-foreground/90 mb-2">
+                    Teléfonos
+                  </h5>
                   <Phones phones={settings.phone} />
                 </>
               ) : (

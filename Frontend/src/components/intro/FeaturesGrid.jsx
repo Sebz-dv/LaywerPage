@@ -1,5 +1,6 @@
+// src/components/about/FeaturesGrid.jsx
 "use client";
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   FaShieldAlt,
@@ -9,7 +10,7 @@ import {
   FaChalkboardTeacher,
   FaHandHoldingUsd,
 } from "react-icons/fa";
-import heroDefault from "../../assets/about/justice.jpg"; // opcional para fondo
+import { mediaService } from "../../services/mediaService"; // 👈 usamos el slot services_hero
 
 /* ================= Utils ================= */
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -101,16 +102,38 @@ export default function FeaturesGrid({
   subtitle = "Nuestro conocimiento, a su servicio.",
   className = "",
   // Estilo Backdrop
-  bgSrc = heroDefault, // pasa null para color plano
+  bgSrc: bgSrcProp = null, // 👈 ya no usamos justice.png como default
   tint = "linear-gradient(135deg, rgba(13,27,58,.85) 0%, rgba(117,159,188,.45) 100%)",
   height = "",
 }) {
   const fade = useFadeUpSlow();
   const prefersReduced = useReducedMotion();
 
+  // 👉 Imagen desde el slot `services_hero`
+  const [bgFromSlot, setBgFromSlot] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await mediaService.getByKey("services_hero");
+        // el back ya devuelve la URL pública (Storage::url)
+        setBgFromSlot(data?.url || null);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("No se pudo cargar media slot services_hero:", e);
+      }
+    })();
+  }, []);
+
+  // Orden de prioridad:
+  // 1. bgSrcProp (si alguien quiere forzar una imagen por props)
+  // 2. bgFromSlot (services_hero desde el back)
+  // 3. color plano (fallback de la sección)
+  const bgSrc = bgSrcProp || bgFromSlot;
+
   return (
     <section id="features" className={cx("relative overflow-hidden", className)}>
-      {/* ===== Fondo estilo Backdrop (opcional) ===== */}
+      {/* ===== Fondo estilo Backdrop (slot services_hero) ===== */}
       {bgSrc ? (
         <div className="absolute inset-0 z-0 pointer-events-none">
           <img
@@ -122,7 +145,10 @@ export default function FeaturesGrid({
             decoding="async"
             sizes="100vw"
           />
-          <div className="absolute inset-0 mix-blend-multiply" style={{ background: tint }} />
+          <div
+            className="absolute inset-0 mix-blend-multiply"
+            style={{ background: tint }}
+          />
           {!prefersReduced && (
             <motion.span
               aria-hidden
@@ -177,8 +203,8 @@ export default function FeaturesGrid({
           className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
         >
           {features.map((f, i) => (
-            <FeatureCard key={i} {...f} fade={fade} />)
-          )}
+            <FeatureCard key={i} {...f} fade={fade} />
+          ))}
         </motion.div>
       </motion.div>
     </section>
@@ -192,7 +218,13 @@ function FeatureCard({ t, bullets, d, icon, fade }) {
     <motion.article
       variants={fade}
       whileHover={
-        prefersReduced ? undefined : { y: -3, boxShadow: "0 18px 44px -22px hsl(var(--primary)/.55)" }
+        prefersReduced
+          ? undefined
+          : {
+              y: -3,
+              boxShadow:
+                "0 18px 44px -22px hsl(var(--primary)/.55)",
+            }
       }
       className={cx(
         "group relative rounded-2xl overflow-hidden",
@@ -231,7 +263,9 @@ function FeatureCard({ t, bullets, d, icon, fade }) {
           </ul>
         ) : (
           d && (
-            <p className="mt-2 text-sm text-[hsl(var(--fg)/0.85)] whitespace-pre-line">{d}</p>
+            <p className="mt-2 text-sm text-[hsl(var(--fg)/0.85)] whitespace-pre-line">
+              {d}
+            </p>
           )
         )}
       </div>
@@ -240,7 +274,10 @@ function FeatureCard({ t, bullets, d, icon, fade }) {
       <span
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-        style={{ background: "radial-gradient(600px 200px at 50% -20%, rgba(255,255,255,.12), transparent 70%)" }}
+        style={{
+          background:
+            "radial-gradient(600px 200px at 50% -20%, rgba(255,255,255,.12), transparent 70%)",
+        }}
       />
     </motion.article>
   );

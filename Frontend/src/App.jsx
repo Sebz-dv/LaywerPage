@@ -26,6 +26,7 @@ import SimplePostsPage from "./pages/admin/post/SimplePostsPage.jsx";
 import PublicPostsGrid from "./pages/public/post/PublicPostsGrid.jsx";
 import PublicPostDetail from "./pages/public/post/PublicPostDetail.jsx";
 import Contactenos from "./pages/public/contacto/Contactenos.jsx";
+import MediaSlotsPage from "./pages/admin/mediaPost/MediaSlotsPage.jsx";
 
 // Sube al tope en cada cambio de ruta
 function ScrollToTop() {
@@ -105,6 +106,7 @@ export default function App() {
             <Route path="/dash/info" element={<InfoBlocksManager />} />
             <Route path="/dash/carousel" element={<CarouselManager />} />
             <Route path="/dash/post" element={<SimplePostsPage />} />
+            <Route path="/dash/media" element={<MediaSlotsPage />} />
           </Route>
         </Route>
 

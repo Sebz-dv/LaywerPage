@@ -11,6 +11,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import TeamFinderMini from "../../components/team/TeamFinderMini.jsx";
 import DataView from "../../components/intro/dataView.jsx";
 import WhyUs from "../../components/intro/WhyUs.jsx";
+import AlliesSection from "../../components/allies/AlliesSection.jsx";
 
 /** tiny util */
 function cx(...xs) {
@@ -99,6 +100,7 @@ export default function IntroPage() {
         </motion.div>
       </Section>
 
+      <AlliesSection />
       {/* Features / cierre */}
       <motion.div variants={fadeUp}>
         <FeaturesGrid />

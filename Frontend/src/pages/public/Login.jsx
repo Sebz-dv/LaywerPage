@@ -7,7 +7,6 @@ import { FiEye, FiEyeOff, FiLock } from "react-icons/fi";
 import { useAuth } from "../../context/useAuth.js";
 import Loader from "../../components/Loader.jsx";
 import usePageReady from "../../hooks/usePageReady.js";
-import { useRouteLoading } from "../../hooks/useRouteLoading.js";
 import { settingsService } from "../../services/settingsService.js";
 
 /* ================= Helpers ================= */
@@ -216,7 +215,6 @@ export default function Login() {
   const emailRef = useRef(null);
 
   const { className: pageClass } = usePageReady();
-  const { routeLoading, setRouteLoading } = useRouteLoading();
 
   // Redirige si ya está logueado
   useEffect(() => {
@@ -259,7 +257,9 @@ export default function Login() {
   // Focus inicial
   useEffect(() => {
     const t = setTimeout(() => emailRef.current?.focus(), 300);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+    };
   }, []);
 
   const parseError = (err) => {
@@ -286,13 +286,15 @@ export default function Login() {
       // Persistir preferencia y email si "Recuérdame" está activo
       try {
         localStorage.setItem("br.login.remember", remember ? "1" : "0");
-        if (remember) localStorage.setItem("br.login.email", email.trim().toLowerCase());
-        else localStorage.removeItem("br.login.email");
+        if (remember) {
+          localStorage.setItem("br.login.email", email.trim().toLowerCase());
+        } else {
+          localStorage.removeItem("br.login.email");
+        }
       } catch {
         /* ignore */
       }
 
-      setRouteLoading(true);
       nav("/dashboard", { replace: true });
     } catch (err) {
       setError(parseError(err));
@@ -310,7 +312,7 @@ export default function Login() {
       <Loader
         fullscreen
         label={pending ? "Entrando…" : "Cambiando de página…"}
-        show={routeLoading || pending}
+        show={pending}
       />
       <AutofillFix />
 
@@ -427,7 +429,6 @@ export default function Login() {
                   onSubmit={onSubmit}
                   className="space-y-4"
                   noValidate
-                  // Este autocomplete ayuda a que el navegador ofrezca guardar contraseña
                   autoComplete="on"
                 >
                   <InputFL
@@ -481,7 +482,6 @@ export default function Login() {
                       Recuérdame
                     </label>
 
-                    {/* Se elimina enlace de recuperar contraseña */}
                     <span className="invisible">.</span>
                   </div>
 
@@ -489,7 +489,7 @@ export default function Login() {
                     type="submit"
                     disabled={pending || !email || !password}
                     className={cn(
-                      "w-full font-semibold py-3 rounded-xl transition-all duration-300",
+                      "w-full font-semibold py-3 rounded-xl transition-all duración-300",
                       "text-[hsl(var(--fg))]",
                       "bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))]",
                       "hover:from-[hsl(var(--primary)/0.92)] hover:to-[hsl(var(--accent)/0.92)]",
@@ -504,8 +504,6 @@ export default function Login() {
                     )}
                   </button>
                 </form>
-
-                {/* Se elimina bloque de registro */}
               </div>
             </div>
           </motion.div>

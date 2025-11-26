@@ -6,7 +6,7 @@ import {
   carouselService,
   filenameFromSrc,
 } from "../../services/carouselService";
-import heroFallback from "../../assets/about/justice.jpg";
+import heroFallback from "../../assets/about/justice.png";
 
 /* =========================================================
  *  Helpers

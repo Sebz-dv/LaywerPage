@@ -102,11 +102,22 @@ function FeaturedCard({ item, reduceMotion }) {
   const cover = item.cover || item.icon || "";
   const isLight = useImageLuma(cover);
 
-  // Agrupar “subtítulos/diferenciales” en columnas de 3
+  // Agrupar “diferenciales” en columnas de 3 usando `excerpt` (fallback a subtitle)
   const bulletGroups = useMemo(() => {
-    const arr = Array.isArray(item.bullets) ? item.bullets : [];
+    const raw = item.excerpt ?? item.subtitle;
+
+    if (!raw) return [];
+
+    // Puede venir como array o como string
+    const arr = Array.isArray(raw)
+      ? raw
+      : String(raw)
+          .split("|") // si quieres, puedes separar por "|"
+          .map((s) => s.trim())
+          .filter(Boolean);
+
     return chunkBy3(arr);
-  }, [item.bullets]);
+  }, [item.excerpt, item.subtitle]);
 
   return (
     <motion.article
@@ -160,30 +171,29 @@ function FeaturedCard({ item, reduceMotion }) {
             {item.title}
           </h3>
 
-          {/* Subtítulo (si lo usas como tagline corto) alineado a la izquierda */}
-          {item.subtitle && (
+          {/* Subtítulo corto opcional (tagline) */}
+          {item.tagline && (
             <p
               className={cx(
                 "text-xl md:text-base mt-3 text-white/85 text-center",
                 "drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)]"
               )}
             >
-              {item.subtitle}
+              {item.tagline}
             </p>
           )}
 
-          {/* Diferenciales / “subtítulos” en columnas de 3, alineados a la izquierda */}
+          {/* Diferenciales / excerpt en columnas de 3 */}
           {bulletGroups.length > 0 && (
             <div
               className={cx(
                 "mt-4",
-                // contenedor de columnas: se van sumando hacia la derecha
                 "flex flex-wrap md:flex-nowrap gap-x-6 gap-y-3 items-start justify-start"
               )}
             >
               {bulletGroups.map((col, ci) => (
                 <ul key={ci} className="min-w-[12rem] space-y-1">
-                  {col.map((b, i) => (
+                  {col.map((line, i) => (
                     <li
                       key={i}
                       className={cx(
@@ -191,7 +201,7 @@ function FeaturedCard({ item, reduceMotion }) {
                         "drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)]"
                       )}
                     >
-                      • {b}
+                      • {line}
                     </li>
                   ))}
                 </ul>
@@ -225,7 +235,7 @@ function FeaturedCard({ item, reduceMotion }) {
 
 /**
  * FeaturedAreas
- * - Props: items: { key, id, slug, title, subtitle, bullets, to, icon, cover }
+ * - Props: items: { key, id, slug, title, excerpt?, subtitle?, tagline?, to, icon, cover }
  */
 export default function FeaturedAreas({
   items = [],

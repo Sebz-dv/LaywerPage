@@ -6,7 +6,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import { MdManageAccounts } from "react-icons/md";
 import { useAuth } from "../../context/useAuth";
 import ThemeToggle from "../toggles/ThemeToggle";
-import { settingsService } from "../../services/settingsService"; 
+import { settingsService } from "../../services/settingsService";
 import { menuConfig as navDefaults } from "../../data/menuConfig";
 
 function cx(...xs) {
@@ -77,8 +77,11 @@ export default function NavbarLanding({
     })();
   }, []);
 
-  // 👇 En vez de booleano, guardamos la KEY del mega abierto (por ejemplo i.to)
+  // Mega abierto en desktop
   const [megaOpenKey, setMegaOpenKey] = useState(null); // string | null
+
+  // Submenú abierto en móvil (por key)
+  const [mobileMegaOpen, setMobileMegaOpen] = useState(null); // string | null
 
   return (
     <header
@@ -219,7 +222,7 @@ export default function NavbarLanding({
                       )}
                     </NavLink>
 
-                    {/* Panel mega: full-width con --bg y --primary (usa i.mega.left/right) */}
+                    {/* Panel mega desktop */}
                     <div
                       id={`mega-panel-${i.to}`}
                       onMouseEnter={() => setMegaOpenKey(i.to)}
@@ -385,10 +388,16 @@ export default function NavbarLanding({
               >
                 <span className="sr-only">Abrir menú</span>
                 <div className="relative w-5 h-5">
-                  <svg viewBox="0 0 24 24" className={cx("absolute inset-0 transition-opacity", open ? "opacity-0" : "opacity-100")}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    className={cx("absolute inset-0 transition-opacity", open ? "opacity-0" : "opacity-100")}
+                  >
                     <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
-                  <svg viewBox="0 0 24 24" className={cx("absolute inset-0 transition-opacity", open ? "opacity-100" : "opacity-0")}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    className={cx("absolute inset-0 transition-opacity", open ? "opacity-100" : "opacity-0")}
+                  >
                     <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </div>
@@ -407,24 +416,124 @@ export default function NavbarLanding({
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-4">
             <ul className="grid gap-1 pt-2">
-              {navItemsPublic.map((i) => (
-                <li key={i.to}>
-                  <NavLink to={i.to} end={i.end} onClick={() => setOpen(false)}>
-                    {({ isActive }) => (
-                      <span
-                        className={cx(
-                          "block rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150",
-                          isActive
-                            ? "bg-[hsl(var(--accent-foreground))/0.22] text-[hsl(var(--accent-foreground))] ring-1 ring-[hsl(var(--accent-foreground))/0.18]"
-                            : "text-[hsl(var(--accent-foreground))] hover:bg-[hsl(var(--accent-foreground))/0.12]"
-                        )}
+              {navItemsPublic.map((i) => {
+                const isMega = !!i.mega;
+
+                // Item simple (sin mega)
+                if (!isMega) {
+                  return (
+                    <li key={i.to}>
+                      <NavLink
+                        to={i.to}
+                        end={i.end}
+                        onClick={() => {
+                          setOpen(false);
+                          setMobileMegaOpen(null);
+                        }}
                       >
-                        {i.label}
-                      </span>
-                    )}
-                  </NavLink>
-                </li>
-              ))}
+                        {({ isActive }) => (
+                          <span
+                            className={cx(
+                              "block rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150",
+                              isActive
+                                ? "bg-[hsl(var(--accent-foreground))/0.22] text-[hsl(var(--accent-foreground))] ring-1 ring-[hsl(var(--accent-foreground))/0.18]"
+                                : "text-[hsl(var(--accent-foreground))] hover:bg-[hsl(var(--accent-foreground))/0.12]"
+                            )}
+                          >
+                            {i.label}
+                          </span>
+                        )}
+                      </NavLink>
+                    </li>
+                  );
+                }
+
+                // Item con submenú en móvil
+                const rightItems = Array.isArray(i.mega?.right) ? i.mega.right : [];
+                const isOpen = mobileMegaOpen === i.to;
+
+                return (
+                  <li key={i.to}>
+                    <div className="flex flex-col rounded-lg bg-[hsl(var(--accent-foreground))/0.02]">
+                      <div className="flex items-center">
+                        <NavLink
+                          to={i.to}
+                          end={i.end}
+                          onClick={() => {
+                            setOpen(false);
+                            setMobileMegaOpen(null);
+                          }}
+                          className={({ isActive }) =>
+                            cx(
+                              "flex-1 px-3 py-2 text-sm font-medium transition-colors duration-150 rounded-l-lg",
+                              isActive
+                                ? "bg-[hsl(var(--accent-foreground))/0.22] text-[hsl(var(--accent-foreground))]"
+                                : "text-[hsl(var(--accent-foreground))] hover:bg-[hsl(var(--accent-foreground))/0.12]"
+                            )
+                          }
+                        >
+                          {i.label}
+                        </NavLink>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setMobileMegaOpen((k) => (k === i.to ? null : i.to))
+                          }
+                          className={cx(
+                            "px-3 py-2 border-l text-[hsl(var(--accent-foreground))]",
+                            "border-[hsl(var(--accent-foreground))/0.25] rounded-r-lg",
+                            "hover:bg-[hsl(var(--accent-foreground))/0.12] transition-colors"
+                          )}
+                          aria-expanded={isOpen}
+                          aria-controls={`mobile-submenu-${i.to}`}
+                        >
+                          <svg
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            className={cx("w-4 h-4 transition-transform", isOpen && "rotate-180")}
+                            aria-hidden="true"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+
+                      {isOpen && rightItems.length > 0 && (
+                        <ul
+                          id={`mobile-submenu-${i.to}`}
+                          className="mt-1 mb-1 ml-4 border-l border-[hsl(var(--accent-foreground))/0.2] pl-3 space-y-1"
+                        >
+                          {rightItems.map((s) => (
+                            <li key={s.to}>
+                              <NavLink
+                                to={s.to}
+                                onClick={() => {
+                                  setOpen(false);
+                                  setMobileMegaOpen(null);
+                                }}
+                                className={({ isActive }) =>
+                                  cx(
+                                    "block text-[13px] py-1 pr-3 transition-colors",
+                                    isActive
+                                      ? "font-semibold text-[hsl(var(--accent-foreground))]"
+                                      : "text-[hsl(var(--accent-foreground))/0.9] hover:text-[hsl(var(--accent-foreground))]"
+                                  )
+                                }
+                              >
+                                {s.title}
+                              </NavLink>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>

@@ -1,4 +1,5 @@
-import React, { useMemo, useId } from "react";
+// src/pages/AboutUs.jsx
+import React, { useMemo, useId, useEffect, useState } from "react";
 import {
   FaBalanceScale,
   FaUsers,
@@ -12,10 +13,8 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
-import equipo from "../../assets/about/equipo.png";
-import hero from "../../assets/about/hero.jpg";
-import office from "../../assets/about/office.jpeg";
 import InfoBlocksSection from "../../components/info/InfoBlocksSection.jsx";
+import { mediaService } from "../../services/mediaService";
 
 /* ============ Utils ============ */
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -54,7 +53,7 @@ const values = [
   },
 ];
 
-/* ============ Animaciones (suaves/lentas) ============ */
+/* ============ Animaciones ============ */
 function useFadeUpSlow() {
   const prefersReduced = useReducedMotion();
   return useMemo(
@@ -77,14 +76,13 @@ const staggerSlow = (delay = 0.12) => ({
   show: { transition: { staggerChildren: delay, when: "beforeChildren" } },
 });
 
-/* ============ Botón con relleno interno al hover (Avenir solo aquí) ============ */
+/* ============ Botón ============ */
 const BtnInk = ({ href, children, variant = "secondary" }) => {
   const base =
     variant === "secondary"
       ? "btn font-subtitle relative overflow-hidden group btn-secondary"
       : "btn font-subtitle relative overflow-hidden group text-white border border-white/70 bg-transparent hover:text-[hsl(var(--primary-foreground))]";
 
-  // FIX: usar --accent (no --accent-special)
   const fillStyle =
     variant === "secondary"
       ? "bg-[linear-gradient(90deg,hsl(var(--secondary)),hsl(var(--accent)))]"
@@ -98,7 +96,6 @@ const BtnInk = ({ href, children, variant = "secondary" }) => {
       transition={{ type: "spring", stiffness: 380, damping: 26, mass: 0.6 }}
       className={base}
     >
-      {/* Relleno interno */}
       <span
         aria-hidden
         className={cx(
@@ -115,7 +112,6 @@ const BtnInk = ({ href, children, variant = "secondary" }) => {
   );
 };
 
-/* ============ Subcomponentes ============ */
 const Container = ({ className, children }) => (
   <div className={cx("mx-auto max-w-7xl px-4 sm:px-6 lg:px-8", className)}>
     {children}
@@ -142,13 +138,49 @@ const ValueItem = ({ icon, title, desc }) => {
 export default function AboutUs() {
   const fade = useFadeUpSlow();
   const { scrollYProgress } = useScroll();
-  const heroScale = useTransform(scrollYProgress, [0, 0.35], [1.07, 1]); // parallax suave
+  const heroScale = useTransform(scrollYProgress, [0, 0.35], [1.07, 1]);
   const titleId = useId();
 
+  // imágenes desde slots
+  const [heroBgUrl, setHeroBgUrl] = useState(null); // about_hero
+  const [teamImgUrl, setTeamImgUrl] = useState(null); // about_hero_persons
+  const [officeImgUrl, setOfficeImgUrl] = useState(null); // contact_services
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const heroSlot = await mediaService.getByKey("about_hero");
+        setHeroBgUrl(heroSlot?.url || null);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("No se pudo cargar media slot about_hero:", e);
+      }
+
+      try {
+        const teamSlot = await mediaService.getByKey("about_hero_persons");
+        setTeamImgUrl(teamSlot?.url || null);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("No se pudo cargar media slot about_hero_persons:", e);
+      }
+
+      try {
+        const officeSlot = await mediaService.getByKey("contact_services");
+        setOfficeImgUrl(officeSlot?.url || null);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("No se pudo cargar media slot contact_services:", e);
+      }
+    })();
+  }, []);
+
+  const hasHeroImg = Boolean(heroBgUrl);
+  const hasTeamImg = Boolean(teamImgUrl);
+  const hasOfficeImg = Boolean(officeImgUrl);
+
   return (
-    // Forzamos Minion VC como base para TODO
     <main className="w-full relative overflow-hidden font-display">
-      {/* HERO con giro/oscilación + barrido blanco */}
+      {/* HERO */}
       <section className="relative z-10" aria-labelledby={titleId}>
         <motion.div
           style={{ scale: heroScale }}
@@ -156,17 +188,19 @@ export default function AboutUs() {
           transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
           className="absolute inset-0 will-change-transform z-0"
         >
-          <img
-            src={hero}
-            alt="Personas trabajando en equipo"
-            className="h-full w-full object-cover"
-            loading="eager"
-            decoding="async"
-            fetchPriority="high"
-            sizes="100vw"
-          />
+          {hasHeroImg && (
+            <img
+              src={heroBgUrl}
+              alt=""
+              className="h-full w-full object-cover"
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+              sizes="100vw"
+            />
+          )}
 
-          {/* Barrido blanco sobre imagen */}
+          {/* Barrido blanco */}
           <motion.span
             aria-hidden
             className="pointer-events-none absolute top-0 bottom-0 -left-1/3 w-1/3 z-0"
@@ -180,7 +214,7 @@ export default function AboutUs() {
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
           />
 
-          {/* Overlay color */}
+          {/* Overlay (si no hay imagen, esto queda como fondo principal) */}
           <div
             className="absolute inset-0 mix-blend-multiply z-10"
             style={{
@@ -199,10 +233,8 @@ export default function AboutUs() {
             viewport={{ once: true, amount: 0.25 }}
             className={cx(
               T.h1,
-              // más espacio ENTRE LETRAS
               "font-display font-semibold tracking-[0.03em] text-white text-balance drop-shadow-[0_8px_24px_rgba(0,0,0,.35)]"
             )}
-            // quitamos wordSpacing; activamos kerning de la fuente
             style={{
               letterSpacing: "0.04em",
               fontKerning: "normal",
@@ -214,7 +246,6 @@ export default function AboutUs() {
             administración pública.
           </motion.h1>
 
-          {/* PÁRRAFO: Minion (no Avenir) */}
           <motion.p
             variants={fade}
             initial="hidden"
@@ -238,7 +269,6 @@ export default function AboutUs() {
             viewport={{ once: true, amount: 0.25 }}
             className="mt-10 flex flex-wrap gap-4"
           >
-            {/* Botones: Avenir (resalte) */}
             <BtnInk href="/contacto" variant="secondary">
               Contactar
             </BtnInk>
@@ -249,31 +279,35 @@ export default function AboutUs() {
         </Container>
       </section>
 
-      {/* INTRO — Quiénes somos (bg primary, textos blancos) */}
+      {/* INTRO — Quiénes somos */}
       <section
         className="relative z-10 bg-[hsl(var(--primary))]"
         aria-labelledby="about-intro"
       >
         <Container className="py-20">
           <div className="grid items-center gap-12 lg:grid-cols-12">
-            {/* Texto IZQUIERDA */}
-            <div className="lg:col-span-7 order-1 text-white">
-              {/* Kicker: Avenir */}
+            {/* Texto IZQ */}
+            <div
+              className={cx(
+                hasTeamImg ? "lg:col-span-7" : "lg:col-span-12",
+                "order-1 text-white"
+              )}
+            >
               <motion.p
                 variants={fade}
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, amount: 0.25 }}
                 className={cx(
-                  T.kicker, // ya incluye font-subtitle
-                  "font-subtitle", // refuerzo explícito
+                  T.kicker,
+                  "font-subtitle",
                   "text-white/85"
                 )}
                 id="about-intro"
                 style={{
                   fontFamily:
                     '"Avenir Next Var","Avenir Next","Avenir","Segoe UI","Inter",system-ui,-apple-system,sans-serif',
-                  fontWeight: 600, // Avenir variable: 300–800
+                  fontWeight: 600,
                   fontStretch: "100%",
                 }}
               >
@@ -293,7 +327,6 @@ export default function AboutUs() {
                 Quiénes somos
               </motion.h2>
 
-              {/* Párrafo: Minion */}
               <motion.p
                 variants={fade}
                 initial="hidden"
@@ -309,7 +342,6 @@ export default function AboutUs() {
                 innovadora.
               </motion.p>
 
-              {/* Chips: Avenir (grandes de verdad) */}
               <motion.div
                 variants={staggerSlow(0.1)}
                 initial="hidden"
@@ -328,7 +360,6 @@ export default function AboutUs() {
                     variants={fade}
                     className={cx(
                       "badge font-subtitle !bg-white/12 !text-white !border-white/30",
-                      // OVERRIDES sobre .badge (que trae text-xs)
                       "!text-base sm:!text-xl lg:!text-sm",
                       "!px-4 sm:!px-5 lg:!px-6",
                       "!py-2 sm:!py-2.5",
@@ -341,7 +372,6 @@ export default function AboutUs() {
                 ))}
               </motion.div>
 
-              {/* KPIs — números: Minion / etiquetas: Avenir */}
               <motion.div
                 variants={staggerSlow(0.12)}
                 initial="hidden"
@@ -358,11 +388,11 @@ export default function AboutUs() {
                     key={k}
                     variants={fade}
                     className="rounded-2xl border border-white/60 p-6
-                         flex flex-col items-center justify-center text-center gap-1
+                         flex flex-col items-center justify-center textcenter gap-1
                          min-h-28 sm:min-h-32 hover:border-white transition-colors"
                   >
                     <div className="text-5xl font-semibold">{n}</div>
-                    <div className="text-sm text-white/85 font-subtitle">
+                    <div className="text-sm textwhite/85 font-subtitle">
                       {k}
                     </div>
                   </motion.div>
@@ -370,25 +400,27 @@ export default function AboutUs() {
               </motion.div>
             </div>
 
-            {/* Imagen DERECHA */}
-            <figure className="lg:col-span-5 order-2 relative">
-              <motion.div
-                variants={fade}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.2 }}
-                className="relative overflow-hidden rounded-2xl"
-              >
-                <img
-                  src={equipo}
-                  alt="Equipo BR Blanco & Ramírez"
-                  className="w-full h-[380px] sm:h-[542px] object-cover"
-                  loading="lazy"
-                  decoding="async"
-                  sizes="(min-width:1024px) 40vw, 90vw"
-                />
-              </motion.div>
-            </figure>
+            {/* Imagen DERECHA solo si hay slot */}
+            {hasTeamImg && (
+              <figure className="lg:col-span-5 order-2 relative">
+                <motion.div
+                  variants={fade}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, amount: 0.2 }}
+                  className="relative overflow-hidden rounded-2xl"
+                >
+                  <img
+                    src={teamImgUrl}
+                    alt="Equipo BR Blanco & Ramírez"
+                    className="w-full h-[380px] sm:h-[542px] object-cover"
+                    loading="lazy"
+                    decoding="async"
+                    sizes="(min-width:1024px) 40vw, 90vw"
+                  />
+                </motion.div>
+              </figure>
+            )}
           </div>
         </Container>
       </section>
@@ -401,116 +433,117 @@ export default function AboutUs() {
         showAnchors
         titleClassName="hidden"
       />
-      {/* PROPÓSITO — Valores IZQ (2x2), Texto DER */}
+
+      {/* PROPÓSITO */}
       <section
-  className="relative z-10 mt-[-30px] bg-[hsl(var(--primary))] text-white"
-  aria-labelledby="about-purpose"
->
-  <Container className="py-18 sm:py-20">
-    <div className="grid gap-12 lg:grid-cols-12 items-start">
-      {/* Texto (Minion) */}
-      <div className="lg:col-span-6 mt-23">
-        <motion.p
-          variants={fade}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.2 }}
-          className={cx(
-            T.kicker,
-            "tracking-[0.22em]",
-            "mb-8",
-            "text-white/70" // antes: text-primary
-          )}
-          id="about-purpose"
-          style={{ letterSpacing: "0.22em" }}
-        >
-          Nuestro propósito
-        </motion.p>
+        className="relative z-10 mt-[-30px] bg-[hsl(var(--primary))] text-white"
+        aria-labelledby="about-purpose"
+      >
+        <Container className="py-18 sm:py-20">
+          <div className="grid gap-12 lg:grid-cols-12 items-start">
+            <div className="lg:col-span-6 mt-23">
+              <motion.p
+                variants={fade}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.2 }}
+                className={cx(
+                  T.kicker,
+                  "tracking-[0.22em]",
+                  "mb-8",
+                  "text-white/70"
+                )}
+                id="about-purpose"
+                style={{ letterSpacing: "0.22em" }}
+              >
+                Nuestro propósito
+              </motion.p>
 
-        <motion.h2
-          variants={fade}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.2 }}
-          className={cx(
-            T.h2,
-            "font-semibold",
-            "tracking-[0.03em]",
-            "text-white" // fuerza blanco sobre cualquier token
-          )}
-          style={{
-            letterSpacing: "0.03em",
-            fontKerning: "normal",
-            fontOpticalSizing: "auto",
-            textRendering: "optimizeLegibility",
-          }}
-        >
-          Todo se transforma, menos nuestro propósito.
-        </motion.h2>
+              <motion.h2
+                variants={fade}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.2 }}
+                className={cx(
+                  T.h2,
+                  "font-semibold",
+                  "tracking-[0.03em]",
+                  "text-white"
+                )}
+                style={{
+                  letterSpacing: "0.03em",
+                  fontKerning: "normal",
+                  fontOpticalSizing: "auto",
+                  textRendering: "optimizeLegibility",
+                }}
+              >
+                Todo se transforma, menos nuestro propósito.
+              </motion.h2>
 
-        <motion.blockquote
-          variants={fade}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.2 }}
-          className={cx(
-            T.pLg,
-            "mt-6 pl-5 italic tracking-[0.01em]",
-            "text-white/90",
-            "border-l-2 border-white/30" // antes: border-token
-          )}
-          style={{ letterSpacing: "0.01em", lineHeight: 1.7 }}
-        >
-          Movilizamos a las instituciones mediante asesoría legal estratégica
-          para generar desarrollo social y económico con soluciones
-          sostenibles, conscientes y competitivas.
-        </motion.blockquote>
-      </div>
+              <motion.blockquote
+                variants={fade}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.2 }}
+                className={cx(
+                  T.pLg,
+                  "mt-6 pl-5 italic tracking-[0.01em]",
+                  "text-white/90",
+                  "border-l-2 border-white/30"
+                )}
+                style={{ letterSpacing: "0.01em", lineHeight: 1.7 }}
+              >
+                Movilizamos a las instituciones mediante asesoría legal
+                estratégica para generar desarrollo social y económico con
+                soluciones sostenibles, conscientes y competitivas.
+              </motion.blockquote>
+            </div>
 
-      {/* Valores (Minion en títulos/descripción) */}
-      <div className="lg:col-span-6">
-        <motion.h3
-          variants={fade}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.2 }}
-          className={cx(T.h2, "font-semibold text-center", "text-white")}
-        >
-          Nuestros valores
-        </motion.h3>
+            <div className="lg:col-span-6">
+              <motion.h3
+                variants={fade}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.2 }}
+                className={cx(T.h2, "font-semibold text-center", "text-white")}
+              >
+                Nuestros valores
+              </motion.h3>
 
-        <motion.div
-          variants={staggerSlow(0.12)}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.2 }}
-          className="mt-7 grid gap-7 sm:grid-cols-2 text-primary"
-        >
-          {values.map((v) => (
-            <ValueItem
-              key={v.title}
-              icon={v.icon}
-              title={v.title}
-              desc={v.desc}
-              // Si tu ValueItem acepta className, mejor aún:
-              // className="text-white"
-            />
-          ))}
-        </motion.div>
-      </div>
-    </div>
-  </Container>
-</section>
+              <motion.div
+                variants={staggerSlow(0.12)}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, amount: 0.2 }}
+                className="mt-7 grid gap-7 sm:grid-cols-2 text-primary"
+              >
+                {values.map((v) => (
+                  <ValueItem
+                    key={v.title}
+                    icon={v.icon}
+                    title={v.title}
+                    desc={v.desc}
+                  />
+                ))}
+              </motion.div>
+            </div>
+          </div>
+        </Container>
+      </section>
 
-
-      {/* CTA — Texto IZQ (Minion título / Avenir texto), Imagen DER */}
+      {/* CTA — solo imagen si hay slot */}
       <section
         className="relative z-10 bg-[hsl(var(--bg))]"
         aria-labelledby="about-cta"
       >
         <Container className="py-16">
           <div className="grid items-center gap-12 lg:grid-cols-12">
-            <div className="lg:col-span-6 order-1 text-primary">
+            <div
+              className={cx(
+                hasOfficeImg ? "lg:col-span-6" : "lg:col-span-12",
+                "order-1 text-primary"
+              )}
+            >
               <motion.h3
                 variants={fade}
                 initial="hidden"
@@ -521,7 +554,6 @@ export default function AboutUs() {
               >
                 Conversemos sobre tus retos institucionales
               </motion.h3>
-              {/* CTA texto: Avenir (resalte) */}
               <motion.p
                 variants={fade}
                 initial="hidden"
@@ -548,24 +580,26 @@ export default function AboutUs() {
               </motion.div>
             </div>
 
-            <div className="lg:col-span-6 order-2">
-              <motion.div
-                variants={fade}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.25 }}
-                className="relative overflow-hidden rounded-2xl"
-              >
-                <img
-                  src={office}
-                  alt="Colaboración con clientes"
-                  className="w-full h-[280px] sm:h-[340px] lg:h-[380px] object-cover"
-                  loading="lazy"
-                  decoding="async"
-                  sizes="(min-width:1024px) 48vw, 90vw"
-                />
-              </motion.div>
-            </div>
+            {hasOfficeImg && (
+              <div className="lg:col-span-6 order-2">
+                <motion.div
+                  variants={fade}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, amount: 0.25 }}
+                  className="relative overflow-hidden rounded-2xl"
+                >
+                  <img
+                    src={officeImgUrl}
+                    alt="Colaboración con clientes"
+                    className="w-full h-[280px] sm:h-[340px] lg:h-[380px] object-cover"
+                    loading="lazy"
+                    decoding="async"
+                    sizes="(min-width:1024px) 48vw, 90vw"
+                  />
+                </motion.div>
+              </div>
+            )}
           </div>
         </Container>
       </section>
@@ -584,7 +618,7 @@ export default function AboutUs() {
               typeof window !== "undefined"
                 ? window.location.origin
                 : "https://ejemplo.com",
-            image: hero,
+            image: heroBgUrl || undefined, // solo si hay slot
             address: { "@type": "PostalAddress", addressCountry: "CO" },
             sameAs: [],
             knowsAbout: [

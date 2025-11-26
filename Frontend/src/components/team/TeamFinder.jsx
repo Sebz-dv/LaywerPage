@@ -3,11 +3,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import team from "../../assets/about/team.jpg";
 
 // ✅ Usa tu axios configurado y el helper para assets
 import { api } from "../../lib/api";
 import { resolveAssetUrl } from "../../lib/origin";
+import { mediaService } from "../../services/mediaService";
 
 /* ================= Utils ================= */
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -61,6 +61,27 @@ export default function TeamFinder({
   title = "Lideramos el cambio porque tenemos al mejor talento",
   description = "Nuestro equipo multidisciplinario combina experiencia pública, privada y académica para ofrecer asesoría integral y confiable.",
 }) {
+  const prefersReduced = useReducedMotion();
+
+  // ===== Fondo hero desde media-slot team_talent =====
+  const [heroBgUrl, setHeroBgUrl] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const slot = await mediaService.getByKey("team_talent");
+        // El back te da algo tipo { key, url, alt }
+        setHeroBgUrl(slot?.url ? resolveAssetUrl(slot.url) : null);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("No se pudo cargar media slot team_talent:", e);
+        setHeroBgUrl(null);
+      }
+    })();
+  }, []);
+
+  const hasHeroImg = Boolean(heroBgUrl);
+
   // ===== Filtros
   const [tab, setTab] = useState(initialTab);
   const [nombre, setNombre] = useState("");
@@ -80,12 +101,15 @@ export default function TeamFinder({
 
   const debouncedNombre = useDebounce(nombre, 250);
 
-  // ===== Preferencia de ajuste de imagen (persistente)
+  // ===== Preferencia de ajuste de imagen (persistente) =====
   const [imageFit, setImageFit] = useState(() => {
+    if (typeof window === "undefined") return imageFitDefault;
     const saved = localStorage.getItem("team_image_fit");
     return saved === "cover" || saved === "contain" ? saved : imageFitDefault;
   });
+
   useEffect(() => {
+    if (typeof window === "undefined") return;
     localStorage.setItem("team_image_fit", imageFit);
   }, [imageFit]);
 
@@ -131,7 +155,6 @@ export default function TeamFinder({
         setItems((prev) => (page === 1 ? ordered : [...prev, ...ordered]));
       })
       .catch((e) => {
-        // Ignora cancelaciones
         if (e?.name === "CanceledError" || e?.name === "AbortError") return;
         setError(e?.message || "Error");
       })
@@ -146,7 +169,6 @@ export default function TeamFinder({
   }, [tab, debouncedNombre, cargo, area, ciudad]);
 
   const canLoad = page < lastPage;
-  const prefersReduced = useReducedMotion();
   const sentinelRef = useAutoLoadMore(canLoad && !loading, () =>
     setPage((p) => p + 1)
   );
@@ -176,30 +198,32 @@ export default function TeamFinder({
 
   return (
     <section className={cx("w-full", className)}>
-      {/* ===== HERO con parallax suave + cristal ===== */}
-      <section className="w-screen h-[56svh] md:h-[64svh] relative overflow-hidden left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] mt-[-12px]">
-        {/* Fondo con blur y animación leve */}
-        <motion.img
-          src={team}
-          alt="Equipo de Blanco & Ramírez Abogados"
-          aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover object-center scale-105 blur-[3px]"
-          loading="eager"
-          decoding="async"
-          fetchPriority="high"
-          sizes="100vw"
-          initial={false}
-          animate={
-            useReducedMotion()
-              ? {}
-              : { scale: [1.05, 1.1, 1.05], y: [0, -8, 0] }
-          }
-          transition={
-            useReducedMotion()
-              ? {}
-              : { duration: 18, repeat: Infinity, ease: "easeInOut" }
-          }
-        />
+      {/* ===== HERO con background del slot team_talent ===== */}
+      <section className="w-screen h-[56svh] md:h-[64svh] relative overflow-hidden left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] mt-[-12px] bg-[hsl(var(--primary))]">
+        {/* Fondo con blur y animación leve sólo si hay imagen */}
+        {hasHeroImg && (
+          <motion.img
+            src={heroBgUrl}
+            alt="Equipo de Blanco & Ramírez Abogados"
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover object-center scale-105 blur-[3px]"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+            sizes="100vw"
+            initial={false}
+            animate={
+              prefersReduced
+                ? {}
+                : { scale: [1.05, 1.1, 1.05], y: [0, -8, 0] }
+            }
+            transition={
+              prefersReduced
+                ? {}
+                : { duration: 18, repeat: Infinity, ease: "easeInOut" }
+            }
+          />
+        )}
 
         {/* Capa oscura sutil para contraste */}
         <div className="absolute inset-0 bg-black/35" />
@@ -245,7 +269,11 @@ export default function TeamFinder({
                     layoutId="tabIndicator"
                     className="absolute inset-0 rounded-lg"
                     style={{ background: "hsl(var(--primary))" }}
-                    transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 500,
+                      damping: 40,
+                    }}
                     aria-hidden
                   />
                 )}
@@ -292,7 +320,9 @@ export default function TeamFinder({
           />
           {/* Ajuste imagen */}
           <div className="flex flex-col">
-            <label className="block text-xs mb-1 text-muted">Ajuste imagen</label>
+            <label className="block text-xs mb-1 text-muted">
+              Ajuste imagen
+            </label>
             <div className="inline-flex rounded-lg border border-[hsl(var(--border))] overflow-hidden">
               <button
                 onClick={() => setImageFit("cover")}
@@ -376,7 +406,10 @@ export default function TeamFinder({
             {items.map((p, i) => {
               const slug = p.slug ?? slugify(p.nombre);
               const key = p.id ?? slug ?? `row-${i}`;
-              const imgSrc = resolveAssetUrl(p.foto_url); // ✅ AHORA desde el back real
+              const imgSrc = p.foto_url
+                ? resolveAssetUrl(p.foto_url)
+                : null;
+
               return (
                 <TeamCard
                   key={key}
@@ -476,12 +509,12 @@ function TeamCard({
       whileHover="hover"
       whileTap={{ scale: prefersReduced ? 1 : 0.995 }}
       layout
-      className={[
+      className={cx(
         "rounded-xl p-5 shadow-sm group transition-shadow",
         "border border-[hsl(var(--border))] bg-[hsl(var(--card))]",
         "hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.35)]",
-        "hover:border-[hsl(var(--primary)/0.55)]",
-      ].join(" ")}
+        "hover:border-[hsl(var(--primary)/0.55)]"
+      )}
     >
       {/* Imagen */}
       <div
@@ -498,6 +531,7 @@ function TeamCard({
             <div className="absolute inset-0 backdrop-blur-[2px] opacity-70" />
           </>
         )}
+
         {imgSrc ? (
           <motion.img
             src={imgError ? FALLBACK_AVATAR : imgSrc}
@@ -533,6 +567,7 @@ function TeamCard({
             Foto
           </span>
         )}
+
         <span className="pointer-events-none absolute inset-0 ring-0 group-hover:ring-2 ring-[hsl(var(--primary))/0.35] transition-all rounded-lg" />
       </div>
 
@@ -553,11 +588,11 @@ function TeamCard({
       <div className="mt-4">
         <Link
           to={href}
-          className={[
+          className={cx(
             "inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium border transition-colors",
             "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-transparent",
-            "hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))/0.5]",
-          ].join(" ")}
+            "hover:brightness-95 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))/0.5]"
+          )}
         >
           Ver Perfil
           <motion.svg
@@ -617,8 +652,21 @@ function Select({ label, value, onChange, options = [] }) {
 function Spinner() {
   return (
     <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" opacity="0.25" />
-      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" fill="none" />
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="3"
+        fill="none"
+        opacity="0.25"
+      />
+      <path
+        d="M22 12a10 10 0 0 1-10 10"
+        stroke="currentColor"
+        strokeWidth="3"
+        fill="none"
+      />
     </svg>
   );
 }

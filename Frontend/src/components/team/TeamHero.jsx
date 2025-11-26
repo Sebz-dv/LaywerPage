@@ -1,7 +1,8 @@
 "use client";
-import React, { useId } from "react";
+import React, { useId, useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import heroDefault from "../../assets/about/justice.jpg"; // puedes cambiar el default con la prop `bgSrc`
+import { mediaService } from "../../services/mediaService";
+import { resolveAssetUrl } from "../../lib/origin";
 
 /* ================= Utils ================= */
 function cx(...xs) {
@@ -26,14 +27,36 @@ export default function TeamHero({
   accent = true, // subrayado bajo el título
   actions = [], // [{ label, href, variant: 'primary'|'outline'|'accent' }]
   className = "",
-  // === NUEVO: fondo tipo Backdrop ===
-  bgSrc = heroDefault,
+  // Fondo: ahora por defecto viene del slot "team_hero".
+  // Si el padre pasa bgSrc, tiene prioridad sobre el slot.
+  bgSrc,
   height = "min-h-[58vh] md:min-h-[72vh]",
   tint = "linear-gradient(135deg, rgba(13,27,58,.85) 0%, rgba(117,159,188,.45) 100%)",
 }) {
   const headingId = useId();
   const prefersReduced = useReducedMotion();
   const Motion = motion.div;
+
+  const [slotBg, setSlotBg] = useState(null);
+
+  // Cargar imagen del slot "team_hero"
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await mediaService.getByKey("team_hero");
+        if (data?.url) {
+          setSlotBg(resolveAssetUrl(data.url));
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("No se pudo cargar media slot team_hero:", e);
+      }
+    })();
+  }, []);
+
+  // Prioridad: prop bgSrc > slot team_hero
+  const effectiveBg = bgSrc || slotBg || null;
+
   const fade = prefersReduced
     ? {
         hidden: { opacity: 0 },
@@ -62,15 +85,17 @@ export default function TeamHero({
     >
       {/* ===== Fondo con imagen + tinte + shine ===== */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <img
-          src={bgSrc}
-          alt=""
-          aria-hidden
-          className="h-full w-full object-cover object-left md:object-center"
-          loading="eager"
-          decoding="async"
-          sizes="100vw"
-        />
+        {effectiveBg && (
+          <img
+            src={effectiveBg}
+            alt=""
+            aria-hidden
+            className="h-full w-full object-cover object-left md:object-center"
+            loading="eager"
+            decoding="async"
+            sizes="100vw"
+          />
+        )}
         {/* Tinte */}
         <div
           className="absolute inset-0 mix-blend-multiply"

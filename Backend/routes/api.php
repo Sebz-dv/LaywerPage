@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\MediaSlotController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\TeamMemberProfilesController;
 use App\Http\Controllers\TeamMembersController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\MediaSlotsController;
 use App\Http\Controllers\PostController;
 
 /*
@@ -80,6 +82,8 @@ Route::middleware(['jwt.cookie', 'auth:api'])->group(function () {
     /* ===== simple-posts (alias) — PRIVADAS ===== */
     Route::post('simple-posts',                 [PostController::class, 'store']);   // alias crear
     Route::match(['post','put','patch'], 'simple-posts/{post}', [PostController::class, 'update']); // alias actualizar
+
+    Route::post('/media-slots/{key}', [MediaSlotsController::class, 'store']);
 });
 
 /*
@@ -114,6 +118,8 @@ Route::middleware([])->group(function () {
     Route::get('simple-posts/{post}', [PostController::class, 'show']);  // alias ver uno
 
     Route::post('/contact', [ContactController::class, 'store']);
+
+    Route::get('/media-slots/{key}', [MediaSlotsController::class, 'show']);
 });
 
 Route::fallback(fn() => response()->json(['message' => 'Not Found'], 404));
