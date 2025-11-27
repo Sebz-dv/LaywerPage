@@ -1,20 +1,22 @@
 // src/pages/admin/PracticeAreasAdmin.jsx
-import React, { useEffect, useMemo, useState, useRef } from "react";
-import { practiceAreasService as svc } from "../../services/practiceAreasService";  
+import React, { useEffect, useState, useRef } from "react";
+import { practiceAreasService as svc } from "../../services/practiceAreasService";
 import { motion, AnimatePresence } from "framer-motion";
 
 /* ================== Utils ================== */
-function cx(...xs) { return xs.filter(Boolean).join(" "); }
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-const toInt = (v, d = 0) => Number.isFinite(+v) ? +v : d;
+function cx(...xs) {
+  return xs.filter(Boolean).join(" ");
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const toInt = (v, d = 0) => (Number.isFinite(+v) ? +v : d);
 
 const parseBullets = (text) =>
   (text ?? "")
     .split("\n")
-    .map(s => s.trim())
+    .map((s) => s.trim())
     .filter(Boolean);
 
-const bulletsToText = (arr) => Array.isArray(arr) ? arr.join("\n") : "";
+const bulletsToText = (arr) => (Array.isArray(arr) ? arr.join("\n") : "");
 
 const readAsDataUrl = (file) =>
   new Promise((resolve, reject) => {
@@ -23,6 +25,55 @@ const readAsDataUrl = (file) =>
     fr.onerror = reject;
     fr.readAsDataURL(file);
   });
+
+// 🔹 Docs: simplemente lista de strings
+const parseDocs = (text) =>
+  (text ?? "")
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+const docsToText = (arr) => (Array.isArray(arr) ? arr.join("\n") : "");
+
+// 🔹 Scope: "Label | Valor"
+const parseScope = (text) =>
+  (text ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [label, ...rest] = line.split("|");
+      return {
+        label: (label ?? "").trim(),
+        value: rest.join("|").trim(),
+      };
+    });
+
+const scopeToText = (arr) =>
+  Array.isArray(arr)
+    ? arr
+        .map((row) => `${row.label ?? ""} | ${row.value ?? ""}`.trim())
+        .join("\n")
+    : "";
+
+// 🔹 FAQs: "Pregunta | Respuesta"
+const parseFaqs = (text) =>
+  (text ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [q, ...rest] = line.split("|");
+      return {
+        q: (q ?? "").trim(),
+        a: rest.join("|").trim(),
+      };
+    });
+
+const faqsToText = (arr) =>
+  Array.isArray(arr)
+    ? arr.map((row) => `${row.q ?? ""} | ${row.a ?? ""}`.trim()).join("\n")
+    : "";
 
 /* ================== Página ================== */
 export default function PracticeAreasAdmin() {
@@ -74,7 +125,11 @@ export default function PracticeAreasAdmin() {
       setMeta(m);
       setPage(m?.current_page ?? p);
     } catch (err) {
-      pushToast({ type: "error", title: "Error cargando áreas", desc: err?.message ?? "Fallo inesperado" });
+      pushToast({
+        type: "error",
+        title: "Error cargando áreas",
+        desc: err?.message ?? "Fallo inesperado",
+      });
     } finally {
       setLoading(false);
     }
@@ -86,18 +141,28 @@ export default function PracticeAreasAdmin() {
   }, [q, JSON.stringify(filters), sort, perPage]);
 
   // Handlers
-  const onCreate = () => { setEditing(null); setShowForm(true); };
-  const onEdit = (row) => { setEditing(row); setShowForm(true); };
+  const onCreate = () => {
+    setEditing(null);
+    setShowForm(true);
+  };
+  const onEdit = (row) => {
+    setEditing(row);
+    setShowForm(true);
+  };
   const onDelete = (row) => setConfirm({ id: row.id, title: row.title });
 
   const confirmDelete = async () => {
     if (!confirm?.id) return;
     try {
       await svc.remove(confirm.id);
-      setItems((xs) => xs.filter(x => x.id !== confirm.id));
+      setItems((xs) => xs.filter((x) => x.id !== confirm.id));
       pushToast({ type: "success", title: "Área eliminada" });
     } catch (err) {
-      pushToast({ type: "error", title: "No se pudo eliminar", desc: err?.message });
+      pushToast({
+        type: "error",
+        title: "No se pudo eliminar",
+        desc: err?.message,
+      });
     } finally {
       setConfirm(null);
     }
@@ -106,18 +171,32 @@ export default function PracticeAreasAdmin() {
   const onToggle = async (row, field) => {
     try {
       const updated = await svc.toggle(row.id, field);
-      setItems(xs => xs.map(x => x.id === row.id ? (updated?.data ?? updated) : x));
+      setItems((xs) =>
+        xs.map((x) => (x.id === row.id ? updated?.data ?? updated : x))
+      );
     } catch (err) {
-      pushToast({ type: "error", title: "No se pudo cambiar el estado", desc: err?.message });
+      pushToast({
+        type: "error",
+        title: "No se pudo cambiar el estado",
+        desc: err?.message,
+      });
     }
   };
 
   const onInlineOrder = async (row, newOrder) => {
     try {
-      const updated = await svc.update(row.id, { order: toInt(newOrder, row.order ?? 0) });
-      setItems(xs => xs.map(x => x.id === row.id ? (updated?.data ?? updated) : x));
+      const updated = await svc.update(row.id, {
+        order: toInt(newOrder, row.order ?? 0),
+      });
+      setItems((xs) =>
+        xs.map((x) => (x.id === row.id ? updated?.data ?? updated : x))
+      );
     } catch (err) {
-      pushToast({ type: "error", title: "No se pudo actualizar el orden", desc: err?.message });
+      pushToast({
+        type: "error",
+        title: "No se pudo actualizar el orden",
+        desc: err?.message,
+      });
     }
   };
 
@@ -127,7 +206,9 @@ export default function PracticeAreasAdmin() {
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-4">
         <div>
           <h1 className="text-2xl font-semibold">Áreas de práctica</h1>
-          <p className="text-sm text-[hsl(var(--fg)/0.6)]">Gestiona las áreas visibles en la página pública.</p>
+          <p className="text-sm text-[hsl(var(--fg)/0.6)]">
+            Gestiona las áreas visibles en la página pública.
+          </p>
         </div>
         <div className="flex gap-2">
           <button
@@ -151,7 +232,9 @@ export default function PracticeAreasAdmin() {
           <div className="flex gap-2 flex-wrap">
             <select
               value={filters.featured}
-              onChange={(e) => setFilters(f => ({ ...f, featured: e.target.value }))}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, featured: e.target.value }))
+              }
               className="rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2 text-sm"
             >
               <option value="">Destacadas: Todas</option>
@@ -161,7 +244,9 @@ export default function PracticeAreasAdmin() {
 
             <select
               value={filters.active}
-              onChange={(e) => setFilters(f => ({ ...f, active: e.target.value }))}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, active: e.target.value }))
+              }
               className="rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2 text-sm"
             >
               <option value="">Estado: Todas</option>
@@ -185,7 +270,11 @@ export default function PracticeAreasAdmin() {
               onChange={(e) => setPerPage(+e.target.value)}
               className="rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2 text-sm"
             >
-              {[6,12,24,48].map(n => <option key={n} value={n}>{n} / página</option>)}
+              {[6, 12, 24, 48].map((n) => (
+                <option key={n} value={n}>
+                  {n} / página
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -208,74 +297,96 @@ export default function PracticeAreasAdmin() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={7} className="px-3 py-6 text-center text-[hsl(var(--fg)/0.6)]">Cargando…</td></tr>
-              )}
-              {!loading && items.length === 0 && (
-                <tr><td colSpan={7} className="px-3 py-8 text-center text-[hsl(var(--fg)/0.6)]">Sin resultados</td></tr>
-              )}
-              {!loading && items.map((row) => (
-                <tr key={row.id} className="border-t border-[hsl(var(--border))]">
-                  <td className="px-3 py-2">
-                    {row.icon ? (
-                      <img
-                        src={row.icon}
-                        alt=""
-                        className="h-10 w-10 rounded-md object-contain bg-[hsl(var(--muted))]"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div className="h-10 w-10 rounded-md bg-[hsl(var(--muted))]" />
-                    )}
-                  </td>
-                  <td className="px-3 py-2 font-medium">{row.title}</td>
-                  <td className="px-3 py-2 text-[hsl(var(--fg)/0.7)]">{row.slug}</td>
-                  <td className="px-3 py-2 text-[hsl(var(--fg)/0.8)]">{row.subtitle ?? "—"}</td>
-                  <td className="px-3 py-2">
-                    <input
-                      defaultValue={row.order ?? 0}
-                      onBlur={(e) => {
-                        const v = toInt(e.target.value, row.order ?? 0);
-                        if (v !== row.order) onInlineOrder(row, v);
-                      }}
-                      type="number"
-                      className="w-20 rounded-lg border border-[hsl(var(--border))] bg-transparent px-2 py-1"
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex gap-2">
-                      <Badge
-                        onClick={() => onToggle(row, "active")}
-                        color={row.active ? "success" : "destructive"}
-                        title={row.active ? "Activa" : "Inactiva"}
-                        clickable
-                      />
-                      <Badge
-                        onClick={() => onToggle(row, "featured")}
-                        color={row.featured ? "warning" : "muted"}
-                        title={row.featured ? "Destacada" : "No destacada"}
-                        clickable
-                      />
-                    </div>
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => onEdit(row)}
-                        className="px-3 py-1.5 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => onDelete(row)}
-                        className="px-3 py-1.5 rounded-lg border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.06)]"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-3 py-6 text-center text-[hsl(var(--fg)/0.6)]"
+                  >
+                    Cargando…
                   </td>
                 </tr>
-              ))}
+              )}
+              {!loading && items.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-3 py-8 text-center text-[hsl(var(--fg)/0.6)]"
+                  >
+                    Sin resultados
+                  </td>
+                </tr>
+              )}
+              {!loading &&
+                items.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="border-t border-[hsl(var(--border))]"
+                  >
+                    <td className="px-3 py-2">
+                      {row.icon ? (
+                        <img
+                          src={row.icon}
+                          alt=""
+                          className="h-10 w-10 rounded-md object-contain bg-[hsl(var(--muted))]"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div className="h-10 w-10 rounded-md bg-[hsl(var(--muted))]" />
+                      )}
+                    </td>
+                    <td className="px-3 py-2 font-medium">{row.title}</td>
+                    <td className="px-3 py-2 text-[hsl(var(--fg)/0.7)]">
+                      {row.slug}
+                    </td>
+                    <td className="px-3 py-2 text-[hsl(var(--fg)/0.8)]">
+                      {row.subtitle ?? "—"}
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        defaultValue={row.order ?? 0}
+                        onBlur={(e) => {
+                          const v = toInt(e.target.value, row.order ?? 0);
+                          if (v !== row.order) onInlineOrder(row, v);
+                        }}
+                        type="number"
+                        className="w-20 rounded-lg border border-[hsl(var(--border))] bg-transparent px-2 py-1"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex gap-2">
+                        <Badge
+                          onClick={() => onToggle(row, "active")}
+                          color={row.active ? "success" : "destructive"}
+                          title={row.active ? "Activa" : "Inactiva"}
+                          clickable
+                        />
+                        <Badge
+                          onClick={() => onToggle(row, "featured")}
+                          color={row.featured ? "warning" : "muted"}
+                          title={row.featured ? "Destacada" : "No destacada"}
+                          clickable
+                        />
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => onEdit(row)}
+                          className="px-3 py-1.5 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => onDelete(row)}
+                          className="px-3 py-1.5 rounded-lg border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.06)]"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -284,8 +395,13 @@ export default function PracticeAreasAdmin() {
         <div className="flex items-center justify-between px-3 py-2 border-t border-[hsl(var(--border))]">
           <div className="text-xs text-[hsl(var(--fg)/0.6)]">
             {meta ? (
-              <>Página {meta.current_page} de {meta.last_page} — {meta.total} registros</>
-            ) : (<>—</>)}
+              <>
+                Página {meta.current_page} de {meta.last_page} — {meta.total}{" "}
+                registros
+              </>
+            ) : (
+              <>—</>
+            )}
           </div>
           <div className="flex gap-2">
             <button
@@ -293,7 +409,7 @@ export default function PracticeAreasAdmin() {
               disabled={!meta || meta.current_page <= 1}
               className={cx(
                 "px-3 py-1.5 rounded-lg border",
-                (!meta || meta.current_page <= 1)
+                !meta || meta.current_page <= 1
                   ? "border-[hsl(var(--border))] text-[hsl(var(--fg)/0.5)] cursor-not-allowed"
                   : "border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
               )}
@@ -305,7 +421,7 @@ export default function PracticeAreasAdmin() {
               disabled={!meta || meta.current_page >= meta.last_page}
               className={cx(
                 "px-3 py-1.5 rounded-lg border",
-                (!meta || meta.current_page >= meta.last_page)
+                !meta || meta.current_page >= meta.last_page
                   ? "border-[hsl(var(--border))] text-[hsl(var(--fg)/0.5)] cursor-not-allowed"
                   : "border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]"
               )}
@@ -325,7 +441,10 @@ export default function PracticeAreasAdmin() {
             onClose={() => setShowForm(false)}
             onSaved={async () => {
               setShowForm(false);
-              pushToast({ type: "success", title: editing ? "Cambios guardados" : "Área creada" });
+              pushToast({
+                type: "success",
+                title: editing ? "Cambios guardados" : "Área creada",
+              });
               await sleep(120);
               fetchData(page);
             }}
@@ -338,7 +457,12 @@ export default function PracticeAreasAdmin() {
         {confirm && (
           <ConfirmDialog
             title="Eliminar área"
-            message={<>¿Seguro que deseas eliminar <b>{confirm.title}</b>? Esta acción no se puede deshacer.</>}
+            message={
+              <>
+                ¿Seguro que deseas eliminar <b>{confirm.title}</b>? Esta acción
+                no se puede deshacer.
+              </>
+            }
             onCancel={() => setConfirm(null)}
             onConfirm={confirmDelete}
           />
@@ -354,12 +478,16 @@ export default function PracticeAreasAdmin() {
             exit={{ y: 20, opacity: 0 }}
             className={cx(
               "fixed bottom-4 right-4 rounded-xl px-4 py-3 shadow-lg border",
-              toast.type === "success" && "bg-[hsl(var(--success)/0.1)] border-[hsl(var(--success))]",
-              toast.type === "error"   && "bg-[hsl(var(--destructive)/0.08)] border-[hsl(var(--destructive))]"
+              toast.type === "success" &&
+                "bg-[hsl(var(--success)/0.1)] border-[hsl(var(--success))]",
+              toast.type === "error" &&
+                "bg-[hsl(var(--destructive)/0.08)] border-[hsl(var(--destructive))]"
             )}
           >
             <div className="text-sm font-medium">{toast.title}</div>
-            {toast.desc && <div className="text-xs opacity-80">{toast.desc}</div>}
+            {toast.desc && (
+              <div className="text-xs opacity-80">{toast.desc}</div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -371,10 +499,13 @@ export default function PracticeAreasAdmin() {
 
 function Badge({ title, color = "muted", clickable = false, onClick }) {
   const map = {
-    muted:        "bg-[hsl(var(--muted))] text-[hsl(var(--fg))]",
-    success:      "bg-[hsl(var(--success)/0.12)] text-[hsl(var(--success))] border border-[hsl(var(--success)/0.4)]",
-    warning:      "bg-[hsl(var(--warning)/0.12)] text-[hsl(var(--warning))] border border-[hsl(var(--warning)/0.4)]",
-    destructive:  "bg-[hsl(var(--destructive)/0.12)] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive)/0.4)]",
+    muted: "bg-[hsl(var(--muted))] text-[hsl(var(--fg))]",
+    success:
+      "bg-[hsl(var(--success)/0.12)] text-[hsl(var(--success))] border border-[hsl(var(--success)/0.4)]",
+    warning:
+      "bg-[hsl(var(--warning)/0.12)] text-[hsl(var(--warning))] border border-[hsl(var(--warning)/0.4)]",
+    destructive:
+      "bg-[hsl(var(--destructive)/0.12)] text-[hsl(var(--destructive))] border border-[hsl(var(--destructive)/0.4)]",
   };
   return (
     <button
@@ -395,19 +526,29 @@ function ConfirmDialog({ title, message, onCancel, onConfirm }) {
   return (
     <motion.div
       className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
     >
       <motion.div
-        initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
+        initial={{ scale: 0.96, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.96, opacity: 0 }}
         className="w-full max-w-md rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5"
       >
         <h3 className="text-lg font-semibold">{title}</h3>
         <div className="mt-2 text-sm text-[hsl(var(--fg)/0.8)]">{message}</div>
         <div className="mt-4 flex justify-end gap-2">
-          <button onClick={onCancel} className="px-3 py-1.5 rounded-lg border border-[hsl(var(--border))]">
+          <button
+            onClick={onCancel}
+            className="px-3 py-1.5 rounded-lg border border-[hsl(var(--border))]"
+          >
             Cancelar
           </button>
-          <button onClick={onConfirm} className="px-3 py-1.5 rounded-lg bg-[hsl(var(--destructive))] text-white">
+          <button
+            onClick={onConfirm}
+            className="px-3 py-1.5 rounded-lg bg-[hsl(var(--destructive))] text-white"
+          >
             Eliminar
           </button>
         </div>
@@ -425,6 +566,16 @@ function FormModal({ editing, onClose, onSaved }) {
     body: editing?.body ?? "",
     slug: editing?.slug ?? "",
     bulletsText: bulletsToText(editing?.bullets),
+
+    // 🔹 Nuevos campos
+    category: editing?.category ?? "",
+    pricing_type: editing?.pricing_type ?? "",
+    from_price: editing?.from_price ?? "",
+    eta: editing?.eta ?? "",
+    scopeText: scopeToText(editing?.scope),
+    faqsText: faqsToText(editing?.faqs),
+    docsText: docsToText(editing?.docs),
+
     featured: !!editing?.featured,
     active: editing?.active ?? true,
     order: editing?.order ?? 0,
@@ -440,7 +591,7 @@ function FormModal({ editing, onClose, onSaved }) {
     setIconFile(file);
     const dataUrl = await readAsDataUrl(file).catch(() => "");
     setIconPreview(dataUrl);
-    setForm(f => ({ ...f, icon_url: "" })); // limpiar url si hay archivo
+    setForm((f) => ({ ...f, icon_url: "" })); // limpiar url si hay archivo
   };
 
   const onDrop = async (e) => {
@@ -460,6 +611,17 @@ function FormModal({ editing, onClose, onSaved }) {
         body: form.body || null,
         slug: form.slug || null,
         bullets: parseBullets(form.bulletsText),
+
+        // 🔹 Nuevos metadata / JSON
+        category: form.category || null,
+        pricing_type: form.pricing_type || null,
+        from_price: form.from_price || null,
+        eta: form.eta || null,
+
+        scope: parseScope(form.scopeText),
+        faqs: parseFaqs(form.faqsText),
+        docs: parseDocs(form.docsText),
+
         featured: form.featured ? 1 : 0,
         active: form.active ? 1 : 0,
         order: toInt(form.order, 0),
@@ -476,7 +638,9 @@ function FormModal({ editing, onClose, onSaved }) {
       onSaved(res?.data ?? res);
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.message || err?.message || "No se pudo guardar");
+      alert(
+        err?.response?.data?.message || err?.message || "No se pudo guardar"
+      );
     } finally {
       setSaving(false);
     }
@@ -485,7 +649,9 @@ function FormModal({ editing, onClose, onSaved }) {
   return (
     <motion.div
       className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
     >
       <motion.form
         onSubmit={onSubmit}
@@ -498,8 +664,12 @@ function FormModal({ editing, onClose, onSaved }) {
         <div className="sticky top-0 z-10 px-5 pt-5 pb-3 bg-[hsl(var(--card))] border-b border-[hsl(var(--border))]">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="text-lg font-semibold">{isEdit ? "Editar área" : "Nueva área"}</h3>
-              <p className="text-xs text-[hsl(var(--fg)/0.6)]">Los cambios se reflejan en la web pública.</p>
+              <h3 className="text-lg font-semibold">
+                {isEdit ? "Editar área" : "Nueva área"}
+              </h3>
+              <p className="text-xs text-[hsl(var(--fg)/0.6)]">
+                Los cambios se reflejan en la web pública.
+              </p>
             </div>
             <button
               type="button"
@@ -517,7 +687,9 @@ function FormModal({ editing, onClose, onSaved }) {
               onClick={() => setTab("content")}
               className={cx(
                 "px-3 py-1.5 rounded-lg border",
-                tab === "content" ? "bg-[hsl(var(--muted))]" : "border-[hsl(var(--border))]"
+                tab === "content"
+                  ? "bg-[hsl(var(--muted))]"
+                  : "border-[hsl(var(--border))]"
               )}
             >
               Contenido
@@ -527,7 +699,9 @@ function FormModal({ editing, onClose, onSaved }) {
               onClick={() => setTab("media")}
               className={cx(
                 "px-3 py-1.5 rounded-lg border",
-                tab === "media" ? "bg-[hsl(var(--muted))]" : "border-[hsl(var(--border))]"
+                tab === "media"
+                  ? "bg-[hsl(var(--muted))]"
+                  : "border-[hsl(var(--border))]"
               )}
             >
               Media
@@ -544,7 +718,9 @@ function FormModal({ editing, onClose, onSaved }) {
                 <input
                   required
                   value={form.title}
-                  onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, title: e.target.value }))
+                  }
                   className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2"
                 />
               </div>
@@ -552,7 +728,9 @@ function FormModal({ editing, onClose, onSaved }) {
                 <label className="text-xs">Subtítulo</label>
                 <input
                   value={form.subtitle}
-                  onChange={(e) => setForm(f => ({ ...f, subtitle: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, subtitle: e.target.value }))
+                  }
                   className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2"
                 />
               </div>
@@ -560,7 +738,9 @@ function FormModal({ editing, onClose, onSaved }) {
                 <label className="text-xs">Slug (opcional)</label>
                 <input
                   value={form.slug}
-                  onChange={(e) => setForm(f => ({ ...f, slug: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, slug: e.target.value }))
+                  }
                   className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2"
                   placeholder="se-generará-desde-el-titulo"
                 />
@@ -570,7 +750,9 @@ function FormModal({ editing, onClose, onSaved }) {
                 <textarea
                   rows={2}
                   value={form.excerpt}
-                  onChange={(e) => setForm(f => ({ ...f, excerpt: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, excerpt: e.target.value }))
+                  }
                   className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2"
                 />
               </div>
@@ -579,17 +761,123 @@ function FormModal({ editing, onClose, onSaved }) {
                 <textarea
                   rows={5}
                   value={form.body}
-                  onChange={(e) => setForm(f => ({ ...f, body: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, body: e.target.value }))
+                  }
                   className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2"
                 />
               </div>
+
               <div className="md:col-span-2">
                 <label className="text-xs">Bullets (una por línea)</label>
                 <textarea
                   rows={4}
                   value={form.bulletsText}
-                  onChange={(e) => setForm(f => ({ ...f, bulletsText: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, bulletsText: e.target.value }))
+                  }
                   className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2"
+                />
+              </div>
+
+              {/* 🔹 Nuevos campos de metadata */}
+              <div>
+                <label className="text-xs">
+                  Categoría (p. ej. "Corporativo")
+                </label>
+                <input
+                  value={form.category}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, category: e.target.value }))
+                  }
+                  className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs">Tipo de tarifa</label>
+                <select
+                  value={form.pricing_type}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, pricing_type: e.target.value }))
+                  }
+                  className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2 text-sm"
+                >
+                  <option value="">—</option>
+                  <option value="fijo">Tarifa fija</option>
+                  <option value="hora">Por hora</option>
+                  <option value="mixto">Mixto</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs">Desde (texto visible)</label>
+                <input
+                  value={form.from_price}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, from_price: e.target.value }))
+                  }
+                  placeholder="Desde $X + IVA"
+                  className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs">Tiempo estimado (ETA)</label>
+                <input
+                  value={form.eta}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, eta: e.target.value }))
+                  }
+                  placeholder="2–5 días hábiles"
+                  className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-xs">
+                  Alcance (una línea por item:{" "}
+                  <code>Label | Detalle</code>)
+                </label>
+                <textarea
+                  rows={4}
+                  value={form.scopeText}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, scopeText: e.target.value }))
+                  }
+                  className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2 text-sm"
+                  placeholder={`Revisión inicial | Diagnóstico legal y plan de acción.\nDocumentos | Contratos adaptados a tu caso.\nAcompañamiento | Asesoría durante la ejecución.`}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-xs">
+                  Preguntas frecuentes (una por línea:{" "}
+                  <code>Pregunta | Respuesta</code>)
+                </label>
+                <textarea
+                  rows={4}
+                  value={form.faqsText}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, faqsText: e.target.value }))
+                  }
+                  className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2 text-sm"
+                  placeholder={`¿Cuánto tarda? | Suele entregarse un plan inicial en 2–5 días hábiles.\n¿Trabajo remoto? | Sí, reuniones breves, firmas electrónicas y tableros compartidos.`}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-xs">
+                  Documentos frecuentes (uno por línea)
+                </label>
+                <textarea
+                  rows={3}
+                  value={form.docsText}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, docsText: e.target.value }))
+                  }
+                  className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2 text-sm"
+                  placeholder={`Contrato/Acuerdo principal\nPolíticas / Anexos\nCarta de instrucciones`}
                 />
               </div>
 
@@ -598,7 +886,9 @@ function FormModal({ editing, onClose, onSaved }) {
                 <input
                   type="number"
                   value={form.order}
-                  onChange={(e) => setForm(f => ({ ...f, order: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, order: e.target.value }))
+                  }
                   className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2"
                 />
               </div>
@@ -607,7 +897,9 @@ function FormModal({ editing, onClose, onSaved }) {
                   <input
                     type="checkbox"
                     checked={form.featured}
-                    onChange={(e) => setForm(f => ({ ...f, featured: e.target.checked }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, featured: e.target.checked }))
+                    }
                   />
                   Destacada
                 </label>
@@ -615,7 +907,9 @@ function FormModal({ editing, onClose, onSaved }) {
                   <input
                     type="checkbox"
                     checked={form.active}
-                    onChange={(e) => setForm(f => ({ ...f, active: e.target.checked }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, active: e.target.checked }))
+                    }
                   />
                   Activa
                 </label>
@@ -632,7 +926,11 @@ function FormModal({ editing, onClose, onSaved }) {
                 <div className="flex items-center gap-3">
                   <div className="h-16 w-16 rounded-md bg-[hsl(var(--muted))] overflow-hidden">
                     {iconPreview ? (
-                      <img src={iconPreview} alt="" className="h-full w-full object-contain" />
+                      <img
+                        src={iconPreview}
+                        alt=""
+                        className="h-full w-full object-contain"
+                      />
                     ) : (
                       <div className="h-full w-full" />
                     )}
@@ -647,7 +945,9 @@ function FormModal({ editing, onClose, onSaved }) {
                     />
                   </label>
                 </div>
-                <p className="text-xs opacity-70 mt-2">También puedes arrastrar y soltar aquí. Máx 4MB.</p>
+                <p className="text-xs opacity-70 mt-2">
+                  También puedes arrastrar y soltar aquí. Máx 4MB.
+                </p>
               </div>
 
               <div className="rounded-xl border border-[hsl(var(--border))] p-4">
@@ -655,13 +955,15 @@ function FormModal({ editing, onClose, onSaved }) {
                 <input
                   value={form.icon_url}
                   onChange={(e) => {
-                    setForm(f => ({ ...f, icon_url: e.target.value }));
+                    setForm((f) => ({ ...f, icon_url: e.target.value }));
                     if (!iconFile) setIconPreview(e.target.value);
                   }}
                   placeholder="https://.../icon.svg"
                   className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-2 text-sm"
                 />
-                <p className="text-xs opacity-70 mt-2">Si subes archivo, la URL se ignora.</p>
+                <p className="text-xs opacity-70 mt-2">
+                  Si subes archivo, la URL se ignora.
+                </p>
               </div>
             </div>
           )}
@@ -681,7 +983,7 @@ function FormModal({ editing, onClose, onSaved }) {
               disabled={saving}
               className="px-3 py-2 rounded-lg bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] hover:opacity-90 disabled:opacity-60"
             >
-              {saving ? "Guardando…" : (isEdit ? "Guardar cambios" : "Crear")}
+              {saving ? "Guardando…" : isEdit ? "Guardar cambios" : "Crear"}
             </button>
           </div>
         </div>

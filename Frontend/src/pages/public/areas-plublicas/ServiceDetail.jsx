@@ -25,11 +25,39 @@ function toAbsUrl(u) {
   return `${base}/storage/${u}`;
 }
 
-/* ========= Bullets fallback (tu arreglo) ========= */
+/* ========= Bullets fallback ========= */
 const DEFAULT_BULLETS = [
   "Procesos sancionatorios",
   "Responsabilidad del Estado",
   "Consultoría en actos administrativos",
+];
+
+const DEFAULT_SCOPE = [
+  { label: "Revisión inicial", value: "Diagnóstico legal y plan de acción." },
+  { label: "Documentos", value: "Contratos/formatos adaptados a tu caso." },
+  { label: "Acompañamiento", value: "Asesoría durante la ejecución." },
+  { label: "Cierre", value: "Checklist final y recomendaciones." },
+];
+
+const DEFAULT_FAQS = [
+  {
+    q: "¿Cuánto tarda?",
+    a: "Solemos entregar un plan inicial en 2–5 días hábiles.",
+  },
+  {
+    q: "¿Trabajo remoto?",
+    a: "Sí, con reuniones breves, firmas electrónicas y tableros compartidos.",
+  },
+  {
+    q: "¿Tarifa plana?",
+    a: "En corporativo, PI y migratorio manejamos paquetes cerrados.",
+  },
+];
+
+const DEFAULT_DOCS = [
+  "Contrato/Acuerdo principal",
+  "Políticas / Anexos",
+  "Carta de instrucciones",
 ];
 
 /* ================= Icons & UI ================= */
@@ -110,7 +138,7 @@ function Button({
   const variants = {
     primary:
       "bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] hover:translate-y-[-1px] active:translate-y-0 shadow-sm",
-    outline: "border hover:bg-black/5 dark:hover:bg白/5",
+    outline: "border hover:bg-black/5 dark:hover:bg-white/5",
     ghost: "hover:bg-black/5 dark:hover:bg-white/5",
     link: "underline underline-offset-4 hover:no-underline px-0",
   }[variant];
@@ -122,6 +150,7 @@ function Button({
 }
 
 function PriceBadge({ type, from }) {
+  if (!type && !from) return null;
   const label =
     type === "fijo" ? "Tarifa fija" : type === "hora" ? "Por hora" : "Mixto";
   return (
@@ -183,7 +212,10 @@ function ScopeTable({ title = "Alcance típico", items = [] }) {
         <table className="w-full text-[15px] md:text-base">
           <tbody>
             {items.map((row, i) => (
-              <tr key={i} className="odd:bg-zinc-50/60 dark:odd:bg-zinc-900/40">
+              <tr
+                key={i}
+                className="odd:bg-zinc-50/60 dark:odd:bg-zinc-900/40"
+              >
                 <td className="p-3 md:p-3.5 font-medium">{row.label}</td>
                 <td className="p-3 md:p-3.5 text-zinc-700 dark:text-zinc-300">
                   {row.value}
@@ -213,6 +245,10 @@ function GlobalCTA({ href = "/contacto" }) {
   );
 }
 
+// Helpers para normalizar arrays del back
+const toArrayOrNull = (v) =>
+  Array.isArray(v) && v.length ? v : null;
+
 // ============== PAGE (carga por slug con fallback por id) ==============
 export default function ServiceDetail() {
   const params = useParams();
@@ -236,7 +272,6 @@ export default function ServiceDetail() {
         const res = await svc.get(routeParam, { signal: ac.signal });
         const a = res?.data ?? res;
 
-        // ✅ Nuevo: guardar body
         setItem({
           title: a.title,
           summary: a.subtitle ?? a.excerpt ?? "",
@@ -246,9 +281,9 @@ export default function ServiceDetail() {
           from_price: a.from_price ?? null,
           category: a.category ?? "General",
           eta: a.eta ?? null,
-          scope: a.scope ?? null,
-          faqs: a.faqs ?? null,
-          docs: a.docs ?? null,
+          scope: toArrayOrNull(a.scope),
+          faqs: toArrayOrNull(a.faqs),
+          docs: toArrayOrNull(a.docs),
           cover: a.cover ?? a.image ?? null,
           icon: a.icon ?? a.icon_url ?? null,
           slug: a.slug ?? String(a.id ?? ""),
@@ -268,9 +303,9 @@ export default function ServiceDetail() {
               from_price: a.from_price ?? null,
               category: a.category ?? "General",
               eta: a.eta ?? null,
-              scope: a.scope ?? null,
-              faqs: a.faqs ?? null,
-              docs: a.docs ?? null,
+              scope: toArrayOrNull(a.scope),
+              faqs: toArrayOrNull(a.faqs),
+              docs: toArrayOrNull(a.docs),
               cover: a.cover ?? a.image ?? null,
               icon: a.icon ?? a.icon_url ?? null,
               slug: a.slug ?? String(a.id ?? ""),
@@ -325,6 +360,7 @@ export default function ServiceDetail() {
     [item]
   );
   const iconUrl = useMemo(() => toAbsUrl(item?.icon), [item]);
+  const heroUrl = iconUrl || coverUrl;
 
   // Si error, mostramos error normal
   if (err) {
@@ -342,20 +378,26 @@ export default function ServiceDetail() {
     );
   }
 
-  // ===== Overlay: NO quitamos el body; solo lo cubrimos con blur y spinner =====
-  // Se monta siempre que loading sea true, vía portal a <body>
-  // (El contenido debajo puede ser un shell si aún no hay "item")
   const bulletsList =
-    (item?.bullets && item.bullets.length > 0) ? item.bullets : DEFAULT_BULLETS;
+    item?.bullets && item.bullets.length > 0 ? item.bullets : DEFAULT_BULLETS;
 
   // Si aún no hay item (primera carga), renderizamos un "shell" mínimo
   if (!item) {
     return (
       <>
         {loading && (
-          <Loader overlay blur={14} size={48} showLabel label="Cargando servicio…" />
+          <Loader
+            overlay
+            blur={14}
+            size={48}
+            showLabel
+            label="Cargando servicio…"
+          />
         )}
-        <section className="mx-auto w-full max-w-7xl px-4 md:px-6" aria-busy="true">
+        <section
+          className="mx-auto w-full max-w-7xl px-4 md:px-6"
+          aria-busy="true"
+        >
           {/* Shell ligero para mantener estructura mientras llega la data */}
           <div className="relative left-1/2 right-1/2 -mx-[50vw] w-screen mt-3 z-10">
             <div className="h-[60dvh]" />
@@ -372,7 +414,10 @@ export default function ServiceDetail() {
                 <div className="h-6 w-1/3 rounded bg-zinc-200/60 dark:bg-zinc-800/60" />
                 <ul className="mt-4 space-y-2">
                   {bulletsList.map((_, i) => (
-                    <li key={i} className="h-4 w-3/4 rounded bg-zinc-200/50 dark:bg-zinc-800/50" />
+                    <li
+                      key={i}
+                      className="h-4 w-3/4 rounded bg-zinc-200/50 dark:bg-zinc-800/50"
+                    />
                   ))}
                 </ul>
               </section>
@@ -386,14 +431,27 @@ export default function ServiceDetail() {
     );
   }
 
+  const scopeItems = item.scope && item.scope.length ? item.scope : DEFAULT_SCOPE;
+  const faqItems = item.faqs && item.faqs.length ? item.faqs : DEFAULT_FAQS;
+  const docsItems = item.docs && item.docs.length ? item.docs : DEFAULT_DOCS;
+
   // ===== Contenido normal cuando ya hay item =====
   return (
     <>
       {loading && (
-        <Loader overlay blur={14} size={48} showLabel label="Cargando servicio…" />
+        <Loader
+          overlay
+          blur={14}
+          size={48}
+          showLabel
+          label="Cargando servicio…"
+        />
       )}
 
-      <section className="mx-auto w-full max-w-7xl px-4 md:px-6" aria-busy={loading ? "true" : "false"}>
+      <section
+        className="mx-auto w-full max-w-7xl px-4 md:px-6"
+        aria-busy={loading ? "true" : "false"}
+      >
         {/* Breadcrumb */}
         <nav className="mt-2 text-xs md:text-sm text-zinc-600 dark:text-zinc-300">
           <Link to="/" className="hover:underline">
@@ -414,9 +472,9 @@ export default function ServiceDetail() {
               className="absolute inset-0 will-change-transform z-0 overflow-hidden"
               transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
             >
-              {iconUrl ? (
+              {heroUrl ? (
                 <img
-                  src={iconUrl}
+                  src={heroUrl}
                   alt="Portada del servicio"
                   className="h-full w-full object-cover"
                   loading="eager"
@@ -426,8 +484,12 @@ export default function ServiceDetail() {
                 />
               ) : null}
 
+              {/* Gradiente de respaldo cuando no hay imagen */}
               <div
-                className="absolute inset-0 hidden"
+                className={cx(
+                  "absolute inset-0",
+                  heroUrl ? "hidden" : "block"
+                )}
                 style={{
                   background:
                     "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%)",
@@ -490,13 +552,19 @@ export default function ServiceDetail() {
                           : "Mixto"}
                       </span>
                       {item.from_price && (
-                        <span className="text-white/80">• {item.from_price}</span>
+                        <span className="text-white/80">
+                          • {item.from_price}
+                        </span>
                       )}
                     </div>
                   )}
                   {item.category && (
                     <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 backdrop-blur px-2.5 py-1 text-xs text-white">
-                      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
                         <path
                           d="M20 13l-7 7-9-9V4h7l9 9z"
                           fill="none"
@@ -510,9 +578,26 @@ export default function ServiceDetail() {
                   )}
                   {item.eta && (
                     <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 backdrop-blur px-2.5 py-1 text-xs text-white">
-                      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-                        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                        <path d="M12 7v6l4 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="9"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                        />
+                        <path
+                          d="M12 7v6l4 2"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                       {item.eta}
                     </span>
@@ -554,7 +639,7 @@ export default function ServiceDetail() {
               </section>
             ) : null}
 
-            {(bulletsList?.length) ? (
+            {bulletsList?.length ? (
               <section>
                 <h2 className="text-4xl md:text-5xl font-semibold mb-5 font-display tracking-tight">
                   ¿Qué incluye?
@@ -570,16 +655,7 @@ export default function ServiceDetail() {
                 Alcance del servicio
               </h3>
               <div className="card card-pad">
-                <ScopeTable
-                  items={
-                    item.scope ?? [
-                      { label: "Revisión inicial", value: "Diagnóstico legal y plan de acción." },
-                      { label: "Documentos", value: "Contratos/formatos adaptados a tu caso." },
-                      { label: "Acompañamiento", value: "Asesoría durante la ejecución." },
-                      { label: "Cierre", value: "Checklist final y recomendaciones." },
-                    ]
-                  }
-                />
+                <ScopeTable items={scopeItems} />
               </div>
 
               {/* Nota informativa */}
@@ -587,24 +663,17 @@ export default function ServiceDetail() {
                 <p className="flex items-start gap-2 text-sm md:text-base text-soft">
                   <Icon.info className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
                   <span>
-                    Precios y tiempos referenciales. Propuesta cerrada tras
-                    evaluación inicial (rápida y sin compromiso).
+                    Precios y tiempos referenciales. La propuesta final se
+                    cierra tras una evaluación inicial rápida y sin
+                    compromiso.
                   </span>
                 </p>
               </div>
             </section>
 
-            <section> 
+            <section>
               <div className="card card-pad">
-                <FAQ
-                  items={
-                    item.faqs ?? [
-                      { q: "¿Cuánto tarda?", a: "Solemos entregar plan inicial en 2-5 días hábiles." },
-                      { q: "¿Trabajo remoto?", a: "Sí, reuniones breves, firmas electrónicas y tableros compartidos." },
-                      { q: "¿Tarifa plana?", a: "En corporativo, PI y migratorio manejamos paquetes cerrados." },
-                    ]
-                  }
-                />
+                <FAQ items={faqItems} />
               </div>
             </section>
 
@@ -619,11 +688,7 @@ export default function ServiceDetail() {
                 Documentos frecuentes
               </h3>
               <ul className="mt-3 space-y-2 text-sm md:text-[15px]">
-                {(item.docs ?? [
-                  "Contrato/Acuerdo principal",
-                  "Políticas / Anexos",
-                  "Carta de instrucciones",
-                ]).map((d, i) => (
+                {docsItems.map((d, i) => (
                   <li key={i} className="flex items-start gap-2">
                     <Icon.check className="mt-0.5 h-4 w-4 text-accent" />
                     <span>{d}</span>
@@ -639,7 +704,10 @@ export default function ServiceDetail() {
                   </h4>
                   <ul className="mt-3 space-y-2 text-sm md:text-[15px]">
                     {servicios.map((s) => (
-                      <li key={s.to} className="flex items-center justify-between gap-2">
+                      <li
+                        key={s.to}
+                        className="flex items-center justify-between gap-2"
+                      >
                         <Link
                           to={s.to}
                           className="link underline underline-offset-4 hover:no-underline"

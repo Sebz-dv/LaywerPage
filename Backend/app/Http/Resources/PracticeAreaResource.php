@@ -27,10 +27,17 @@ class PracticeAreaResource extends JsonResource
             'subtitle'   => $this->subtitle,
             'excerpt'    => $this->excerpt,
             'body'       => $this->body,
-            'icon'       => $icon,              // 👈 el frontend usa `icon`
-            'icon_url'   => $this->icon_url,    // (transparencia)
-            'icon_path'  => $this->icon_path,   // (transparencia)
-            'bullets'    => $this->bullets ?? [],  // 👈 siempre array
+
+            // Front usa `icon`
+            'icon'       => $icon,
+            'icon_url'   => $this->icon_url,
+            'icon_path'  => $this->icon_path,
+
+            // Siempre arrays para evitar null-checks feos en el front
+            'bullets'    => $this->bullets ?? [],
+            'scope'      => $this->scope ?? [],
+            'faqs'       => $this->faqs ?? [],
+            'docs'       => $this->docs ?? [],
 
             'featured'   => (bool) $this->featured,
             'active'     => (bool) $this->active,
@@ -38,6 +45,11 @@ class PracticeAreaResource extends JsonResource
 
             'created_at' => optional($this->created_at)->toISOString(),
             'updated_at' => optional($this->updated_at)->toISOString(),
+
+            'category'      => $this->category,
+            'pricing_type'  => $this->pricing_type,
+            'from_price'    => $this->from_price,
+            'eta'           => $this->eta,
         ];
     }
 }

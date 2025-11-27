@@ -3,7 +3,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import postsService from "../../../services/postsService";
 import { teamService } from "../../../services/teamService";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
 import fallbackHero from "../../../assets/about/hero.jpg";
 
 const cx = (...xs) => xs.filter(Boolean).join(" ");
@@ -43,7 +48,12 @@ function useFadeUpSlow() {
 
 const letterAvatar = (name = "U") =>
   `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><rect width='100%' height='100%' fill='#eef2ff'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-family='Inter,Arial' font-size='72' fill='#3730a3'>${(name || "U").trim().charAt(0).toUpperCase()}</text></svg>`
+    `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><rect width='100%' height='100%' fill='#eef2ff'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-family='Inter,Arial' font-size='72' fill='#3730a3'>${(
+      name || "U"
+    )
+      .trim()
+      .charAt(0)
+      .toUpperCase()}</text></svg>`
   )}`;
 
 /* ===== Helpers ===== */
@@ -99,7 +109,10 @@ export default function PublicPostDetail() {
     const rawAuthor = post?.author;
     if (!rawAuthor) return;
 
-    if (typeof rawAuthor === "object" && (rawAuthor.name || rawAuthor.slug || rawAuthor.avatar_url)) {
+    if (
+      typeof rawAuthor === "object" &&
+      (rawAuthor.name || rawAuthor.slug || rawAuthor.avatar_url)
+    ) {
       setAuthor(rawAuthor);
       return;
     }
@@ -156,7 +169,7 @@ export default function PublicPostDetail() {
   return (
     <main className="bg-app min-h-dvh">
       {/* ===== HERO ===== */}
-      <section className="relative h-[36svh] min-h-[260px] overflow-hidden">
+      <section className="relative h-[50svh] min-h-[260px] overflow-hidden">
         <motion.div style={{ scale: heroScale }} className="absolute inset-0">
           <img
             src={heroUrl}
@@ -178,17 +191,7 @@ export default function PublicPostDetail() {
         <div className="relative z-10 h-full">
           {/* ⬇️ MÁS ANCHO: antes max-w-4xl */}
           <div className="mx-auto h-full max-w-5xl lg:max-w-6xl px-4 sm:px-6 flex flex-col justify-end pb-6">
-            <motion.div
-              variants={fade}
-              initial="hidden"
-              animate="show"
-              className="flex items-center justify-between gap-3"
-            >
-              <Link to="/public/simple-posts" className="btn btn-outline">
-                Ver todas
-              </Link>
-            </motion.div>
-
+            
             <motion.h1
               variants={fade}
               initial="hidden"
@@ -224,6 +227,27 @@ export default function PublicPostDetail() {
                 {post.info}
               </motion.p>
             )}
+
+            <motion.div
+              variants={fade}
+              initial="hidden"
+              animate="show"
+              className="flex items-center justify-between gap-3"
+            >
+              <Link
+                to="/public/simple-posts"
+                className={cx(
+                  "inline-flex items-center justify-center sm:justify-start gap-2 rounded-full mt-2",
+                  "px-2   text-sm  ",
+                  "bg-secondary text-white shadow-md",
+                  "hover:bg-[#4374b8] hover:shadow-lg",
+                  "transition-colors transition-shadow"
+                )}
+              >
+                <span className="text-lg">←</span>
+                <span>Ver todas las publicaciones</span>
+              </Link>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -269,7 +293,10 @@ export default function PublicPostDetail() {
                 {author ? (
                   <div className="flex items-center gap-3 min-w-0">
                     <img
-                      src={author.avatar_url || letterAvatar(author.name || author.slug)}
+                      src={
+                        author.avatar_url ||
+                        letterAvatar(author.name || author.slug)
+                      }
                       alt={author.name || "Autor"}
                       className="h-10 w-10 rounded-full border object-cover flex-shrink-0"
                       loading="lazy"
@@ -333,7 +360,12 @@ export default function PublicPostDetail() {
 
             {/* Enlaces */}
             {(post.links?.length || 0) > 0 && (
-              <motion.section variants={fade} initial="hidden" animate="show" className="mt-2">
+              <motion.section
+                variants={fade}
+                initial="hidden"
+                animate="show"
+                className="mt-2"
+              >
                 <h3 className="font-display text-lg mb-3">Enlaces</h3>
                 <ul className="grid sm:grid-cols-2 gap-2">
                   {post.links.map((l, i) => (
@@ -355,7 +387,12 @@ export default function PublicPostDetail() {
 
             {/* Comentarios */}
             {(post.comments?.length || 0) > 0 && (
-              <motion.section variants={fade} initial="hidden" animate="show" className="mt-2">
+              <motion.section
+                variants={fade}
+                initial="hidden"
+                animate="show"
+                className="mt-2"
+              >
                 <h3 className="font-display text-lg mb-3">Comentarios</h3>
                 <ul className="space-y-3">
                   {post.comments.map((c, i) => {

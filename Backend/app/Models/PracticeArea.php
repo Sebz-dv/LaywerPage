@@ -23,6 +23,15 @@ class PracticeArea extends Model
         'featured',
         'active',
         'order',
+
+        // Nuevos
+        'category',
+        'pricing_type',
+        'from_price',
+        'eta',
+        'scope',
+        'faqs',
+        'docs',
     ];
 
     protected $casts = [
@@ -30,6 +39,10 @@ class PracticeArea extends Model
         'featured' => 'boolean',
         'active'   => 'boolean',
         'order'    => 'integer',
+
+        'scope'    => 'array',
+        'faqs'     => 'array',
+        'docs'     => 'array',
     ];
 
     protected $appends = ['icon']; // URL resuelta para el front
@@ -37,8 +50,14 @@ class PracticeArea extends Model
     // Accessor: icon => URL final (prioriza icon_url, si no usa storage)
     public function getIconAttribute(): ?string
     {
-        if ($this->icon_url) return $this->icon_url;
-        if ($this->icon_path) return asset('storage/' . ltrim($this->icon_path, '/'));
+        if ($this->icon_url) {
+            return $this->icon_url;
+        }
+
+        if ($this->icon_path) {
+            return asset('storage/' . ltrim($this->icon_path, '/'));
+        }
+
         return null;
     }
 
@@ -50,9 +69,11 @@ class PracticeArea extends Model
                 $base = Str::slug($m->title);
                 $slug = $base;
                 $i = 1;
+
                 while (static::where('slug', $slug)->withTrashed()->exists()) {
                     $slug = $base . '-' . $i++;
                 }
+
                 $m->slug = $slug;
             }
         });
@@ -61,8 +82,12 @@ class PracticeArea extends Model
     // Scope de búsqueda simple
     public function scopeSearch($q, ?string $term)
     {
-        if (!$term) return $q;
+        if (!$term) {
+            return $q;
+        }
+
         $t = trim($term);
+
         return $q->where(function ($qq) use ($t) {
             $qq->where('title', 'like', "%{$t}%")
                 ->orWhere('subtitle', 'like', "%{$t}%")

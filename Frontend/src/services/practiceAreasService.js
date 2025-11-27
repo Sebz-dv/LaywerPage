@@ -17,10 +17,13 @@ function toFormData(payload, methodOverride = null) {
   for (const [k, raw] of Object.entries(payload)) {
     if (raw === undefined) continue;
 
-    if (k === "bullets") {
-      fd.append("bullets", JSON.stringify(Array.isArray(raw) ? raw : []));
+    // JSON que Laravel espera como array/JSON
+    if (k === "bullets" || k === "scope" || k === "faqs" || k === "docs") {
+      const arr = Array.isArray(raw) ? raw : [];
+      fd.append(k, JSON.stringify(arr));
       continue;
     }
+
     if (k === "icon_url" && hasIconFile) continue;
 
     let v = raw;
@@ -36,7 +39,9 @@ export const practiceAreasService = {
   },
 
   get(idOrSlug, config = {}) {
-    return api.get(`/practice-areas/${idOrSlug}`, { ...config }).then((r) => r.data);
+    return api
+      .get(`/practice-areas/${idOrSlug}`, { ...config })
+      .then((r) => r.data);
   },
 
   create(payload, config = {}) {
@@ -50,6 +55,7 @@ export const practiceAreasService = {
         })
         .then((r) => r.data);
     }
+    // Sin archivo: se manda JSON, Laravel recibe arrays directos
     return api.post("/practice-areas", payload, { ...config }).then((r) => r.data);
   },
 
@@ -64,14 +70,20 @@ export const practiceAreasService = {
         })
         .then((r) => r.data);
     }
-    return api.put(`/practice-areas/${id}`, payload, { ...config }).then((r) => r.data);
+    return api
+      .put(`/practice-areas/${id}`, payload, { ...config })
+      .then((r) => r.data);
   },
 
   remove(id, config = {}) {
-    return api.delete(`/practice-areas/${id}`, { ...config }).then((r) => r.data);
+    return api
+      .delete(`/practice-areas/${id}`, { ...config })
+      .then((r) => r.data);
   },
 
   toggle(id, field, config = {}) {
-    return api.post(`/practice-areas/${id}/toggle`, { field }, { ...config }).then((r) => r.data);
+    return api
+      .post(`/practice-areas/${id}/toggle`, { field }, { ...config })
+      .then((r) => r.data);
   },
 };
