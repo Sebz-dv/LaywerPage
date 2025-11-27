@@ -19,14 +19,17 @@ import { mediaService } from "../../services/mediaService";
 /* ============ Utils ============ */
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 
+/**
+ * Escala de texto más amigable en móvil.
+ */
 const T = {
-  h1: "text-5xl sm:text-6xl md:text-7xl",
-  h2: "text-4xl sm:text-5xl",
-  h3: "text-3xl sm:text-4xl",
-  h4: "text-2xl sm:text-3xl",
-  pLg: "text-xl sm:text-2xl",
-  p: "text-lg sm:text-xl",
-  kicker: "text-xs sm:text-sm tracking-[.18em] uppercase font-subtitle",
+  h1: "text-3xl sm:text-4xl md:text-5xl lg:text-6xl",
+  h2: "text-2xl sm:text-3xl md:text-4xl",
+  h3: "text-xl sm:text-2xl md:text-3xl",
+  h4: "text-lg sm:text-xl md:text-2xl",
+  pLg: "text-base sm:text-lg md:text-xl",
+  p: "text-sm sm:text-base md:text-lg",
+  kicker: "text-[11px] sm:text-xs md:text-sm tracking-[.18em] uppercase font-subtitle",
 };
 
 /* ============ Datos ============ */
@@ -77,7 +80,7 @@ const staggerSlow = (delay = 0.12) => ({
 });
 
 /* ============ Botón ============ */
-const BtnInk = ({ href, children, variant = "secondary" }) => {
+const BtnInk = ({ href, children, variant = "secondary", className }) => {
   const base =
     variant === "secondary"
       ? "btn font-subtitle relative overflow-hidden group btn-secondary"
@@ -94,7 +97,12 @@ const BtnInk = ({ href, children, variant = "secondary" }) => {
       whileHover={{ scale: 1.03 }}
       whileTap={{ scale: 0.99 }}
       transition={{ type: "spring", stiffness: 380, damping: 26, mass: 0.6 }}
-      className={base}
+      className={cx(
+        base,
+        // full width en móvil, auto en pantallas grandes
+        "w-full sm:w-auto justify-center sm:justify-start text-center sm:text-left",
+        className
+      )}
     >
       <span
         aria-hidden
@@ -104,9 +112,9 @@ const BtnInk = ({ href, children, variant = "secondary" }) => {
           fillStyle
         )}
       />
-      <span className="relative z-10 flex items-center">
+      <span className="relative z-10 flex items-center justify-center sm:justify-start">
         {children}
-        <FaArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+        <FaArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-0.5" />
       </span>
     </motion.a>
   );
@@ -123,12 +131,12 @@ const ValueItem = ({ icon, title, desc }) => {
   return (
     <motion.article
       variants={fade}
-      className="rounded-2xl p-6 bg-card border border-token hover:shadow-lg transition-shadow font-display"
+      className="rounded-2xl p-5 sm:p-6 bg-card border border-token hover:shadow-lg transition-shadow font-display"
     >
-      <div className="h-12 w-12 rounded-xl grid place-items-center bg-[hsl(var(--primary)/.08)] text-[hsl(var(--primary))] border border-[hsl(var(--border))]">
+      <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-xl grid place-items-center bg-[hsl(var(--primary)/.08)] text-[hsl(var(--primary))] border border-[hsl(var(--border))]">
         {icon}
       </div>
-      <h4 className={cx(T.h4, "mt-4 font-semibold")}>{title}</h4>
+      <h4 className={cx(T.h4, "mt-3 sm:mt-4 font-semibold")}>{title}</h4>
       <p className={cx(T.p, "mt-2 text-soft")}>{desc}</p>
     </motion.article>
   );
@@ -138,7 +146,7 @@ const ValueItem = ({ icon, title, desc }) => {
 export default function AboutUs() {
   const fade = useFadeUpSlow();
   const { scrollYProgress } = useScroll();
-  const heroScale = useTransform(scrollYProgress, [0, 0.35], [1.07, 1]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.35], [1.05, 1]);
   const titleId = useId();
 
   // imágenes desde slots
@@ -224,7 +232,7 @@ export default function AboutUs() {
           />
         </motion.div>
 
-        <Container className="relative z-10 py-24 sm:py-28 mt-20">
+        <Container className="relative z-10 pt-24 pb-20 sm:pt-28 sm:pb-24 mt-16 sm:mt-20">
           <motion.h1
             id={titleId}
             variants={fade}
@@ -233,7 +241,8 @@ export default function AboutUs() {
             viewport={{ once: true, amount: 0.25 }}
             className={cx(
               T.h1,
-              "font-display font-semibold tracking-[0.03em] text-white text-balance drop-shadow-[0_8px_24px_rgba(0,0,0,.35)]"
+              "font-display font-semibold tracking-[0.03em] text-white text-balance drop-shadow-[0_8px_24px_rgba(0,0,0,.35)]",
+              "text-center sm:text-left"
             )}
             style={{
               letterSpacing: "0.04em",
@@ -253,7 +262,8 @@ export default function AboutUs() {
             viewport={{ once: true, amount: 0.25 }}
             className={cx(
               T.pLg,
-              "mt-6 max-w-4xl text-white/95 tracking-[0.02em] leading-relaxed"
+              "mt-5 sm:mt-6 max-w-4xl text-white/95 tracking-[0.02em] leading-relaxed",
+              "text-center sm:text-left mx-auto sm:mx-0"
             )}
             style={{ wordSpacing: "0.06em" }}
           >
@@ -267,7 +277,7 @@ export default function AboutUs() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, amount: 0.25 }}
-            className="mt-10 flex flex-wrap gap-4"
+            className="mt-8 sm:mt-10 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-stretch sm:items-center justify-center sm:justify-start"
           >
             <BtnInk href="/contacto" variant="secondary">
               Contactar
@@ -284,8 +294,8 @@ export default function AboutUs() {
         className="relative z-10 bg-[hsl(var(--primary))]"
         aria-labelledby="about-intro"
       >
-        <Container className="py-20">
-          <div className="grid items-center gap-12 lg:grid-cols-12">
+        <Container className="py-16 sm:py-20">
+          <div className="grid items-center gap-10 sm:gap-12 lg:grid-cols-12">
             {/* Texto IZQ */}
             <div
               className={cx(
@@ -300,8 +310,7 @@ export default function AboutUs() {
                 viewport={{ once: true, amount: 0.25 }}
                 className={cx(
                   T.kicker,
-                  "font-subtitle",
-                  "text-white/85"
+                  "font-subtitle text-white/85 text-center sm:text-left"
                 )}
                 id="about-intro"
                 style={{
@@ -321,7 +330,7 @@ export default function AboutUs() {
                 viewport={{ once: true, amount: 0.25 }}
                 className={cx(
                   T.h1,
-                  "font-semibold tracking-tight mt-3 text-white"
+                  "font-semibold tracking-tight mt-3 text-white text-center sm:text-left"
                 )}
               >
                 Quiénes somos
@@ -334,7 +343,7 @@ export default function AboutUs() {
                 viewport={{ once: true, amount: 0.25 }}
                 className={cx(
                   T.pLg,
-                  "mt-7 leading-relaxed text-pretty text-white/90"
+                  "mt-5 sm:mt-7 leading-relaxed text-pretty text-white/90 text-center sm:text-left"
                 )}
               >
                 Fortalecemos la gestión del sector público y educativo
@@ -347,7 +356,7 @@ export default function AboutUs() {
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, amount: 0.25 }}
-                className="mt-8 flex flex-wrap gap-3.5 sm:gap-4"
+                className="mt-7 sm:mt-8 flex flex-wrap gap-3 sm:gap-3.5 justify-center sm:justify-start"
               >
                 {[
                   "Derecho administrativo y constitucional",
@@ -360,9 +369,9 @@ export default function AboutUs() {
                     variants={fade}
                     className={cx(
                       "badge font-subtitle !bg-white/12 !text-white !border-white/30",
-                      "!text-base sm:!text-xl lg:!text-sm",
-                      "!px-4 sm:!px-5 lg:!px-6",
-                      "!py-2 sm:!py-2.5",
+                      "!text-xs sm:!text-sm md:!text-base",
+                      "!px-3 sm:!px-4 md:!px-5",
+                      "!py-1.5 sm:!py-2",
                       "rounded-xl",
                       "!leading-tight tracking-[0.015em]"
                     )}
@@ -377,7 +386,7 @@ export default function AboutUs() {
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, amount: 0.25 }}
-                className="mt-10 grid grid-cols-2 gap-5 sm:grid-cols-3 text-white"
+                className="mt-8 sm:mt-10 grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 text-white"
               >
                 {[
                   ["+12", "Años de experiencia"],
@@ -387,12 +396,14 @@ export default function AboutUs() {
                   <motion.div
                     key={k}
                     variants={fade}
-                    className="rounded-2xl border border-white/60 p-6
-                         flex flex-col items-center justify-center textcenter gap-1
-                         min-h-28 sm:min-h-32 hover:border-white transition-colors"
+                    className="rounded-2xl border border-white/60 p-4 sm:p-6
+                         flex flex-col items-center justify-center text-center gap-1
+                         min-h-[96px] sm:min-h-[120px] hover:border-white transition-colors"
                   >
-                    <div className="text-5xl font-semibold">{n}</div>
-                    <div className="text-sm textwhite/85 font-subtitle">
+                    <div className="text-3xl sm:text-4xl md:text-5xl font-semibold">
+                      {n}
+                    </div>
+                    <div className="text-[11px] sm:text-xs md:text-sm text-white/85 font-subtitle">
                       {k}
                     </div>
                   </motion.div>
@@ -402,7 +413,7 @@ export default function AboutUs() {
 
             {/* Imagen DERECHA solo si hay slot */}
             {hasTeamImg && (
-              <figure className="lg:col-span-5 order-2 relative">
+              <figure className="lg:col-span-5 order-2 relative mt-6 lg:mt-0">
                 <motion.div
                   variants={fade}
                   initial="hidden"
@@ -413,7 +424,7 @@ export default function AboutUs() {
                   <img
                     src={teamImgUrl}
                     alt="Equipo BR Blanco & Ramírez"
-                    className="w-full h-[380px] sm:h-[542px] object-cover"
+                    className="w-full h-[260px] sm:h-[380px] md:h-[460px] lg:h-[520px] object-cover"
                     loading="lazy"
                     decoding="async"
                     sizes="(min-width:1024px) 40vw, 90vw"
@@ -436,12 +447,12 @@ export default function AboutUs() {
 
       {/* PROPÓSITO */}
       <section
-        className="relative z-10 mt-[-30px] bg-[hsl(var(--primary))] text-white"
+        className="relative z-10 -mt-4 sm:mt-[-30px] bg-[hsl(var(--primary))] text-white"
         aria-labelledby="about-purpose"
       >
-        <Container className="py-18 sm:py-20">
-          <div className="grid gap-12 lg:grid-cols-12 items-start">
-            <div className="lg:col-span-6 mt-23">
+        <Container className="py-14 sm:py-18 md:py-20">
+          <div className="grid gap-10 sm:gap-12 lg:grid-cols-12 items-start">
+            <div className="lg:col-span-6">
               <motion.p
                 variants={fade}
                 initial="hidden"
@@ -449,9 +460,7 @@ export default function AboutUs() {
                 viewport={{ once: true, amount: 0.2 }}
                 className={cx(
                   T.kicker,
-                  "tracking-[0.22em]",
-                  "mb-8",
-                  "text-white/70"
+                  "mb-6 sm:mb-8 text-white/70 text-center sm:text-left"
                 )}
                 id="about-purpose"
                 style={{ letterSpacing: "0.22em" }}
@@ -466,9 +475,7 @@ export default function AboutUs() {
                 viewport={{ once: true, amount: 0.2 }}
                 className={cx(
                   T.h2,
-                  "font-semibold",
-                  "tracking-[0.03em]",
-                  "text-white"
+                  "font-semibold tracking-[0.03em] text-white text-center sm:text-left"
                 )}
                 style={{
                   letterSpacing: "0.03em",
@@ -487,9 +494,9 @@ export default function AboutUs() {
                 viewport={{ once: true, amount: 0.2 }}
                 className={cx(
                   T.pLg,
-                  "mt-6 pl-5 italic tracking-[0.01em]",
-                  "text-white/90",
-                  "border-l-2 border-white/30"
+                  "mt-5 sm:mt-6 pl-4 sm:pl-5 italic tracking-[0.01em]",
+                  "text-white/90 border-l-2 border-white/30",
+                  "text-left"
                 )}
                 style={{ letterSpacing: "0.01em", lineHeight: 1.7 }}
               >
@@ -499,13 +506,16 @@ export default function AboutUs() {
               </motion.blockquote>
             </div>
 
-            <div className="lg:col-span-6">
+            <div className="lg:col-span-6 mt-8 lg:mt-0">
               <motion.h3
                 variants={fade}
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, amount: 0.2 }}
-                className={cx(T.h2, "font-semibold text-center", "text-white")}
+                className={cx(
+                  T.h2,
+                  "font-semibold text-center text-white"
+                )}
               >
                 Nuestros valores
               </motion.h3>
@@ -515,7 +525,7 @@ export default function AboutUs() {
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, amount: 0.2 }}
-                className="mt-7 grid gap-7 sm:grid-cols-2 text-primary"
+                className="mt-6 sm:mt-7 grid gap-5 sm:gap-7 grid-cols-1 sm:grid-cols-2 text-primary"
               >
                 {values.map((v) => (
                   <ValueItem
@@ -531,13 +541,13 @@ export default function AboutUs() {
         </Container>
       </section>
 
-      {/* CTA — solo imagen si hay slot */}
+      {/* CTA */}
       <section
         className="relative z-10 bg-[hsl(var(--bg))]"
         aria-labelledby="about-cta"
       >
-        <Container className="py-16">
-          <div className="grid items-center gap-12 lg:grid-cols-12">
+        <Container className="py-14 sm:py-16">
+          <div className="grid items-center gap-10 sm:gap-12 lg:grid-cols-12">
             <div
               className={cx(
                 hasOfficeImg ? "lg:col-span-6" : "lg:col-span-12",
@@ -550,7 +560,10 @@ export default function AboutUs() {
                 whileInView="show"
                 viewport={{ once: true, amount: 0.25 }}
                 id="about-cta"
-                className={cx(T.h2, "font-semibold")}
+                className={cx(
+                  T.h2,
+                  "font-semibold text-center sm:text-left"
+                )}
               >
                 Conversemos sobre tus retos institucionales
               </motion.h3>
@@ -559,7 +572,10 @@ export default function AboutUs() {
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, amount: 0.25 }}
-                className={cx(T.p, "text-primary/85 mt-3 font-subtitle")}
+                className={cx(
+                  T.p,
+                  "text-primary/85 mt-3 font-subtitle text-center sm:text-left"
+                )}
               >
                 Un diagnóstico claro, un plan accionable y acompañamiento
                 cercano.
@@ -569,7 +585,7 @@ export default function AboutUs() {
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, amount: 0.25 }}
-                className="mt-7 flex gap-4"
+                className="mt-7 flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center justify-center sm:justify-start"
               >
                 <BtnInk href="/contacto" variant="secondary">
                   Contactar
@@ -587,12 +603,12 @@ export default function AboutUs() {
                   initial="hidden"
                   whileInView="show"
                   viewport={{ once: true, amount: 0.25 }}
-                  className="relative overflow-hidden rounded-2xl"
+                  className="relative overflow-hidden rounded-2xl mt-6 lg:mt-0"
                 >
                   <img
                     src={officeImgUrl}
                     alt="Colaboración con clientes"
-                    className="w-full h-[280px] sm:h-[340px] lg:h-[380px] object-cover"
+                    className="w-full h-[220px] sm:h-[280px] md:h-[340px] lg:h-[380px] object-cover"
                     loading="lazy"
                     decoding="async"
                     sizes="(min-width:1024px) 48vw, 90vw"
@@ -618,7 +634,7 @@ export default function AboutUs() {
               typeof window !== "undefined"
                 ? window.location.origin
                 : "https://ejemplo.com",
-            image: heroBgUrl || undefined, // solo si hay slot
+            image: heroBgUrl || undefined,
             address: { "@type": "PostalAddress", addressCountry: "CO" },
             sameAs: [],
             knowsAbout: [

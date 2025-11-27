@@ -6,10 +6,10 @@ import {
   FaAlignCenter,
   FaBlogger,
   FaBookmark,
-  FaArchway,
-  FaBookMedical,
   FaImages,
   FaImage,
+  FaBuilding,
+  FaInfoCircle,
 } from "react-icons/fa";
 
 export const menuItems = [
@@ -63,14 +63,14 @@ export const menuItems = [
       {
         key: "empresa",
         label: "Configuracion de Empresa",
-        icon: FaArchway,
+        icon: FaBuilding,
         link: "/dash/settings",
       },
       {
         key: "datos",
         label: "Informacion De La Empresa",
         link: "/dash/info",
-        icon: FaBookMedical,
+        icon: FaInfoCircle,
       },
     ],
   },
