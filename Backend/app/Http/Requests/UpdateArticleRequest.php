@@ -65,8 +65,8 @@ class UpdateArticleRequest extends FormRequest
             'published_at'        => ['nullable', 'date'],
 
             'meta'                => ['nullable', 'array'],
-            'meta.title'          => ['nullable', 'string', 'max:80'],
-            'meta.description'    => ['nullable', 'string', 'max:160'],
+            'meta.title'          => ['nullable', 'string'],
+            'meta.description'    => ['nullable', 'string'],
             'meta.keywords'       => ['nullable', 'array'],
             'meta.keywords.*'     => ['string', 'max:50'],
 

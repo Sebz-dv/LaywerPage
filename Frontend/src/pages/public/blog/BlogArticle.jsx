@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { articlesService as svc } from "../../../services/articlesService";
 import { motion, useReducedMotion } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 
 /* ================= Helpers ================= */
 const formatDate = (iso, withTime = false) => {
@@ -19,7 +21,10 @@ const formatDate = (iso, withTime = false) => {
 
 const estimateReadingTime = (html) => {
   if (!html) return null;
-  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const text = html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   const words = text ? text.split(" ").length : 0;
   return `${Math.max(1, Math.round(words / 200))} min`;
 };
@@ -153,7 +158,10 @@ export default function BlogArticle() {
     if (!el) return;
     const onScroll = () => {
       const total = el.scrollHeight - window.innerHeight;
-      const y = Math.min(Math.max(window.scrollY - (el.offsetTop - 16), 0), total);
+      const y = Math.min(
+        Math.max(window.scrollY - (el.offsetTop - 16), 0),
+        total
+      );
       setProgress(total > 0 ? (y / total) * 100 : 0);
     };
     onScroll();
@@ -165,8 +173,14 @@ export default function BlogArticle() {
     };
   }, [art?.body]);
 
-  const readingTime = useMemo(() => estimateReadingTime(art?.body), [art?.body]);
-  const authorName = useMemo(() => authorNameFrom(art?.author || {}), [art?.author]);
+  const readingTime = useMemo(
+    () => estimateReadingTime(art?.body),
+    [art?.body]
+  );
+  const authorName = useMemo(
+    () => authorNameFrom(art?.author || {}),
+    [art?.author]
+  );
   const metaObj = useMemo(() => parseMeta(art?.meta), [art?.meta]);
 
   const hasExternal = !!art?.external_url;
@@ -178,7 +192,9 @@ export default function BlogArticle() {
     return (
       <div className="max-w-3xl mx-auto p-4">
         <div className="card card-pad">
-          <h2 className="text-lg font-semibold mb-2 font-display">Artículo no encontrado</h2>
+          <h2 className="text-lg font-semibold mb-2 font-display">
+            Artículo no encontrado
+          </h2>
           <p className="text-sm text-soft mb-4">
             Revisa el enlace. Esta vista funciona únicamente con ID numérico.
           </p>
@@ -208,9 +224,15 @@ export default function BlogArticle() {
   /* ================= Share URLs ================= */
   const canonical = typeof window !== "undefined" ? window.location.href : "";
   const share = {
-    fb: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(canonical)}`,
-    tw: `https://twitter.com/intent/tweet?url=${encodeURIComponent(canonical)}&text=${encodeURIComponent(art.title)}`,
-    li: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(canonical)}&title=${encodeURIComponent(art.title)}`,
+    fb: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+      canonical
+    )}`,
+    tw: `https://twitter.com/intent/tweet?url=${encodeURIComponent(
+      canonical
+    )}&text=${encodeURIComponent(art.title)}`,
+    li: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(
+      canonical
+    )}&title=${encodeURIComponent(art.title)}`,
   };
 
   /* ================= UI ================= */
@@ -231,9 +253,13 @@ export default function BlogArticle() {
       {/* Breadcrumb minimal */}
       <div className="px-4 md:px-6 mt-4">
         <nav className="text-sm text-soft font-subtitle">
-          <Link className="link" to="/">Inicio</Link>
+          <Link className="link" to="/">
+            Inicio
+          </Link>
           <span className="mx-2">/</span>
-          <Link className="link" to="/blog">Publicaciones</Link>
+          <Link className="link" to="/blog">
+            Publicaciones
+          </Link>
         </nav>
       </div>
 
@@ -251,7 +277,11 @@ export default function BlogArticle() {
             sizes="100vw"
             initial={false}
             animate={prefersReduced ? {} : { scale: [1.03, 1.07, 1.03] }}
-            transition={prefersReduced ? {} : { duration: 16, repeat: Infinity, ease: "easeInOut" }}
+            transition={
+              prefersReduced
+                ? {}
+                : { duration: 16, repeat: Infinity, ease: "easeInOut" }
+            }
             onError={(e) => (e.currentTarget.style.display = "none")}
           />
         ) : (
@@ -271,9 +301,19 @@ export default function BlogArticle() {
             <header className="max-w-4xl">
               {/* Chips de estado */}
               <div className="flex items-center gap-2 mb-3">
-                {art.category?.name && <Badge tone="accent">{art.category.name}</Badge>}
-                {hasPdf && <Badge tone="info" title="Documento PDF">PDF</Badge>}
-                {hasExternal && <Badge tone="success" title="Enlace externo">Link externo</Badge>}
+                {art.category?.name && (
+                  <Badge tone="accent">{art.category.name}</Badge>
+                )}
+                {hasPdf && (
+                  <Badge tone="info" title="Documento PDF">
+                    PDF
+                  </Badge>
+                )}
+                {hasExternal && (
+                  <Badge tone="success" title="Enlace externo">
+                    Link externo
+                  </Badge>
+                )}
                 {art.featured && <Badge tone="warn">Destacado</Badge>}
               </div>
 
@@ -282,10 +322,15 @@ export default function BlogArticle() {
               </h1>
 
               <div className="mt-2 text-white/90 text-sm font-subtitle flex flex-wrap items-center gap-x-3 gap-y-1">
-                <time>{art.published_at ? formatDate(art.published_at) : "Borrador"}</time>
-                {readingTime && <span className="opacity-70">• {readingTime} de lectura</span>}
-                {/* ⬇️ Ahora usamos authorName (ya resuelve display_name) */}
-                {authorName && <span className="opacity-70">• Por {authorName}</span>}
+                <time>
+                  {art.published_at ? formatDate(art.published_at) : "Borrador"}
+                </time>
+                {readingTime && (
+                  <span className="opacity-70">• {readingTime} de lectura</span>
+                )}
+                {authorName && (
+                  <span className="opacity-70">• Por {authorName}</span>
+                )}
               </div>
 
               {/* Acciones rápidas si hay PDF/Link */}
@@ -300,7 +345,7 @@ export default function BlogArticle() {
                     >
                       Ver PDF ↗
                     </a>
-                  )} 
+                  )}
                 </div>
               )}
             </header>
@@ -320,25 +365,50 @@ export default function BlogArticle() {
       {/* Contenido (o fallback cuando solo hay PDF/Link) */}
       <section className="px-4 md:px-6 mt-6">
         {hasBody ? (
-          <div ref={contentRef} className="prose prose-neutral max-w-none">
+          <div
+            ref={contentRef}
+            className="
+              prose prose-neutral max-w-none
+            "
+          >
             <div
-              className="card card-pad [&>img]:rounded-xl [&>img]:border [&>img]:border-token"
-              dangerouslySetInnerHTML={{ __html: art.body }}
-            />
+              className="
+                card card-pad
+                [&>img]:rounded-xl [&>img]:border [&>img]:border-token
+                whitespace-pre-line
+              "
+            >
+              <ReactMarkdown remarkPlugins={[remarkBreaks]}>
+                {art.body || ""}
+              </ReactMarkdown>
+            </div>
           </div>
-        ) : (hasPdf || hasExternal) ? (
+        ) : hasPdf || hasExternal ? (
           <div className="card card-pad">
             <p className="text-soft">
-              Este artículo se encuentra disponible {hasPdf ? "en formato PDF" : ""}{hasPdf && hasExternal ? " y " : ""}{hasExternal ? "mediante un enlace externo" : ""}.
+              Este artículo se encuentra disponible{" "}
+              {hasPdf ? "en formato PDF" : ""}
+              {hasPdf && hasExternal ? " y " : ""}
+              {hasExternal ? "mediante un enlace externo" : ""}.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {hasPdf && (
-                <a className="btn btn-primary" href={art.pdf_url} target="_blank" rel="noreferrer noopener">
+                <a
+                  className="btn btn-primary"
+                  href={art.pdf_url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
                   Abrir PDF ↗
                 </a>
               )}
               {hasExternal && (
-                <a className="btn btn-outline" href={art.external_url} target="_blank" rel="noreferrer noopener">
+                <a
+                  className="btn btn-outline"
+                  href={art.external_url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
                   Abrir enlace ↗
                 </a>
               )}
@@ -346,7 +416,9 @@ export default function BlogArticle() {
           </div>
         ) : (
           <div className="card card-pad">
-            <p className="text-soft">Próximamente contenido para este artículo.</p>
+            <p className="text-soft">
+              Próximamente contenido para este artículo.
+            </p>
           </div>
         )}
       </section>
@@ -356,11 +428,34 @@ export default function BlogArticle() {
         <div className="flex flex-col gap-6">
           {/* Share */}
           <div className="rounded-2xl border border-token bg-card p-4">
-            <div className="text-sm font-subtitle opacity-80 mb-2">Compartir en</div>
+            <div className="text-sm font-subtitle opacity-80 mb-2">
+              Compartir en
+            </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <a className="btn btn-outline" href={share.fb} target="_blank" rel="noopener noreferrer">Facebook</a>
-              <a className="btn btn-outline" href={share.li} target="_blank" rel="noopener noreferrer">LinkedIn</a>
-              <a className="btn btn-outline" href={share.tw} target="_blank" rel="noopener noreferrer">X / Twitter</a>
+              <a
+                className="btn btn-outline"
+                href={share.fb}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Facebook
+              </a>
+              <a
+                className="btn btn-outline"
+                href={share.li}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                LinkedIn
+              </a>
+              <a
+                className="btn btn-outline"
+                href={share.tw}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                X / Twitter
+              </a>
               <button
                 className="btn btn-outline"
                 onClick={() => {
@@ -374,7 +469,6 @@ export default function BlogArticle() {
 
           {/* Autor */}
           <div className="rounded-2xl border border-token bg-card p-4 flex items-center gap-4">
-            {/* ⬇️ Usa avatar_url si viene del backend */}
             {art.author?.avatar_url ? (
               <img
                 src={art.author.avatar_url}
@@ -391,7 +485,10 @@ export default function BlogArticle() {
               <div className="text-sm text-soft mb-1">Escrito por:</div>
               <div className="font-semibold">{authorName}</div>
               {art.author?.slug && (
-                <Link to={`/equipo/${art.author.slug}`} className="link text-sm">
+                <Link
+                  to={`/equipo/${art.author.slug}`}
+                  className="link text-sm"
+                >
                   Ver perfil
                 </Link>
               )}
@@ -403,10 +500,15 @@ export default function BlogArticle() {
       {/* Relacionados */}
       {related.length > 0 && (
         <section className="px-4 md:px-6 mt-10 mb-10">
-          <h3 className="text-lg font-semibold mb-3">Artículos que te pueden interesar</h3>
+          <h3 className="text-lg font-semibold mb-3">
+            Artículos que te pueden interesar
+          </h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {related.map((it) => (
-              <article key={it.id} className="card overflow-hidden interactive flex flex-col">
+              <article
+                key={it.id}
+                className="card overflow-hidden interactive flex flex-col"
+              >
                 {it.cover_url ? (
                   <img
                     src={it.cover_url}
@@ -421,7 +523,9 @@ export default function BlogArticle() {
                   </div>
                 )}
                 <div className="card-pad flex flex-col gap-2">
-                  <span className="text-xs text-soft">{formatDate(it.published_at)}</span>
+                  <span className="text-xs text-soft">
+                    {formatDate(it.published_at)}
+                  </span>
                   <Link
                     to={`/publicaciones/${encodeURIComponent(it.id)}`}
                     className="font-semibold hover:underline underline-offset-4 line-clamp-2"
@@ -429,7 +533,11 @@ export default function BlogArticle() {
                   >
                     {it.title}
                   </Link>
-                  {it.excerpt && <p className="text-sm text-soft line-clamp-3">{it.excerpt}</p>}
+                  {it.excerpt && (
+                    <p className="text-sm text-soft line-clamp-3">
+                      {it.excerpt}
+                    </p>
+                  )}
                 </div>
               </article>
             ))}
@@ -447,30 +555,45 @@ export default function BlogArticle() {
                 <span className="badge">ID #{art.id}</span>
                 {art.slug && <span className="badge badge-primary">slug</span>}
                 {hasPdf && <span className="badge">pdf_url</span>}
-                {hasExternal && <span className="badge">external_url</span>}
+                {hasExternal && (
+                  <span className="badge">external_url</span>
+                )}
               </div>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
               <KV label="ID" value={art.id} />
               <KV label="Slug" value={art.slug || "—"} mono />
-              <KV label="Categoría ID" value={art.article_category_id ?? "—"} />
+              <KV
+                label="Categoría ID"
+                value={art.article_category_id ?? "—"}
+              />
               <KV label="Categoría" value={art.category?.name ?? "—"} />
               <KV label="Autor ID" value={art.author_id ?? "—"} />
               <KV label="Autor" value={authorName || "—"} />
               <KV label="Destacado" value={art.featured ? "Sí" : "No"} />
               <KV label="Publicado" value={art.is_published ? "Sí" : "No"} />
-              <KV label="Publicado el" value={formatDate(art.published_at, true)} />
+              <KV
+                label="Publicado el"
+                value={formatDate(art.published_at, true)}
+              />
               <KV label="Creado el" value={formatDate(art.created_at, true)} />
-              <KV label="Actualizado el" value={formatDate(art.updated_at, true)} />
+              <KV
+                label="Actualizado el"
+                value={formatDate(art.updated_at, true)}
+              />
               <KV label="Cover path" value={art.cover_path || "—"} mono />
               <KV label="Cover URL" value={art.cover_url || "—"} mono />
               <KV label="PDF URL" value={art.pdf_url || "—"} mono />
-              <KV label="External URL" value={art.external_url || "—"} mono />
+              <KV
+                label="External URL"
+                value={art.external_url || "—"}
+                mono
+              />
             </div>
             <div className="mt-4">
               <div className="text-sm font-medium mb-1">Meta</div>
               <pre className="text-xs overflow-auto rounded-xl border border-token bg-muted p-3">
-{JSON.stringify(metaObj ?? null, null, 2)}
+                {JSON.stringify(metaObj ?? null, null, 2)}
               </pre>
             </div>
           </div>
