@@ -71,9 +71,9 @@ function toFormData(payload = {}) {
 
     // arrays simples (keywords, etc.)
     if (Array.isArray(v)) {
-      // Si backend espera array JSON, lo mandas como JSON.
-      // Si lo espera como campos repetidos, descomenta abajo.
+      // Backend espera array JSON (meta.keywords, etc.)
       fd.append(k, JSON.stringify(v));
+      // Si un día quieres campos repetidos tipo name[], descomenta:
       // v.forEach((item) => fd.append(`${k}[]`, item));
       continue;
     }
@@ -121,25 +121,23 @@ export const articlesService = {
 
   /** POST /articles (multipart/form-data) */
   async create(payload) {
-    const fd = toFormData(payload);
-    const r = await api.post("/articles", fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    // 👇 Si ya viene FormData desde el formulario, lo respetamos
+    const body = payload instanceof FormData ? payload : toFormData(payload);
+
+    const r = await api.post("/articles", body);
     const data = r.data?.data ?? r.data;
     return normalizeArticle(data);
   },
 
   /**
    * PUT /articles/{id} (usando override para simplificar con FormData)
-   * Alternativa: api.put(..., fd, { headers: {'Content-Type':'multipart/form-data'} })
    */
   async update(id, payload) {
     const safeId = ensureNumericId(id);
-    const fd = toFormData(payload);
-    fd.append("_method", "PUT");
-    const r = await api.post(`/articles/${encodeURIComponent(safeId)}`, fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const body = payload instanceof FormData ? payload : toFormData(payload);
+
+    // 👇 sin _method
+    const r = await api.post(`/articles/${encodeURIComponent(safeId)}`, body);
     const data = r.data?.data ?? r.data;
     return normalizeArticle(data);
   },

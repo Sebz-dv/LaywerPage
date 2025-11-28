@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { articlesService as svc } from "../../../services/articlesService";
 import { teamService } from "../../../services/teamService";
+import { articleCategoriesService } from "../../../services/articleCategoriesService";
 import { useParams, useNavigate } from "react-router-dom";
 
 // util slugify consistente (sin dependencias)
@@ -23,10 +24,15 @@ export default function ArticleForm() {
   const [ReactMarkdown, setReactMarkdown] = useState(null); // carga dinámica para preview
 
   const [authors, setAuthors] = useState([]);
+  const [categories, setCategories] = useState([]); // categorías existentes
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [previewOn, setPreviewOn] = useState(false);
+
+  // estado para crear categorías rápidas
+  const [catName, setCatName] = useState("");
+  const [catSaving, setCatSaving] = useState(false);
 
   const [form, setForm] = useState({
     article_category_id: "",
@@ -40,11 +46,11 @@ export default function ArticleForm() {
     meta: { title: "", description: "", keywords: [] },
 
     // Archivos / URLs
-    cover: null,       // File nuevo
-    cover_url: null,   // existente (backend)
-    pdf: null,         // File nuevo
-    pdf_url: null,     // existente (backend)
-    external_url: "",  // link externo opcional
+    cover: null, // File nuevo
+    cover_url: null, // existente (backend)
+    pdf: null, // File nuevo
+    pdf_url: null, // existente (backend)
+    external_url: "", // link externo opcional
   });
 
   // Preview de la portada NUEVA (si se selecciona archivo); si no, usamos cover_url existente
@@ -61,6 +67,21 @@ export default function ArticleForm() {
         setAuthors(res?.data || res || []);
       } catch (e) {
         console.warn("No se pudo cargar autores:", e);
+      }
+    })();
+  }, []);
+
+  // Cargar categorías
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await articleCategoriesService.list({
+          per_page: 100,
+          sort: "name",
+        });
+        setCategories(res?.data || res || []);
+      } catch (e) {
+        console.warn("No se pudo cargar categorías:", e);
       }
     })();
   }, []);
@@ -167,11 +188,42 @@ export default function ArticleForm() {
       e.currentTarget.value = "";
     }
   };
+
   const removeKeyword = (kw) => {
     setMetaField(
       "keywords",
       (form.meta.keywords || []).filter((k) => k !== kw)
     );
+  };
+
+  // Crear categoría rápida
+  const handleCreateCategory = async () => {
+    const name = catName.trim();
+    if (!name) {
+      alert("Escribe un nombre para la categoría.");
+      return;
+    }
+
+    setCatSaving(true);
+    try {
+      const created = await articleCategoriesService.create({ name });
+      const cat = created?.data ?? created;
+
+      // agregar a la lista y seleccionar
+      setCategories((prev) => [...prev, cat]);
+      setForm((f) => ({
+        ...f,
+        article_category_id:
+          cat?.id != null ? String(cat.id) : f.article_category_id,
+      }));
+      setCatName("");
+    } catch (err) {
+      console.error("Error creando categoría:", err);
+      const apiMsg = err?.response?.data?.message;
+      alert(apiMsg || err?.message || "No se pudo crear la categoría.");
+    } finally {
+      setCatSaving(false);
+    }
   };
 
   // Normaliza payload y decide multipart si hay archivos
@@ -189,7 +241,8 @@ export default function ArticleForm() {
       meta: form.meta || null,
     };
 
-    const needMultipart = form.cover instanceof File || form.pdf instanceof File;
+    const needMultipart =
+      form.cover instanceof File || form.pdf instanceof File;
 
     if (needMultipart) {
       const fd = new FormData();
@@ -209,8 +262,7 @@ export default function ArticleForm() {
   const onSubmit = async (e) => {
     e.preventDefault();
     if (!form.title?.trim()) return alert("El título es obligatorio.");
-    if (!form.slug?.trim())
-      setForm((f) => ({ ...f, slug: slugify(f.title) }));
+    if (!form.slug?.trim()) setForm((f) => ({ ...f, slug: slugify(f.title) }));
 
     setSaving(true);
     setError(null);
@@ -226,7 +278,8 @@ export default function ArticleForm() {
         data?.message ??
         (Object.entries(data?.errors ?? {})
           .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
-          .join("\n") || "No se pudo guardar.");
+          .join("\n") ||
+          "No se pudo guardar.");
       setError(msg);
       alert(msg);
     } finally {
@@ -265,7 +318,11 @@ export default function ArticleForm() {
           >
             {previewOn ? "Ocultar preview" : "Ver preview"}
           </button>
-          <button className="btn btn-accent" onClick={onSubmit} disabled={saving}>
+          <button
+            className="btn btn-accent"
+            onClick={onSubmit}
+            disabled={saving}
+          >
             {saving ? "Guardando…" : "Guardar"}
           </button>
         </div>
@@ -306,17 +363,48 @@ export default function ArticleForm() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
+              {/* Categoría como select + creación rápida */}
               <div className="space-y-1.5">
-                <label className="block text-sm text-soft">Categoría (ID)</label>
-                <input
-                  className="input"
+                <label className="block text-sm text-soft">Categoría</label>
+                <select
+                  className="input text-black"
                   name="article_category_id"
                   value={form.article_category_id}
                   onChange={onChange}
-                  placeholder="Ej. 1"
-                />
+                >
+                  <option value="">— Sin categoría —</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name || cat.nombre || cat.title}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Crear categoría rápida */}
+                <div className="mt-2 flex gap-2">
+                  <input
+                    className="input flex-1"
+                    placeholder="Nueva categoría…"
+                    value={catName}
+                    onChange={(e) => setCatName(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={handleCreateCategory}
+                    disabled={catSaving}
+                  >
+                    {catSaving ? "Creando…" : "Crear"}
+                  </button>
+                </div>
+                <p className="text-xs text-soft mt-1">
+                  Escribe un nombre y pulsa{" "}
+                  <span className="font-semibold">Crear</span> para añadir una
+                  categoría nueva.
+                </p>
               </div>
 
+              {/* Autor */}
               <div className="space-y-1.5">
                 <label className="block text-sm text-soft">Autor</label>
                 <select
@@ -328,7 +416,9 @@ export default function ArticleForm() {
                   <option value="">— Sin autor —</option>
                   {authors.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.nombre || t.name || `${t.first_name ?? ""} ${t.last_name ?? ""}`.trim()}
+                      {t.nombre ||
+                        t.name ||
+                        `${t.first_name ?? ""} ${t.last_name ?? ""}`.trim()}
                     </option>
                   ))}
                 </select>
@@ -376,7 +466,9 @@ export default function ArticleForm() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-sm text-soft">SEO Descripción</label>
+                <label className="block text-sm text-soft">
+                  SEO Descripción
+                </label>
                 <input
                   className="input"
                   name="meta.description"
@@ -438,7 +530,9 @@ export default function ArticleForm() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-sm text-soft">Link externo (opcional)</label>
+                <label className="block text-sm text-soft">
+                  Link externo (opcional)
+                </label>
                 <input
                   className="input"
                   name="external_url"
@@ -462,32 +556,55 @@ export default function ArticleForm() {
         </div>
 
         {/* Columna derecha (portada + PDF + preview) */}
-        <div className="space-y-5">
-          <div className="card card-pad space-y-3">
-            <label className="block text-sm text-soft">Portada</label>
-            <div className="flex items-start gap-4">
-              <div className="logo-box">
-                {coverPreview ? (
-                  <img
-                    src={coverPreview}
-                    alt="Portada"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-soft text-sm">Sin imagen</span>
-                )}
+        <div className="space-y-6">
+          {/* PORTADA */}
+          <div className="card card-pad space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold tracking-wide uppercase text-soft/80">
+                  Portada
+                </p>
               </div>
-              <div className="space-y-2">
-                <input
-                  ref={coverRef}
-                  type="file"
-                  accept="image/*"
-                  name="cover"
-                  className="block"
-                  onChange={onChange}
-                />
+
+              {coverPreview && (
+                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-300">
+                  Imagen cargada
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-4 md:flex-row md:items-start">
+              {/* Preview de portada */}
+              <div className="w-full md:w-48">
+                <div className="logo-box relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg border border-dashed border-slate-500/40 bg-slate-900/40">
+                  {coverPreview ? (
+                    <img
+                      src={coverPreview}
+                      alt="Portada"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xs text-soft">Sin imagen</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Controles de archivo */}
+              <div className="flex-1 space-y-3">
+                <label className="inline-flex cursor-pointer flex-wrap items-center gap-2 text-[8px]">
+                  <span className="btn btn-outline">Seleccionar imagen</span>
+                  <input
+                    ref={coverRef}
+                    type="file"
+                    accept="image/*"
+                    name="cover"
+                    className="sr-only"
+                    onChange={onChange}
+                  /> 
+                </label>
+
                 {(form.cover || form.cover_url) && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
                     {form.cover && (
                       <button
                         type="button"
@@ -497,6 +614,7 @@ export default function ArticleForm() {
                         Quitar archivo
                       </button>
                     )}
+
                     {form.cover_url && !form.cover && (
                       <a
                         className="btn btn-outline"
@@ -513,25 +631,49 @@ export default function ArticleForm() {
             </div>
           </div>
 
-          <div className="card card-pad space-y-3">
-            <label className="block text-sm text-soft">PDF (opcional)</label>
+          {/* PDF OPCIONAL */}
+          <div className="card card-pad space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold tracking-wide uppercase text-soft/80">
+                  PDF (opcional)
+                </p>
+                <p className="text-xs text-soft mt-1">
+                  Adjunta un documento extendido para descarga o lectura
+                  detallada.
+                </p>
+              </div>
+
+              {(form.pdf || form.pdf_url) && (
+                <span className="inline-flex items-center rounded-full bg-sky-500/10 px-2.5 py-0.5 text-[11px] font-medium text-sky-300">
+                  PDF disponible
+                </span>
+              )}
+            </div>
+
             <div className="flex items-start gap-4">
-              <div className="flex-1 space-y-2">
-                <input
-                  ref={pdfRef}
-                  type="file"
-                  accept="application/pdf"
-                  name="pdf"
-                  className="block"
-                  onChange={onChange}
-                />
-                <p className="text-xs text-soft">
+              <div className="flex-1 space-y-3">
+                <label className="block text-xs text-soft">
+                  <span className="mb-1 inline-block font-medium">
+                    Seleccionar archivo PDF
+                  </span>
+                  <input
+                    ref={pdfRef}
+                    type="file"
+                    accept="application/pdf"
+                    name="pdf"
+                    className="block w-full text-xs file:mr-3 file:rounded-md file:border-0 file:bg-slate-700 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white hover:file:bg-slate-600"
+                    onChange={onChange}
+                  />
+                </label>
+
+                <p className="text-[11px] text-soft">
                   Se aceptan archivos .pdf (máx 10MB).
                 </p>
 
                 {/* Acciones para PDF existente */}
                 {form.pdf_url && !form.pdf && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
                     <a
                       className="btn btn-outline"
                       href={form.pdf_url}
@@ -540,11 +682,7 @@ export default function ArticleForm() {
                     >
                       Ver PDF ↗
                     </a>
-                    <a
-                      className="btn btn-outline"
-                      href={form.pdf_url}
-                      download
-                    >
+                    <a className="btn btn-outline" href={form.pdf_url} download>
                       Descargar
                     </a>
                   </div>
@@ -564,17 +702,32 @@ export default function ArticleForm() {
             </div>
           </div>
 
+          {/* PREVIEW DEL ARTÍCULO */}
           {previewOn && (
-            <div className="card card-pad">
-              <h3 className="font-semibold mb-2 font-display">Preview</h3>
-              <div className="prose prose-sm max-w-none">
-                {ReactMarkdown ? (
-                  <Suspense fallback={<p className="text-soft">Cargando preview…</p>}>
-                    <ReactMarkdown>{form.body || "_(vacío)_"}</ReactMarkdown>
-                  </Suspense>
-                ) : (
-                  <p className="text-soft">Cargando preview…</p>
-                )}
+            <div className="card card-pad space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-display text-sm font-semibold">
+                  Preview del contenido
+                </h3>
+                <span className="text-[11px] text-soft">
+                  Solo lectura · generado en tiempo real
+                </span>
+              </div>
+
+              <div className="rounded-lg border border-slate-700/60 bg-slate-900/60 p-3">
+                <div className="prose prose-sm max-w-none prose-invert">
+                  {ReactMarkdown ? (
+                    <Suspense
+                      fallback={
+                        <p className="text-soft text-sm">Cargando preview…</p>
+                      }
+                    >
+                      <ReactMarkdown>{form.body || "_(vacío)_"}</ReactMarkdown>
+                    </Suspense>
+                  ) : (
+                    <p className="text-soft text-sm">Cargando preview…</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -590,7 +743,11 @@ export default function ArticleForm() {
         >
           Cancelar
         </button>
-        <button className="btn btn-primary" onClick={onSubmit} disabled={saving}>
+        <button
+          className="btn btn-primary"
+          onClick={onSubmit}
+          disabled={saving}
+        >
           {saving ? "Guardando…" : "Guardar cambios"}
         </button>
       </div>

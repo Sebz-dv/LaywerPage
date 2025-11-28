@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\MediaSlotController;
+use App\Http\Controllers\ArticleCategoryController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
@@ -84,6 +85,9 @@ Route::middleware(['jwt.cookie', 'auth:api'])->group(function () {
     Route::match(['post','put','patch'], 'simple-posts/{post}', [PostController::class, 'update']); // alias actualizar
 
     Route::post('/media-slots/{key}', [MediaSlotsController::class, 'store']);
+
+    Route::apiResource('article-categories', ArticleCategoryController::class)
+    ->only(['index', 'store', 'update', 'destroy']);
 });
 
 /*
