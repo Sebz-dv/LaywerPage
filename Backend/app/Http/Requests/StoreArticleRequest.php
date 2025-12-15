@@ -52,7 +52,7 @@ class StoreArticleRequest extends FormRequest
             'title'               => ['required', 'string', 'max:255'],
             'slug'                => ['nullable', 'string', 'max:255', 'unique:articles,slug'],
 
-            'external_url'        => ['nullable', 'url', 'max:2048'],
+            'external_url'        => ['nullable', 'url'],
 
             'excerpt'             => ['nullable', 'string', 'max:500'],
             'body'                => ['nullable', 'string'],

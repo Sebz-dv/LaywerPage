@@ -1,18 +1,106 @@
 // components/NavbarLanding.jsx
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { MdManageAccounts } from "react-icons/md";
 import { useAuth } from "../../context/useAuth";
 import ThemeToggle from "../toggles/ThemeToggle";
 import { settingsService } from "../../services/settingsService";
 import { menuConfig as navDefaults } from "../../data/menuConfig";
+import br from "../../assets/logo/br.png";
+
+// ✅ IMPORT: igual que en tu página de áreas (ajusta path si cambia)
+import { practiceAreasService as svc } from "../../services/practiceAreasService.js";
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
 }
 
+/* ================== Servicios dinámicos (Featured) ================== */
+const SERVICIOS_FALLBACK = Object.freeze([
+  { title: "Derecho Constitucional", to: "/servicios/derecho-constitucional?id=1" },
+  { title: "Derecho Administrativo", to: "/servicios/derecho-administrativo?id=2" },
+  { title: "Derecho Ambiental", to: "/servicios/derecho-ambiental?id=3" },
+  { title: "Derecho Disciplinario", to: "/servicios/derecho-disciplinario?id=5" },
+  { title: "Contratación Estatal", to: "/servicios/contratacion-estatal?id=7" },
+  { title: "Más Servicios", to: "/servicios" },
+]);
+
+const asArray = (res) =>
+  Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+
+const uniqByTo = (items) => {
+  const seen = new Set();
+  return items.filter((x) => {
+    const k = x?.to || "";
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+};
+
+const buildServiciosFromFeatured = (list, { limit = 5 } = {}) => {
+  const featured = uniqByTo(
+    (list || []).map((it) => {
+      const id = it?.id ?? "";
+      const slug = it?.slug ?? String(id);
+      const title = it?.title ?? "";
+      const desc = it?.excerpt ?? it?.subtitle ?? ""; // 👈 para tu mega menu
+
+      return {
+        title,
+        desc,
+        to: slug ? `/servicios/${slug}?id=${id}` : "/servicios",
+      };
+    })
+  )
+    .filter((x) => x.title && x.to)
+    .slice(0, limit);
+
+  if (!featured.length) return SERVICIOS_FALLBACK;
+
+  // ✅ “Más Servicios” al final
+  return [...featured, { title: "Más Servicios", to: "/servicios" }];
+};
+
+// Cache in-memory (para no pegarle al API cada vez que cambias de ruta)
+let serviciosMemo = null;
+let serviciosMemoAt = 0;
+let serviciosInflight = null;
+const SERVICIOS_TTL = 60_000; // 1 minuto
+
+async function getServiciosCached({ limit = 5 } = {}) {
+  const now = Date.now();
+  if (serviciosMemo && now - serviciosMemoAt < SERVICIOS_TTL) return serviciosMemo;
+  if (serviciosInflight) return serviciosInflight;
+
+  serviciosInflight = (async () => {
+    try {
+      const res = await svc.list({
+        featured: 1,
+        active: 1,
+        sort: "order,title",
+        per_page: 60,
+      });
+
+      const built = buildServiciosFromFeatured(asArray(res), { limit });
+      serviciosMemo = built;
+      serviciosMemoAt = Date.now();
+      return built;
+    } catch {
+      serviciosMemo = SERVICIOS_FALLBACK;
+      serviciosMemoAt = Date.now();
+      return SERVICIOS_FALLBACK;
+    } finally {
+      serviciosInflight = null;
+    }
+  })();
+
+  return serviciosInflight;
+}
+
+/* ================== Componente ================== */
 export default function NavbarLanding({
   ctaHref = "/contacto",
   ctaLabel = "Solicita una consulta",
@@ -23,9 +111,6 @@ export default function NavbarLanding({
   const { pathname } = useLocation();
   const isDashboard = pathname.startsWith("/dashboard");
   const isLogin = pathname.startsWith("/login");
-
-  // Siempre usa la config como fuente de verdad
-  const navItemsPublic = navDefaults;
 
   // Menú móvil
   const [openMenu, setOpenMenu] = useState(false);
@@ -77,6 +162,43 @@ export default function NavbarLanding({
     })();
   }, []);
 
+  // ✅ Servicios dinámicos para el mega
+  const [serviciosRight, setServiciosRight] = useState(
+    serviciosMemo || SERVICIOS_FALLBACK
+  );
+
+  useEffect(() => {
+    let alive = true;
+
+    // Nota: si estás en dashboard/login, ni gastes llamadas
+    if (isDashboard || isLogin) return;
+
+    (async () => {
+      const data = await getServiciosCached({ limit: 5 });
+      if (alive) setServiciosRight(data);
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [isDashboard, isLogin]);
+
+  // ✅ Siempre usa la config como fuente de verdad, pero “inyectando” servicios
+  const navItemsPublic = useMemo(() => {
+    return navDefaults.map((i) => {
+      if (i?.to === "/servicios" && i?.mega) {
+        return {
+          ...i,
+          mega: {
+            ...i.mega,
+            right: Array.isArray(serviciosRight) ? serviciosRight : [],
+          },
+        };
+      }
+      return i;
+    });
+  }, [serviciosRight]);
+
   // Mega abierto en desktop
   const [megaOpenKey, setMegaOpenKey] = useState(null); // string | null
 
@@ -102,7 +224,6 @@ export default function NavbarLanding({
                 className={[
                   "h-9 w-9 rounded-xl grid place-items-center overflow-hidden shrink-0",
                   "bg-[hsl(var(--accent-foreground))/0.08]",
-                  "border border-[hsl(var(--accent-foreground))/0.25]",
                   "text-[hsl(var(--accent-foreground))]",
                 ].join(" ")}
               >
@@ -115,21 +236,13 @@ export default function NavbarLanding({
                     decoding="async"
                   />
                 ) : (
-                  <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-                    <path
-                      d="M12 3v3m-6 4 6-2 6 2M6 10c0 2 2 4 4 4s4-2 4-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M12 6v12M7 18h10"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                    />
-                  </svg>
+                  <img
+                    src={br}
+                    alt="Blanco & Ramírez"
+                    className="h-full w-full object-cover"
+                    loading="eager"
+                    decoding="async"
+                  />
                 )}
               </div>
 
@@ -180,11 +293,14 @@ export default function NavbarLanding({
                     key={i.to}
                     className="relative group before:content-[''] before:absolute before:left-0 before:right-0 before:top-full before:h-3"
                     onMouseEnter={() => setMegaOpenKey(i.to)}
-                    onMouseLeave={() => setMegaOpenKey((k) => (k === i.to ? null : k))}
+                    onMouseLeave={() =>
+                      setMegaOpenKey((k) => (k === i.to ? null : k))
+                    }
                     onFocus={() => setMegaOpenKey(i.to)}
                     onBlur={(e) => {
                       const li = e.currentTarget;
-                      if (!li.contains(e.relatedTarget)) setMegaOpenKey((k) => (k === i.to ? null : k));
+                      if (!li.contains(e.relatedTarget))
+                        setMegaOpenKey((k) => (k === i.to ? null : k));
                     }}
                   >
                     {/* Trigger: el texto principal SÍ navega */}
@@ -226,7 +342,9 @@ export default function NavbarLanding({
                     <div
                       id={`mega-panel-${i.to}`}
                       onMouseEnter={() => setMegaOpenKey(i.to)}
-                      onMouseLeave={() => setMegaOpenKey((k) => (k === i.to ? null : k))}
+                      onMouseLeave={() =>
+                        setMegaOpenKey((k) => (k === i.to ? null : k))
+                      }
                       className={cx(
                         "fixed inset-x-0 top-16 z-40 transition-all duration-200 ease-out",
                         megaOpenKey === i.to
@@ -238,7 +356,7 @@ export default function NavbarLanding({
                     >
                       <div className="w-full bg-[hsl(var(--bg))] text-[hsl(var(--primary))] border-t border-[hsl(var(--primary)/0.12)] shadow-xl">
                         <div className="grid grid-cols-12 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                          {/* IZQ: texto desde config */}
+                          {/* IZQ */}
                           <div className="col-span-12 md:col-span-5 py-6 md:py-8 pr-4 md:pr-8">
                             {i.mega?.left?.overline && (
                               <p className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-2 text-[hsl(var(--primary)/0.7)]">
@@ -257,11 +375,13 @@ export default function NavbarLanding({
                             )}
                           </div>
 
-                          {/* DER: sublinks desde config */}
+                          {/* DER */}
                           <div className="col-span-12 md:col-span-7 py-4 md:py-6 pl-4 md:pl-8 border-t md:border-t-0 md:border-l border-[hsl(var(--primary)/0.12)]">
                             <nav aria-label="Lista" className="w-full">
                               {(() => {
-                                const rightItems = Array.isArray(i.mega?.right) ? i.mega.right : [];
+                                const rightItems = Array.isArray(i.mega?.right)
+                                  ? i.mega.right
+                                  : [];
                                 return (
                                   <ul className="grid grid-cols-1">
                                     {rightItems.map((s) => (
@@ -373,6 +493,7 @@ export default function NavbarLanding({
               >
                 <MdManageAccounts />
               </Link>
+
               {/* Mobile toggle */}
               <button
                 id="nav-toggle"
@@ -390,15 +511,31 @@ export default function NavbarLanding({
                 <div className="relative w-5 h-5">
                   <svg
                     viewBox="0 0 24 24"
-                    className={cx("absolute inset-0 transition-opacity", open ? "opacity-0" : "opacity-100")}
+                    className={cx(
+                      "absolute inset-0 transition-opacity",
+                      open ? "opacity-0" : "opacity-100"
+                    )}
                   >
-                    <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <path
+                      d="M4 6h16M4 12h16M4 18h16"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
                   </svg>
                   <svg
                     viewBox="0 0 24 24"
-                    className={cx("absolute inset-0 transition-opacity", open ? "opacity-100" : "opacity-0")}
+                    className={cx(
+                      "absolute inset-0 transition-opacity",
+                      open ? "opacity-100" : "opacity-0"
+                    )}
                   >
-                    <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <path
+                      d="M6 6l12 12M18 6 6 18"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </div>
               </button>
@@ -412,7 +549,10 @@ export default function NavbarLanding({
         <div
           id="mobile-panel"
           ref={panelRef}
-          className={cx("lg:hidden overflow-hidden transition-[max-height] duration-300", open ? "max-h-96" : "max-h-0")}
+          className={cx(
+            "lg:hidden overflow-hidden transition-[max-height] duration-300",
+            open ? "max-h-96" : "max-h-0"
+          )}
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-4">
             <ul className="grid gap-1 pt-2">
@@ -476,9 +616,7 @@ export default function NavbarLanding({
                         </NavLink>
                         <button
                           type="button"
-                          onClick={() =>
-                            setMobileMegaOpen((k) => (k === i.to ? null : i.to))
-                          }
+                          onClick={() => setMobileMegaOpen((k) => (k === i.to ? null : i.to))}
                           className={cx(
                             "px-3 py-2 border-l text-[hsl(var(--accent-foreground))]",
                             "border-[hsl(var(--accent-foreground))/0.25] rounded-r-lg",

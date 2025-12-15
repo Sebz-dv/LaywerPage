@@ -43,14 +43,42 @@ const parseMeta = (meta) => {
   }
 };
 
-// ⬅️ Ahora prioriza display_name
-const authorNameFrom = (a = {}) =>
-  a.display_name ||
-  a.name ||
-  a.full_name ||
-  [a.first_name, a.last_name].filter(Boolean).join(" ") ||
-  a.nombre ||
-  "Anónimo";
+const safeStr = (v) => (typeof v === "string" ? v.trim() : v);
+
+/** Intenta sacar el mejor nombre posible del autor */
+const authorNameFrom = (author = {}, fallbackFromArticle, fallbackSlug) => {
+  const a = author || {};
+
+  const fullNameFromParts = [a.first_name, a.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  // Si todo viene vacío, podemos intentar formatear el slug
+  let fromSlug = null;
+  if (fallbackSlug && typeof fallbackSlug === "string") {
+    const cleaned = fallbackSlug.replace(/[-_]+/g, " ").trim();
+    if (cleaned) {
+      fromSlug = cleaned
+        .split(" ")
+        .filter(Boolean)
+        .map((w) => w[0].toUpperCase() + w.slice(1))
+        .join(" ");
+    }
+  }
+
+  const candidates = [
+    safeStr(a.display_name),
+    safeStr(a.name),
+    safeStr(a.full_name),
+    fullNameFromParts || null,
+    safeStr(a.nombre),
+    safeStr(fallbackFromArticle), // article.author_name
+    safeStr(fromSlug),
+  ].filter(Boolean);
+
+  return candidates[0] || "Anónimo";
+};
 
 const initialsOf = (name = "") =>
   name
@@ -66,10 +94,8 @@ const Badge = ({ children, tone = "neutral", title }) => {
     neutral: "border-token bg-muted text-soft",
     success:
       "border-emerald-300/50 bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200",
-    warn:
-      "border-amber-300/50 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200",
-    info:
-      "border-sky-300/50 bg-sky-50 text-sky-800 dark:bg-sky-900/20 dark:text-sky-200",
+    warn: "border-amber-300/50 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200",
+    info: "border-sky-300/50 bg-sky-50 text-sky-800 dark:bg-sky-900/20 dark:text-sky-200",
     accent: "badge-accent",
   };
   return (
@@ -119,7 +145,7 @@ export default function BlogArticle() {
     (async () => {
       try {
         const res = await svc.get(id);
-        console.log("GET article:", res);
+        // console.log("GET article:", res);
         setArt(res);
         setErr(null);
       } catch (e) {
@@ -177,10 +203,13 @@ export default function BlogArticle() {
     () => estimateReadingTime(art?.body),
     [art?.body]
   );
+
   const authorName = useMemo(
-    () => authorNameFrom(art?.author || {}),
-    [art?.author]
+    () =>
+      authorNameFrom(art?.author || {}, art?.author_name, art?.author?.slug),
+    [art?.author, art?.author_name]
   );
+
   const metaObj = useMemo(() => parseMeta(art?.meta), [art?.meta]);
 
   const hasExternal = !!art?.external_url;
@@ -198,7 +227,7 @@ export default function BlogArticle() {
           <p className="text-sm text-soft mb-4">
             Revisa el enlace. Esta vista funciona únicamente con ID numérico.
           </p>
-          <Link to="/blog" className="btn btn-accent">
+          <Link to="/blog" className="btn btn-accent ">
             ← Volver al blog
           </Link>
         </div>
@@ -299,20 +328,26 @@ export default function BlogArticle() {
         <div className="relative h-full flex items	end mt-36">
           <div className="w-full px-4 sm:px-6 lg:px-8 pb-8">
             <header className="max-w-4xl">
+              {/* Botón volver a publicaciones */}
+              <div className="mb-3">
+                <Link
+                  to="/publicaciones"
+                  className="
+                    inline-flex items-center gap-1 rounded-full
+                    border border-white/90 bg-white/40
+                    px-3 py-1 text-sm font-medium
+                    text-white/90 backdrop-blur-sm
+                    transition hover:bg-white/15 hover:border-white/70
+                  "
+                >
+                  ← Volver a publicaciones
+                </Link>
+              </div>
+
               {/* Chips de estado */}
               <div className="flex items-center gap-2 mb-3">
                 {art.category?.name && (
                   <Badge tone="accent">{art.category.name}</Badge>
-                )}
-                {hasPdf && (
-                  <Badge tone="info" title="Documento PDF">
-                    PDF
-                  </Badge>
-                )}
-                {hasExternal && (
-                  <Badge tone="success" title="Enlace externo">
-                    Link externo
-                  </Badge>
                 )}
                 {art.featured && <Badge tone="warn">Destacado</Badge>}
               </div>
@@ -332,22 +367,6 @@ export default function BlogArticle() {
                   <span className="opacity-70">• Por {authorName}</span>
                 )}
               </div>
-
-              {/* Acciones rápidas si hay PDF/Link */}
-              {(hasPdf || hasExternal) && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {hasPdf && (
-                    <a
-                      className="btn btn-outline"
-                      href={art.pdf_url}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                    >
-                      Ver PDF ↗
-                    </a>
-                  )}
-                </div>
-              )}
             </header>
           </div>
         </div>
@@ -365,12 +384,7 @@ export default function BlogArticle() {
       {/* Contenido (o fallback cuando solo hay PDF/Link) */}
       <section className="px-4 md:px-6 mt-6">
         {hasBody ? (
-          <div
-            ref={contentRef}
-            className="
-              prose prose-neutral max-w-none
-            "
-          >
+          <div ref={contentRef} className="prose prose-neutral max-w-none">
             <div
               className="
                 card card-pad
@@ -464,6 +478,29 @@ export default function BlogArticle() {
               >
                 Copiar enlace
               </button>
+
+              {/* 🔗 Botón para external_url en la sección "Compartir en" */}
+              {hasExternal && (
+                <a
+                  className="btn btn-outline"
+                  href={art.external_url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  Ver enlace externo ↗
+                </a>
+              )}
+
+              {hasPdf && (
+                <a
+                  className="btn btn-outline"
+                  href={art.pdf_url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  Abrir PDF ↗
+                </a>
+              )}
             </div>
           </div>
 
@@ -555,20 +592,18 @@ export default function BlogArticle() {
                 <span className="badge">ID #{art.id}</span>
                 {art.slug && <span className="badge badge-primary">slug</span>}
                 {hasPdf && <span className="badge">pdf_url</span>}
-                {hasExternal && (
-                  <span className="badge">external_url</span>
-                )}
+                {hasExternal && <span className="badge">external_url</span>}
               </div>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
               <KV label="ID" value={art.id} />
               <KV label="Slug" value={art.slug || "—"} mono />
-              <KV
-                label="Categoría ID"
-                value={art.article_category_id ?? "—"}
-              />
+              <KV label="Categoría ID" value={art.article_category_id ?? "—"} />
               <KV label="Categoría" value={art.category?.name ?? "—"} />
-              <KV label="Autor ID" value={art.author_id ?? "—"} />
+              <KV
+                label="Autor ID"
+                value={art.author_id ?? art.author?.id ?? "—"}
+              />
               <KV label="Autor" value={authorName || "—"} />
               <KV label="Destacado" value={art.featured ? "Sí" : "No"} />
               <KV label="Publicado" value={art.is_published ? "Sí" : "No"} />
@@ -584,11 +619,7 @@ export default function BlogArticle() {
               <KV label="Cover path" value={art.cover_path || "—"} mono />
               <KV label="Cover URL" value={art.cover_url || "—"} mono />
               <KV label="PDF URL" value={art.pdf_url || "—"} mono />
-              <KV
-                label="External URL"
-                value={art.external_url || "—"}
-                mono
-              />
+              <KV label="External URL" value={art.external_url || "—"} mono />
             </div>
             <div className="mt-4">
               <div className="text-sm font-medium mb-1">Meta</div>

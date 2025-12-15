@@ -117,7 +117,9 @@ function detectPlatformFromHost(url = "") {
     if (host.includes("twitter") || host.includes("x.com")) return "twitter";
     if (host.includes("whatsapp")) return "whatsapp";
     if (host.includes("github")) return "github";
-  } catch { /* noop */ }
+  } catch {
+    /* noop */
+  }
   return "";
 }
 function normalizePlatform(rawPlatform = "", url = "") {
@@ -132,15 +134,24 @@ function buildUrl(platform, handleRaw) {
   const handle = String(handleRaw || "").replace(/^@/, "");
   if (!platform || !handle) return "";
   switch (platform) {
-    case "instagram": return `https://instagram.com/${handle}`;
-    case "facebook":  return `https://facebook.com/${handle}`;
-    case "twitter":   return `https://x.com/${handle}`;
-    case "linkedin":  return `https://www.linkedin.com/company/${handle}`;
-    case "tiktok":    return `https://www.tiktok.com/@${handle}`;
-    case "whatsapp":  return /^\+?\d{7,15}$/.test(handle) ? `https://wa.me/${handle.replace(/\D/g, "")}` : "";
-    case "github":    return `https://github.com/${handle}`;
-    case "youtube":   return `https://www.youtube.com/@${handle}`;
-    default: return "";
+    case "instagram":
+      return `https://instagram.com/${handle}`;
+    case "facebook":
+      return `https://facebook.com/${handle}`;
+    case "twitter":
+      return `https://x.com/${handle}`;
+    case "linkedin":
+      return `https://www.linkedin.com/company/${handle}`;
+    case "tiktok":
+      return `https://www.tiktok.com/@${handle}`;
+    case "whatsapp":
+      return /^\+?\d{7,15}$/.test(handle) ? `https://wa.me/${handle.replace(/\D/g, "")}` : "";
+    case "github":
+      return `https://github.com/${handle}`;
+    case "youtube":
+      return `https://www.youtube.com/@${handle}`;
+    default:
+      return "";
   }
 }
 function parseSocialEntry(entry) {
@@ -151,7 +162,9 @@ function parseSocialEntry(entry) {
     const url = urlMatch ? urlMatch[0] : "";
     const handleMatch = text.match(/@([A-Za-z0-9._-]+)/);
     const handle = handleMatch ? handleMatch[0] : "";
-    const platMatch = text.match(/\b(instagram|ig|facebook|fb|linkedin|in|youtube|yt|tiktok|tt|twitter|x|whatsapp|wa|github|gh)\b/i);
+    const platMatch = text.match(
+      /\b(instagram|ig|facebook|fb|linkedin|in|youtube|yt|tiktok|tt|twitter|x|whatsapp|wa|github|gh)\b/i
+    );
     const rawPlatform = platMatch ? platMatch[0] : "";
     const platform = normalizePlatform(rawPlatform, url);
     const finalUrl = url || buildUrl(platform, handle);
@@ -216,7 +229,9 @@ function useIsDark() {
 /* ========= Variants (Framer Motion) ========= */
 const useVariants = () => {
   const prefersReduced = useReducedMotion();
-  const fast = prefersReduced ? { duration: 0.2 } : { type: "spring", stiffness: 500, damping: 32, mass: 0.7 };
+  const fast = prefersReduced
+    ? { duration: 0.2 }
+    : { type: "spring", stiffness: 500, damping: 32, mass: 0.7 };
 
   return {
     containerStagger: {
@@ -227,22 +242,59 @@ const useVariants = () => {
       hidden: { opacity: 0, y: 10 },
       show: { opacity: 1, y: 0, transition: fast },
     },
-    hoverLift: prefersReduced ? {} : {
-      whileHover: { y: -3 },
-      whileTap: { scale: 0.98 },
-    },
-    iconHover: prefersReduced ? {} : {
-      whileHover: { scale: 1.08, rotate: 2 },
-      whileTap: { scale: 0.95 },
-      transition: { type: "spring", stiffness: 600, damping: 24 },
-    },
+    hoverLift: prefersReduced
+      ? {}
+      : {
+          whileHover: { y: -3 },
+          whileTap: { scale: 0.98 },
+        },
+    iconHover: prefersReduced
+      ? {}
+      : {
+          whileHover: { scale: 1.08, rotate: 2 },
+          whileTap: { scale: 0.95 },
+          transition: { type: "spring", stiffness: 600, damping: 24 },
+        },
   };
 };
 
+/* ========= Cache in-memory para settings =========
+   - evita fetch en cada navegación / remount
+   - TTL para refrescar cada cierto tiempo
+*/
+let __settingsMemo = null;
+let __settingsMemoAt = 0;
+let __settingsInflight = null;
+const SETTINGS_TTL_MS = 60_000; // 1 minuto (ajústalo)
+
+async function getSettingsCached() {
+  const now = Date.now();
+  if (__settingsMemo && now - __settingsMemoAt < SETTINGS_TTL_MS) return __settingsMemo;
+  if (__settingsInflight) return __settingsInflight;
+
+  __settingsInflight = Promise.resolve()
+    .then(() => settingsService.get())
+    .then((data) => {
+      __settingsMemo = data || {};
+      __settingsMemoAt = Date.now();
+      return __settingsMemo;
+    })
+    .catch((e) => {
+      // no rompas: devuelve algo y deja que el footer pinte
+      console.error("[Footer] settings error:", e);
+      // No sobreescribimos memo “bueno” si ya existía
+      return __settingsMemo || {};
+    })
+    .finally(() => {
+      __settingsInflight = null;
+    });
+
+  return __settingsInflight;
+}
+
 /* ========= Subcomponentes ========= */
-function SocialIconButton({ item, isDark }) {
+function SocialIconButton({ item, isDark, iconHover }) {
   const Icon = ICONS[item.platform] ?? ICONS.default;
-  const { iconHover } = useVariants();
   const color = BRAND_COLORS[item.platform] || BRAND_COLORS.default;
   const borderColor = hexToRgba(color, 0.35);
   const bg = hexToRgba(color, isDark ? 0.10 : 0.08);
@@ -268,9 +320,7 @@ function SocialIconButton({ item, isDark }) {
 }
 
 function Phones({ phones, isDark }) {
-  const raw = Array.isArray(phones)
-    ? phones
-    : String(phones || "").split(/\s*[;,]\s*|\s+[–-]\s+/);
+  const raw = Array.isArray(phones) ? phones : String(phones || "").split(/\s*[;,]\s*|\s+[–-]\s+/);
 
   const items = raw
     .map((p) => p.trim())
@@ -289,9 +339,11 @@ function Phones({ phones, isDark }) {
           <a
             href={it.href}
             className={`inline-flex items-center rounded-md px-3 py-1.5 text-xs transition
-              ${isDark
-                ? "border border-white/15 bg-white/10 hover:bg-white/15 text-white"
-                : "border border-zinc-300/80 bg-zinc-100 hover:bg-zinc-200 text-zinc-900"}`}
+              ${
+                isDark
+                  ? "border border-white/15 bg-white/10 hover:bg-white/15 text-white"
+                  : "border border-zinc-300/80 bg-zinc-100 hover:bg-zinc-200 text-zinc-900"
+              }`}
           >
             {it.label}
           </a>
@@ -316,9 +368,11 @@ function Emails({ emails, isDark }) {
         <li key={i} className="leading-6">
           <a
             className={`inline-flex items-center rounded-md px-3 py-1.5 text-xs transition
-              ${isDark
-                ? "border border-white/15 bg-white/10 hover:bg-white/15 text-white"
-                : "border border-zinc-300/80 bg-zinc-100 hover:bg-zinc-200 text-zinc-900"}`}
+              ${
+                isDark
+                  ? "border border-white/15 bg-white/10 hover:bg-white/15 text-white"
+                  : "border border-zinc-300/80 bg-zinc-100 hover:bg-zinc-200 text-zinc-900"
+              }`}
             href={it.href}
           >
             {it.label}
@@ -334,9 +388,7 @@ function PagesList({ s, pages, isDark }) {
   const list = useMemo(() => {
     if (pages?.length) return pages;
     const fromSettings = s?.footer_pages ?? s?.menu_footer ?? [];
-    return (fromSettings || []).map((it) =>
-      typeof it === "string" ? { title: it, href: "#" } : it
-    );
+    return (fromSettings || []).map((it) => (typeof it === "string" ? { title: it, href: "#" } : it));
   }, [pages, s]);
 
   if ((!list || !list.length) && !(s?.footer_blocks || []).length) return null;
@@ -350,16 +402,13 @@ function PagesList({ s, pages, isDark }) {
               <div className="flex items-center justify-between gap-2">
                 <a
                   className={`inline-flex items-center gap-2 transition
-                    ${isDark
-                      ? "text-white/80 hover:text-[hsl(var(--accent))]"
-                      : "text-zinc-700 hover:text-[hsl(var(--accent))]"}`}
+                    ${isDark ? "text-white/80 hover:text-[hsl(var(--accent))]" : "text-zinc-700 hover:text-[hsl(var(--accent))]"}`}
                   href={p.href || "#"}
                   aria-label={`Abrir página individual: ${p.title || "Página"}`}
                 >
                   <span
                     aria-hidden
-                    className={`inline-block h-1.5 w-1.5 rounded-full
-                      ${isDark ? "bg-white/60" : "bg-zinc-500/70"}`}
+                    className={`inline-block h-1.5 w-1.5 rounded-full ${isDark ? "bg-white/60" : "bg-zinc-500/70"}`}
                   />
                   <span>{p.title || "Página"}</span>
                 </a>
@@ -379,9 +428,11 @@ function PagesList({ s, pages, isDark }) {
           key={i}
           className={`prose prose-sm max-w-none
                      [&_a]:no-underline [&_ul]:m-0 [&_li]:m-0 [&_li]:py-1
-                     ${isDark
-                       ? "text-white/80 [&_a]:text-white/80 [&_a:hover]:text-[hsl(var(--accent))]"
-                       : "text-zinc-700 [&_a]:text-zinc-700 [&_a:hover]:text-[hsl(var(--accent))]"}`}
+                     ${
+                       isDark
+                         ? "text-white/80 [&_a]:text-white/80 [&_a:hover]:text-[hsl(var(--accent))]"
+                         : "text-zinc-700 [&_a]:text-zinc-700 [&_a:hover]:text-[hsl(var(--accent))]"
+                     }`}
           dangerouslySetInnerHTML={{ __html: b?.html || "" }}
         />
       ))}
@@ -394,7 +445,10 @@ function Addresses({ s, isDark }) {
   const splitAddresses = (input) => {
     const raw = String(input || "");
     const temp = raw.split("||").join("//");
-    const parts = temp.split("//").map((p) => p.trim()).filter(Boolean);
+    const parts = temp
+      .split("//")
+      .map((p) => p.trim())
+      .filter(Boolean);
     return parts.map((p) => {
       const idx = p.indexOf(":");
       if (idx > -1) {
@@ -406,12 +460,7 @@ function Addresses({ s, isDark }) {
     });
   };
 
-  const list = Array.isArray(s?.addresses)
-    ? s.addresses
-    : s?.address
-    ? splitAddresses(s.address)
-    : [];
-
+  const list = Array.isArray(s?.addresses) ? s.addresses : s?.address ? splitAddresses(s.address) : [];
   if (!list.length) return null;
 
   return (
@@ -420,16 +469,16 @@ function Addresses({ s, isDark }) {
         {list.slice(0, 6).map((a, i) => (
           <li key={i}>
             {a.label ? (
-              <div className={`text-sm font-semibold ${isDark ? "text-white" : "text-zinc-900"}`}>
-                {a.label}
-              </div>
+              <div className={`text-sm font-semibold ${isDark ? "text-white" : "text-zinc-900"}`}>{a.label}</div>
             ) : null}
             <div>{a.address}</div>
             <a
               className={`mt-1 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs transition
-                ${isDark
-                  ? "border border-white/15 bg-white/10 hover:bg-white/15 text-white"
-                  : "border border-zinc-300/80 bg-zinc-100 hover:bg-zinc-200 text-zinc-900"}`}
+                ${
+                  isDark
+                    ? "border border-white/15 bg-white/10 hover:bg-white/15 text-white"
+                    : "border border-zinc-300/80 bg-zinc-100 hover:bg-zinc-200 text-zinc-900"
+                }`}
               target="_blank"
               rel="noopener noreferrer"
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.address)}`}
@@ -469,18 +518,12 @@ function LegalModal({ open, onClose, brandName }) {
               style={{ backgroundColor: "#071a35", borderColor: "rgba(255,255,255,0.06)" }}
             >
               <div>
-                <p className="text-xs font-semibold text-white/70 uppercase tracking-[0.16em]">
-                  Avisos legales
-                </p>
+                <p className="text-xs font-semibold text-white/70 uppercase tracking-[0.16em]">Avisos legales</p>
                 <h3 className="text-sm md:text-base font-bold text-white mt-0.5">
                   Políticas de privacidad y términos de uso
                 </h3>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="text-white/70 hover:text:white text-sm font-semibold px-2"
-              >
+              <button type="button" onClick={onClose} className="text-white/70 hover:text:white text-sm font-semibold px-2">
                 Cerrar
               </button>
             </div>
@@ -489,15 +532,14 @@ function LegalModal({ open, onClose, brandName }) {
             <div className="px-5 md:px-7 py-4 max-h-[70vh] overflow-y-auto text-neutral-800 text-sm md:text-[15px] leading-relaxed">
               <SectionTitle>1. Responsables del tratamiento de datos</SectionTitle>
               <p className="mb-3">
-                {brandName} actúa como responsable del tratamiento de la información
-                personal recolectada a través de este sitio web y de los canales
-                asociados a la prestación de sus servicios jurídicos.
+                {brandName} actúa como responsable del tratamiento de la información personal recolectada a través de
+                este sitio web y de los canales asociados a la prestación de sus servicios jurídicos.
               </p>
 
               <SectionTitle>2. Finalidad del tratamiento</SectionTitle>
               <p className="mb-2">
-                La información suministrada por los usuarios podrá ser utilizada, entre
-                otros, para las siguientes finalidades:
+                La información suministrada por los usuarios podrá ser utilizada, entre otros, para las siguientes
+                finalidades:
               </p>
               <ul className="list-disc pl-5 mb-3 space-y-1">
                 <li>Atender consultas, solicitudes y comunicaciones remitidas por los usuarios.</li>
@@ -507,10 +549,7 @@ function LegalModal({ open, onClose, brandName }) {
               </ul>
 
               <SectionTitle>3. Derechos de los titulares</SectionTitle>
-              <p className="mb-2">
-                Los titulares de la información podrán ejercer, entre otros, los
-                siguientes derechos:
-              </p>
+              <p className="mb-2">Los titulares de la información podrán ejercer, entre otros, los siguientes derechos:</p>
               <ul className="list-disc pl-5 mb-3 space-y-1">
                 <li>Conocer, actualizar y rectificar sus datos personales.</li>
                 <li>Solicitar la supresión de sus datos cuando resulte procedente.</li>
@@ -520,30 +559,25 @@ function LegalModal({ open, onClose, brandName }) {
 
               <SectionTitle>4. Conservación de la información</SectionTitle>
               <p className="mb-3">
-                Los datos personales serán conservados por el tiempo necesario para
-                cumplir las finalidades indicadas y las exigencias legales o contractuales
-                aplicables a la firma.
+                Los datos personales serán conservados por el tiempo necesario para cumplir las finalidades indicadas y
+                las exigencias legales o contractuales aplicables a la firma.
               </p>
 
               <SectionTitle>5. Uso del sitio web</SectionTitle>
               <p className="mb-3">
-                El contenido publicado en este sitio tiene fines informativos y no
-                constituye asesoría jurídica específica. Cualquier decisión debe adoptarse
-                con base en una consulta directa y personalizada con profesionales de la
-                firma.
+                El contenido publicado en este sitio tiene fines informativos y no constituye asesoría jurídica específica.
+                Cualquier decisión debe adoptarse con base en una consulta directa y personalizada con profesionales de la firma.
               </p>
 
               <SectionTitle>6. Actualizaciones</SectionTitle>
               <p className="mb-1">
-                {brandName} podrá modificar estas políticas en cualquier momento para
-                atender cambios normativos o institucionales. Las versiones actualizadas
-                serán publicadas en este mismo espacio.
+                {brandName} podrá modificar estas políticas en cualquier momento para atender cambios normativos o institucionales.
+                Las versiones actualizadas serán publicadas en este mismo espacio.
               </p>
 
               <p className="mt-4 text-xs text-neutral-500 italic">
-                Si desea ejercer sus derechos como titular de datos o conocer la versión
-                completa de nuestras políticas, puede comunicarse a través de los canales
-                oficiales de contacto de la firma.
+                Si desea ejercer sus derechos como titular de datos o conocer la versión completa de nuestras políticas, puede comunicarse
+                a través de los canales oficiales de contacto de la firma.
               </p>
             </div>
           </motion.div>
@@ -555,10 +589,7 @@ function LegalModal({ open, onClose, brandName }) {
 
 function SectionTitle({ children }) {
   return (
-    <h4
-      className="mt-3 mb-1 font-semibold text-sm md:text-[15px]"
-      style={{ color: BRAND_BLUE }}
-    >
+    <h4 className="mt-3 mb-1 font-semibold text-sm md:text-[15px]" style={{ color: BRAND_BLUE }}>
       {children}
     </h4>
   );
@@ -566,22 +597,29 @@ function SectionTitle({ children }) {
 
 /* ========= Footer principal ========= */
 export default function Footer() {
-  const [s, setS] = useState(null);
+  // ✅ render inmediato: no bloquees el footer esperando settings
+  const [s, setS] = useState(() => ({}));
   const [error, setError] = useState(null);
   const [legalOpen, setLegalOpen] = useState(false);
-  const { containerStagger, fadeInUp, hoverLift } = useVariants();
+
+  const { containerStagger, fadeInUp, hoverLift, iconHover } = useVariants();
   const isDark = useIsDark();
 
   useEffect(() => {
     let mounted = true;
-    settingsService
-      .get()
-      .then((data) => mounted && setS(data || {}))
+
+    getSettingsCached()
+      .then((data) => {
+        if (!mounted) return;
+        setS(data || {});
+      })
       .catch((e) => {
         console.error("[Footer] settings error:", e);
+        if (!mounted) return;
         setError(e);
-        setS({});
+        setS((prev) => prev || {});
       });
+
     return () => {
       mounted = false;
     };
@@ -594,7 +632,6 @@ export default function Footer() {
   }, [s]);
 
   const year = useMemo(() => new Date().getFullYear(), []);
-  if (!s) return null;
 
   const fixed = Boolean(s?.footer_fixed ?? false);
   const footerHeight = s?.footer_height || 260;
@@ -628,9 +665,7 @@ export default function Footer() {
         {/* Cinta decorativa superior */}
         <div
           aria-hidden
-          className={`pointer-events-none absolute inset-x-0 top-0 h-[68px] ${
-            isDark ? "bg-white/[0.03]" : "bg-zinc-900/[0.02]"
-          }`}
+          className={`pointer-events-none absolute inset-x-0 top-0 h-[68px] ${isDark ? "bg-white/[0.03]" : "bg-zinc-900/[0.02]"}`}
         />
 
         <motion.div
@@ -642,13 +677,10 @@ export default function Footer() {
         >
           {/* Social arriba */}
           {socials?.length ? (
-            <motion.div
-              className="flex items-center justify-end gap-2 md:gap-3 pb-4"
-              variants={containerStagger}
-            >
+            <motion.div className="flex items-center justify-end gap-2 md:gap-3 pb-4" variants={containerStagger}>
               {socials.map((r, i) => (
                 <motion.div key={i} variants={fadeInUp}>
-                  <SocialIconButton item={r} isDark={isDark} />
+                  <SocialIconButton item={r} isDark={isDark} iconHover={iconHover} />
                 </motion.div>
               ))}
             </motion.div>
@@ -680,25 +712,13 @@ export default function Footer() {
                 </span>
               </div>
 
-              <h4
-                className={`text-sm font-semibold mb-2 ${
-                  isDark ? "text-white" : "text-zinc-900"
-                }`}
-              >
-                Páginas
-              </h4>
+              <h4 className={`text-sm font-semibold mb-2 ${isDark ? "text-white" : "text-zinc-900"}`}>Páginas</h4>
               <PagesList s={s} pages={PAGES_FROM_ROUTES} isDark={isDark} />
             </motion.div>
 
             {/* Col 2: Aliados */}
             <motion.div variants={fadeInUp} {...hoverLift}>
-              <h4
-                className={`text-sm font-semibold mb-3 ${
-                  isDark ? "text-white" : "text-zinc-900"
-                }`}
-              >
-                Aliados
-              </h4>
+              <h4 className={`text-sm font-semibold mb-3 ${isDark ? "text-white" : "text-zinc-900"}`}>Aliados</h4>
               {FOOTER_ALLIES.length ? (
                 <ul className="space-y-1.5 text-sm">
                   {FOOTER_ALLIES.map((ally) => (
@@ -723,60 +743,34 @@ export default function Footer() {
 
             {/* Col 3: Contacto */}
             <motion.div variants={fadeInUp} {...hoverLift}>
-              <h4
-                className={`text-sm font-semibold mb-3 ${
-                  isDark ? "text-white" : "text-zinc-900"
-                }`}
-              >
-                Contacto
-              </h4>
+              <h4 className={`text-sm font-semibold mb-3 ${isDark ? "text-white" : "text-zinc-900"}`}>Contacto</h4>
+
               {s?.phone ? (
                 <>
-                  <h5
-                    className={`text-sm font-medium mb-2 ${
-                      isDark ? "text-white/90" : "text-zinc-800"
-                    }`}
-                  >
-                    Teléfono
-                  </h5>
+                  <h5 className={`text-sm font-medium mb-2 ${isDark ? "text-white/90" : "text-zinc-800"}`}>Teléfono</h5>
                   <Phones phones={s.phone} isDark={isDark} />
                 </>
               ) : null}
+
               {s?.email ? (
                 <>
-                  <h5
-                    className={`text-sm font-medium mt-4 mb-2 ${
-                      isDark ? "text-white/90" : "text-zinc-800"
-                    }`}
-                  >
-                    Email
-                  </h5>
+                  <h5 className={`text-sm font-medium mt-4 mb-2 ${isDark ? "text-white/90" : "text-zinc-800"}`}>Email</h5>
                   <Emails emails={s.email} isDark={isDark} />
                 </>
               ) : null}
-              {!s?.phone && !s?.email ? (
-                <p className={`text-sm ${fgMuted}`}>Agrega teléfono o correo en settings.</p>
-              ) : null}
+
+              {!s?.phone && !s?.email ? <p className={`text-sm ${fgMuted}`}>Agrega teléfono o correo en settings.</p> : null}
             </motion.div>
 
             {/* Col 4: Direcciones */}
             <motion.div variants={fadeInUp} {...hoverLift}>
-              <h4
-                className={`text-sm font-semibold mb-3 ${
-                  isDark ? "text-white" : "text-zinc-900"
-                }`}
-              >
-                Direcciones
-              </h4>
+              <h4 className={`text-sm font-semibold mb-3 ${isDark ? "text-white" : "text-zinc-900"}`}>Direcciones</h4>
               <Addresses s={s} isDark={isDark} />
             </motion.div>
           </motion.div>
 
           {/* Barra legal inferior */}
-          <motion.div
-            className={`pb-5 pt-4 ${borderSoft} border-t`}
-            variants={fadeInUp}
-          >
+          <motion.div className={`pb-5 pt-4 ${borderSoft} border-t`} variants={fadeInUp}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className={`text-xs ${isDark ? "text-white/70" : "text-zinc-600"}`}>
                 © {year} {s?.site_name || "Tu Sitio"}.{" "}
@@ -788,43 +782,28 @@ export default function Footer() {
                   Todos los derechos reservados.
                 </button>
               </p>
-              <nav
-                aria-label="Legal"
-                className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-xs ${fgMuted}`}
-              >
+
+              <nav aria-label="Legal" className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-xs ${fgMuted}`}>
                 {s?.privacy_url ? (
-                  <a
-                    className="hover:text-[hsl(var(--accent))]"
-                    href={safeUrl(s.privacy_url)}
-                  >
+                  <a className="hover:text-[hsl(var(--accent))]" href={safeUrl(s.privacy_url)}>
                     Privacidad
                   </a>
                 ) : null}
                 {s?.terms_url ? (
-                  <a
-                    className="hover:text-[hsl(var(--accent))]"
-                    href={safeUrl(s.terms_url)}
-                  >
+                  <a className="hover:text-[hsl(var(--accent))]" href={safeUrl(s.terms_url)}>
                     Términos
                   </a>
                 ) : null}
                 {s?.cookies_url ? (
-                  <a
-                    className="hover:text-[hsl(var(--accent))]"
-                    href={safeUrl(s.cookies_url)}
-                  >
+                  <a className="hover:text-[hsl(var(--accent))]" href={safeUrl(s.cookies_url)}>
                     Cookies
                   </a>
                 ) : null}
+
                 <motion.button
                   type="button"
-                  onClick={() =>
-                    typeof window !== "undefined" &&
-                    window.scrollTo({ top: 0, behavior: "smooth" })
-                  }
-                  className={`inline-flex items-center gap-1 hover:text-[hsl(var(--accent))] ${
-                    isDark ? "text-white/80" : "text-zinc-700"
-                  }`}
+                  onClick={() => typeof window !== "undefined" && window.scrollTo({ top: 0, behavior: "smooth" })}
+                  className={`inline-flex items-center gap-1 hover:text-[hsl(var(--accent))] ${isDark ? "text-white/80" : "text-zinc-700"}`}
                   aria-label="Volver arriba"
                   title="Volver arriba"
                   whileHover={{ x: -1 }}
@@ -834,12 +813,9 @@ export default function Footer() {
                 </motion.button>
               </nav>
             </div>
+
             {error ? (
-              <p
-                className={`mt-2 text-[11px] ${
-                  isDark ? "text-red-300/80" : "text-red-600/80"
-                }`}
-              >
+              <p className={`mt-2 text-[11px] ${isDark ? "text-red-300/80" : "text-red-600/80"}`}>
                 No se pudieron cargar algunos datos del footer.
               </p>
             ) : null}
@@ -847,15 +823,12 @@ export default function Footer() {
         </motion.div>
       </footer>
 
-      <LegalModal
-        open={legalOpen}
-        onClose={() => setLegalOpen(false)}
-        brandName={s?.site_name || "Tu Sitio"}
-      />
+      <LegalModal open={legalOpen} onClose={() => setLegalOpen(false)} brandName={s?.site_name || "Tu Sitio"} />
     </>
   );
 
   if (!fixed) return content;
+
   return (
     <>
       <div aria-hidden style={{ height: footerHeight }} />

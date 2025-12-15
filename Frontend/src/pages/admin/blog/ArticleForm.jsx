@@ -94,6 +94,7 @@ export default function ArticleForm() {
       setError(null);
       try {
         const res = await svc.get(id);
+        // console.log("Artículo cargado para edición:", res);
         const a = (res?.data ?? res) || {};
         setForm((f) => ({
           ...f,

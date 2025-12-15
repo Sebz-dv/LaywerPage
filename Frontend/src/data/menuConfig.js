@@ -1,5 +1,4 @@
 // /data/menuConfig.js
-import { servicios } from "./servicios";
 import { about } from "./about";
 
 export const menuConfig = [
@@ -17,7 +16,7 @@ export const menuConfig = [
           "visión estratégica e innovación para responder de forma integral " +
           "a las necesidades de nuestros clientes",
       },
-      right: about, // 👈 array [{title,to,desc?}]
+      right: about,
     },
   },
 
@@ -30,7 +29,7 @@ export const menuConfig = [
         title: "Áreas de práctica",
         text: "Acompañamos a su empresa en cada reto, del puntual al complejo.",
       },
-      right: servicios, // 👈 array [{title,to,desc?}]
+      right: [], // ✅ se llena dinámicamente en NavbarLanding
     },
   },
 
@@ -39,5 +38,4 @@ export const menuConfig = [
   { label: "Contacto", to: "/contacto" },
 ];
 
-// Opcional: sellar también la raíz
 Object.freeze(menuConfig);
