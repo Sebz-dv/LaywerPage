@@ -326,10 +326,10 @@ export default function BlogList({
           {/* Items */}
           {!loading &&
             items.map((it, i) => {
-              const id = it.id; // 🔒 usamos id sí o sí
+              const slug = it.slug; // 🔒 usamos id sí o sí
               return (
                 <motion.article
-                  key={id ?? i}
+                  key={it.id ?? slug ?? i}
                   className={cx(
                     "card overflow-hidden group interactive",
                     "flex flex-col"
@@ -372,7 +372,7 @@ export default function BlogList({
                     </div>
 
                     <Link
-                      to={`/publicaciones/${encodeURIComponent(id)}`}
+                       to={`/publicaciones/${encodeURIComponent(slug)}`}
                       className="text-lg font-semibold font-display leading-tight hover:underline underline-offset-4 line-clamp-2 pointer-events-auto"
                       title={it.title}
                     >
@@ -404,7 +404,7 @@ export default function BlogList({
                     {/* CTA primaria */}
                     <div className="pt-1">
                       <Link
-                        to={`/publicaciones/${encodeURIComponent(id)}`}
+                         to={`/publicaciones/${encodeURIComponent(slug)}`}
                         className="btn btn-outline w-full pointer-events-auto select-none"
                         role="button"
                         aria-label={`Leer más sobre ${it.title}`}

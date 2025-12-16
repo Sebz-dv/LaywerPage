@@ -21,10 +21,7 @@ const formatDate = (iso, withTime = false) => {
 
 const estimateReadingTime = (html) => {
   if (!html) return null;
-  const text = html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   const words = text ? text.split(" ").length : 0;
   return `${Math.max(1, Math.round(words / 200))} min`;
 };
@@ -120,7 +117,9 @@ function KV({ label, value, mono = false }) {
 
 /* ================= Component ================= */
 export default function BlogArticle() {
-  const { id } = useParams();
+  // ✅ ahora usamos slug (la ruta debe ser /publicaciones/:slug)
+  const { slug } = useParams();
+
   const location = useLocation();
   const debug = useMemo(
     () => new URLSearchParams(location.search).has("debug"),
@@ -137,25 +136,29 @@ export default function BlogArticle() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    if (!id || !/^[0-9]+$/.test(String(id))) {
+    if (!slug) {
       setErr(404);
       setArt(null);
       return;
     }
+
     (async () => {
       try {
-        const res = await svc.get(id);
-        // console.log("GET article:", res);
+        const res = await svc.getBySlug(slug);
         setArt(res);
         setErr(null);
       } catch (e) {
         const status = e?.response?.status || 500;
+        console.error(
+          "[BlogArticle] error API:",
+          status,
+          e?.response?.data || e
+        );
         setErr(status);
         setArt(null);
-        console.warn("GET article error:", status, e?.response?.data || e);
       }
     })();
-  }, [id]);
+  }, [slug]);
 
   // relacionados por categoría
   useEffect(() => {
@@ -168,6 +171,7 @@ export default function BlogArticle() {
           sort: "-published_at,id",
           category_id: art.article_category_id,
         });
+
         const rows = (r?.data ?? []).filter(
           (x) => String(x.id) !== String(art.id)
         );
@@ -225,10 +229,10 @@ export default function BlogArticle() {
             Artículo no encontrado
           </h2>
           <p className="text-sm text-soft mb-4">
-            Revisa el enlace. Esta vista funciona únicamente con ID numérico.
+            Revisa el enlace. Esta publicación puede no existir o no estar publicada.
           </p>
-          <Link to="/blog" className="btn btn-accent ">
-            ← Volver al blog
+          <Link to="/publicaciones" className="btn btn-accent ">
+            ← Volver a publicaciones
           </Link>
         </div>
       </div>
@@ -286,7 +290,7 @@ export default function BlogArticle() {
             Inicio
           </Link>
           <span className="mx-2">/</span>
-          <Link className="link" to="/blog">
+          <Link className="link" to="/publicaciones">
             Publicaciones
           </Link>
         </nav>
@@ -479,7 +483,6 @@ export default function BlogArticle() {
                 Copiar enlace
               </button>
 
-              {/* 🔗 Botón para external_url en la sección "Compartir en" */}
               {hasExternal && (
                 <a
                   className="btn btn-outline"
@@ -522,10 +525,7 @@ export default function BlogArticle() {
               <div className="text-sm text-soft mb-1">Escrito por:</div>
               <div className="font-semibold">{authorName}</div>
               {art.author?.slug && (
-                <Link
-                  to={`/equipo/${art.author.slug}`}
-                  className="link text-sm"
-                >
+                <Link to={`/equipo/${art.author.slug}`} className="link text-sm">
                   Ver perfil
                 </Link>
               )}
@@ -543,7 +543,7 @@ export default function BlogArticle() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {related.map((it) => (
               <article
-                key={it.id}
+                key={it.id ?? it.slug}
                 className="card overflow-hidden interactive flex flex-col"
               >
                 {it.cover_url ? (
@@ -564,7 +564,7 @@ export default function BlogArticle() {
                     {formatDate(it.published_at)}
                   </span>
                   <Link
-                    to={`/publicaciones/${encodeURIComponent(it.id)}`}
+                    to={`/publicaciones/${encodeURIComponent(it.slug)}`}
                     className="font-semibold hover:underline underline-offset-4 line-clamp-2"
                     title={it.title}
                   >
@@ -595,6 +595,7 @@ export default function BlogArticle() {
                 {hasExternal && <span className="badge">external_url</span>}
               </div>
             </div>
+
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
               <KV label="ID" value={art.id} />
               <KV label="Slug" value={art.slug || "—"} mono />
@@ -621,6 +622,7 @@ export default function BlogArticle() {
               <KV label="PDF URL" value={art.pdf_url || "—"} mono />
               <KV label="External URL" value={art.external_url || "—"} mono />
             </div>
+
             <div className="mt-4">
               <div className="text-sm font-medium mb-1">Meta</div>
               <pre className="text-xs overflow-auto rounded-xl border border-token bg-muted p-3">

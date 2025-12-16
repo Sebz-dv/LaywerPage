@@ -82,7 +82,8 @@ export default function App() {
           {/* Blog */}
           <Route path="/publicaciones" element={<BlogList />} />
           {/* ✅ SOLO POR ID */}
-          <Route path="/publicaciones/:id" element={<BlogArticle />} />
+          <Route path="/publicaciones/:slug" element={<BlogArticle />} />
+          <Route path="/publicaciones/id/:id" element={<BlogArticle />} />
 
           <Route path="/about-us" element={<AboutUs />} />
           <Route path="/public/simple-posts" element={<PublicPostsGrid />} />

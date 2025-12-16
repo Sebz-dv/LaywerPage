@@ -63,7 +63,7 @@ function toFormData(payload = {}) {
       continue;
     }
 
-    // booleans como "true"/"false" (coincide con prepareForValidation)
+    // booleans como "true"/"false"
     if (typeof v === "boolean") {
       fd.append(k, v ? "true" : "false");
       continue;
@@ -71,10 +71,7 @@ function toFormData(payload = {}) {
 
     // arrays simples (keywords, etc.)
     if (Array.isArray(v)) {
-      // Backend espera array JSON (meta.keywords, etc.)
       fd.append(k, JSON.stringify(v));
-      // Si un día quieres campos repetidos tipo name[], descomenta:
-      // v.forEach((item) => fd.append(`${k}[]`, item));
       continue;
     }
 
@@ -93,22 +90,30 @@ const ensureNumericId = (id) => {
   return s;
 };
 
+/* ================== Validación slug ================== */
+const ensureSlug = (slug) => {
+  const s = String(slug ?? "").trim();
+  // Ajusta el regex si permites underscores u otros
+  if (!s || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/i.test(s)) {
+    throw new Error(`Slug inválido: "${slug}".`);
+  }
+  return s;
+};
+
 /* ================== Servicio ================== */
 export const articlesService = {
   async list(params = {}) {
-    // Puedes pasar filtros: { search, category_id, category, featured, published_only, sort, per_page }
     const r = await api.get("/articles", { params });
-    // Paginado Laravel Resource: { data, links, meta }
+
     if (Array.isArray(r.data?.data)) {
       r.data.data = r.data.data.map(normalizeArticle);
     } else if (Array.isArray(r.data)) {
-      // Por si algún endpoint retorna arreglo pelado
       r.data = r.data.map(normalizeArticle);
     }
     return r.data;
   },
 
-  /** GET /articles/{id}?with_body=true|false (por defecto true en tu controller) */
+  /** ADMIN/privado: GET /articles/{id}?with_body= */
   async get(id, { withBody } = {}) {
     const safeId = ensureNumericId(id);
     const r = await api.get(`/articles/${encodeURIComponent(safeId)}`, {
@@ -119,9 +124,19 @@ export const articlesService = {
     return normalizeArticle(data);
   },
 
+  /** PÚBLICO: GET /articles/{slug}?with_body= */
+  async getBySlug(slug, { withBody } = {}) {
+    const safeSlug = ensureSlug(slug);
+    const r = await api.get(`/articles/${encodeURIComponent(safeSlug)}`, {
+      params:
+        typeof withBody === "boolean" ? { with_body: withBody } : undefined,
+    });
+    const data = r.data?.data ?? r.data;
+    return normalizeArticle(data);
+  },
+
   /** POST /articles (multipart/form-data) */
   async create(payload) {
-    // 👇 Si ya viene FormData desde el formulario, lo respetamos
     const body = payload instanceof FormData ? payload : toFormData(payload);
 
     const r = await api.post("/articles", body);
@@ -129,14 +144,11 @@ export const articlesService = {
     return normalizeArticle(data);
   },
 
-  /**
-   * PUT /articles/{id} (usando override para simplificar con FormData)
-   */
+  /** UPDATE por ID (privado): POST /articles/{id} */
   async update(id, payload) {
     const safeId = ensureNumericId(id);
     const body = payload instanceof FormData ? payload : toFormData(payload);
 
-    // 👇 sin _method
     const r = await api.post(`/articles/${encodeURIComponent(safeId)}`, body);
     const data = r.data?.data ?? r.data;
     return normalizeArticle(data);
@@ -166,14 +178,12 @@ export const articlesService = {
     return normalizeArticle(data);
   },
 
-  /** Helper útil si solo quieres la URL absoluta del PDF para abrir/descargar */
   pdfUrl(articleOrId) {
     if (typeof articleOrId === "object" && articleOrId !== null) {
       return articleOrId.pdf_url
         ? normalizeFromApiOrigin(articleOrId.pdf_url)
         : null;
     }
-    // Si solo tienes el path crudo
     return normalizeFromApiOrigin(articleOrId);
   },
 };

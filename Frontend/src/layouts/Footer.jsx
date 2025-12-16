@@ -648,183 +648,188 @@ export default function Footer() {
 
   const content = (
     <>
-      <footer
-        role="contentinfo"
-        className={[
-          "z-[40]",
-          "relative",
-          baseBg,
-          "before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent",
-          topSheen,
-          "before:to-transparent",
-          fixed ? "fixed inset-x-0 bottom-0" : "mt-16",
-          wrapperText,
-        ].join(" ")}
-        style={fixed ? { "--footer-h": `${footerHeight}px` } : undefined}
-      >
-        {/* Cinta decorativa superior */}
-        <div
-          aria-hidden
-          className={`pointer-events-none absolute inset-x-0 top-0 h-[68px] ${isDark ? "bg-white/[0.03]" : "bg-zinc-900/[0.02]"}`}
-        />
+  <footer
+    role="contentinfo"
+    className={[
+      "z-[40]",
+      "relative",
+      baseBg,
+      "before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent",
+      topSheen,
+      "before:to-transparent",
+      fixed ? "fixed inset-x-0 bottom-0" : "mt-16",
+      wrapperText,
+    ].join(" ")}
+    style={fixed ? { "--footer-h": `${footerHeight}px` } : undefined}
+  >
+    {/* Cinta decorativa superior */}
+    <div
+      aria-hidden
+      className={`pointer-events-none absolute inset-x-0 top-0 h-[68px] ${
+        isDark ? "bg-white/[0.03]" : "bg-zinc-900/[0.02]"
+      }`}
+    />
 
-        <motion.div
-          className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pt-5"
-          variants={containerStagger}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.2 }}
-        >
-          {/* Social arriba */}
-          {socials?.length ? (
-            <motion.div className="flex items-center justify-end gap-2 md:gap-3 pb-4" variants={containerStagger}>
-              {socials.map((r, i) => (
-                <motion.div key={i} variants={fadeInUp}>
-                  <SocialIconButton item={r} isDark={isDark} iconHover={iconHover} />
-                </motion.div>
-              ))}
+    <motion.div
+      className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pt-5"
+      variants={containerStagger}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, amount: 0.2 }}
+    >
+      {/* Social arriba (se queda tal cual) */}
+      {socials?.length ? (
+        <motion.div className="flex items-center justify-end gap-2 md:gap-3 pb-4" variants={containerStagger}>
+          {socials.map((r, i) => (
+            <motion.div key={i} variants={fadeInUp}>
+              <SocialIconButton item={r} isDark={isDark} iconHover={iconHover} />
             </motion.div>
+          ))}
+        </motion.div>
+      ) : null}
+
+      {/* Zona principal: ✅ 2 columnas en móvil, 2 en sm, 4 en lg */}
+      <motion.div
+        className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 py-8 ${borderSoft} border-t`}
+        variants={containerStagger}
+      >
+        {/* Col 1: Logo + Páginas */}
+        <motion.div variants={fadeInUp} {...hoverLift} className="col-span-2 sm:col-span-1">
+          <div className="mb-4 flex items-center gap-3">
+            {s?.logo_url ? (
+              <img
+                src={s.logo_url}
+                alt={s.site_name ? `${s.site_name} logo` : "Logo"}
+                className="h-10 md:h-12 object-contain shrink-0"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : null}
+            <span
+              className={`font-display text-lg md:text-xl font-semibold tracking-tight ${
+                isDark ? "text-white" : "text-zinc-900"
+              }`}
+            >
+              {s?.site_name || "Blanco & Ramírez"}
+            </span>
+          </div>
+
+          <h4 className={`text-sm font-semibold mb-2 ${isDark ? "text-white" : "text-zinc-900"}`}>Páginas</h4>
+          <PagesList s={s} pages={PAGES_FROM_ROUTES} isDark={isDark} />
+        </motion.div>
+
+        {/* Col 2: Aliados */}
+        <motion.div variants={fadeInUp} {...hoverLift} className="col-span-2 sm:col-span-1">
+          <h4 className={`text-sm font-semibold mb-3 ${isDark ? "text-white" : "text-zinc-900"}`}>Aliados</h4>
+          {FOOTER_ALLIES.length ? (
+            <ul className="space-y-1.5 text-sm">
+              {FOOTER_ALLIES.map((ally) => (
+                <li key={ally.name}>
+                  <a
+                    href={ally.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`underline underline-offset-2 decoration-[0.08em] hover:text-[hsl(var(--accent))] ${
+                      isDark ? "text-white/80" : "text-zinc-700"
+                    }`}
+                  >
+                    {ally.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={`text-sm ${fgMuted}`}>Pronto anunciaremos nuestros aliados.</p>
+          )}
+        </motion.div>
+
+        {/* Col 3: Contacto */}
+        <motion.div variants={fadeInUp} {...hoverLift} className="col-span-2 sm:col-span-1">
+          <h4 className={`text-sm font-semibold mb-3 ${isDark ? "text-white" : "text-zinc-900"}`}>Contacto</h4>
+
+          {s?.phone ? (
+            <>
+              <h5 className={`text-sm font-medium mb-2 ${isDark ? "text-white/90" : "text-zinc-800"}`}>Teléfono</h5>
+              <Phones phones={s.phone} isDark={isDark} />
+            </>
           ) : null}
 
-          {/* Zona principal: 4 columnas en desktop */}
-          <motion.div
-            className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 py-8 ${borderSoft} border-t`}
-            variants={containerStagger}
-          >
-            {/* Col 1: Logo + Páginas */}
-            <motion.div variants={fadeInUp} {...hoverLift}>
-              <div className="mb-4 flex items-center gap-3">
-                {s?.logo_url ? (
-                  <img
-                    src={s.logo_url}
-                    alt={s.site_name ? `${s.site_name} logo` : "Logo"}
-                    className="h-10 md:h-12 object-contain shrink-0"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : null}
-                <span
-                  className={`font-display text-lg md:text-xl font-semibold tracking-tight ${
-                    isDark ? "text-white" : "text-zinc-900"
-                  }`}
-                >
-                  {s?.site_name || "Blanco & Ramírez"}
-                </span>
-              </div>
+          {s?.email ? (
+            <>
+              <h5 className={`text-sm font-medium mt-4 mb-2 ${isDark ? "text-white/90" : "text-zinc-800"}`}>Email</h5>
+              <Emails emails={s.email} isDark={isDark} />
+            </>
+          ) : null}
 
-              <h4 className={`text-sm font-semibold mb-2 ${isDark ? "text-white" : "text-zinc-900"}`}>Páginas</h4>
-              <PagesList s={s} pages={PAGES_FROM_ROUTES} isDark={isDark} />
-            </motion.div>
-
-            {/* Col 2: Aliados */}
-            <motion.div variants={fadeInUp} {...hoverLift}>
-              <h4 className={`text-sm font-semibold mb-3 ${isDark ? "text-white" : "text-zinc-900"}`}>Aliados</h4>
-              {FOOTER_ALLIES.length ? (
-                <ul className="space-y-1.5 text-sm">
-                  {FOOTER_ALLIES.map((ally) => (
-                    <li key={ally.name}>
-                      <a
-                        href={ally.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`underline underline-offset-2 decoration-[0.08em] hover:text-[hsl(var(--accent))] ${
-                          isDark ? "text-white/80" : "text-zinc-700"
-                        }`}
-                      >
-                        {ally.name}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className={`text-sm ${fgMuted}`}>Pronto anunciaremos nuestros aliados.</p>
-              )}
-            </motion.div>
-
-            {/* Col 3: Contacto */}
-            <motion.div variants={fadeInUp} {...hoverLift}>
-              <h4 className={`text-sm font-semibold mb-3 ${isDark ? "text-white" : "text-zinc-900"}`}>Contacto</h4>
-
-              {s?.phone ? (
-                <>
-                  <h5 className={`text-sm font-medium mb-2 ${isDark ? "text-white/90" : "text-zinc-800"}`}>Teléfono</h5>
-                  <Phones phones={s.phone} isDark={isDark} />
-                </>
-              ) : null}
-
-              {s?.email ? (
-                <>
-                  <h5 className={`text-sm font-medium mt-4 mb-2 ${isDark ? "text-white/90" : "text-zinc-800"}`}>Email</h5>
-                  <Emails emails={s.email} isDark={isDark} />
-                </>
-              ) : null}
-
-              {!s?.phone && !s?.email ? <p className={`text-sm ${fgMuted}`}>Agrega teléfono o correo en settings.</p> : null}
-            </motion.div>
-
-            {/* Col 4: Direcciones */}
-            <motion.div variants={fadeInUp} {...hoverLift}>
-              <h4 className={`text-sm font-semibold mb-3 ${isDark ? "text-white" : "text-zinc-900"}`}>Direcciones</h4>
-              <Addresses s={s} isDark={isDark} />
-            </motion.div>
-          </motion.div>
-
-          {/* Barra legal inferior */}
-          <motion.div className={`pb-5 pt-4 ${borderSoft} border-t`} variants={fadeInUp}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className={`text-xs ${isDark ? "text-white/70" : "text-zinc-600"}`}>
-                © {year} {s?.site_name || "Tu Sitio"}.{" "}
-                <button
-                  type="button"
-                  onClick={() => setLegalOpen(true)}
-                  className="underline underline-offset-2 decoration-[0.08em] hover:text-[hsl(var(--accent))] transition-colors"
-                >
-                  Todos los derechos reservados.
-                </button>
-              </p>
-
-              <nav aria-label="Legal" className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-xs ${fgMuted}`}>
-                {s?.privacy_url ? (
-                  <a className="hover:text-[hsl(var(--accent))]" href={safeUrl(s.privacy_url)}>
-                    Privacidad
-                  </a>
-                ) : null}
-                {s?.terms_url ? (
-                  <a className="hover:text-[hsl(var(--accent))]" href={safeUrl(s.terms_url)}>
-                    Términos
-                  </a>
-                ) : null}
-                {s?.cookies_url ? (
-                  <a className="hover:text-[hsl(var(--accent))]" href={safeUrl(s.cookies_url)}>
-                    Cookies
-                  </a>
-                ) : null}
-
-                <motion.button
-                  type="button"
-                  onClick={() => typeof window !== "undefined" && window.scrollTo({ top: 0, behavior: "smooth" })}
-                  className={`inline-flex items-center gap-1 hover:text-[hsl(var(--accent))] ${isDark ? "text-white/80" : "text-zinc-700"}`}
-                  aria-label="Volver arriba"
-                  title="Volver arriba"
-                  whileHover={{ x: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  ↑ Arriba
-                </motion.button>
-              </nav>
-            </div>
-
-            {error ? (
-              <p className={`mt-2 text-[11px] ${isDark ? "text-red-300/80" : "text-red-600/80"}`}>
-                No se pudieron cargar algunos datos del footer.
-              </p>
-            ) : null}
-          </motion.div>
+          {!s?.phone && !s?.email ? <p className={`text-sm ${fgMuted}`}>Agrega teléfono o correo en settings.</p> : null}
         </motion.div>
-      </footer>
 
-      <LegalModal open={legalOpen} onClose={() => setLegalOpen(false)} brandName={s?.site_name || "Tu Sitio"} />
-    </>
+        {/* Col 4: Direcciones */}
+        <motion.div variants={fadeInUp} {...hoverLift} className="col-span-2 sm:col-span-1">
+          <h4 className={`text-sm font-semibold mb-3 ${isDark ? "text-white" : "text-zinc-900"}`}>Direcciones</h4>
+          <Addresses s={s} isDark={isDark} />
+        </motion.div>
+      </motion.div>
+
+      {/* Barra legal inferior */}
+      <motion.div className={`pb-5 pt-4 ${borderSoft} border-t`} variants={fadeInUp}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className={`text-xs ${isDark ? "text-white/70" : "text-zinc-600"}`}>
+            © {year} {s?.site_name || "Tu Sitio"}.{" "}
+            <button
+              type="button"
+              onClick={() => setLegalOpen(true)}
+              className="underline underline-offset-2 decoration-[0.08em] hover:text-[hsl(var(--accent))] transition-colors"
+            >
+              Todos los derechos reservados.
+            </button>
+          </p>
+
+          <nav aria-label="Legal" className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-xs ${fgMuted}`}>
+            {s?.privacy_url ? (
+              <a className="hover:text-[hsl(var(--accent))]" href={safeUrl(s.privacy_url)}>
+                Privacidad
+              </a>
+            ) : null}
+            {s?.terms_url ? (
+              <a className="hover:text-[hsl(var(--accent))]" href={safeUrl(s.terms_url)}>
+                Términos
+              </a>
+            ) : null}
+            {s?.cookies_url ? (
+              <a className="hover:text-[hsl(var(--accent))]" href={safeUrl(s.cookies_url)}>
+                Cookies
+              </a>
+            ) : null}
+
+            <motion.button
+              type="button"
+              onClick={() => typeof window !== "undefined" && window.scrollTo({ top: 0, behavior: "smooth" })}
+              className={`inline-flex items-center gap-1 hover:text-[hsl(var(--accent))] ${
+                isDark ? "text-white/80" : "text-zinc-700"
+              }`}
+              aria-label="Volver arriba"
+              title="Volver arriba"
+              whileHover={{ x: -1 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              ↑ Arriba
+            </motion.button>
+          </nav>
+        </div>
+
+        {error ? (
+          <p className={`mt-2 text-[11px] ${isDark ? "text-red-300/80" : "text-red-600/80"}`}>
+            No se pudieron cargar algunos datos del footer.
+          </p>
+        ) : null}
+      </motion.div>
+    </motion.div>
+  </footer>
+
+  <LegalModal open={legalOpen} onClose={() => setLegalOpen(false)} brandName={s?.site_name || "Tu Sitio"} />
+</>
+
   );
 
   if (!fixed) return content;

@@ -21,7 +21,7 @@ class ArticleController extends Controller
         try {
 
             $q = Article::query()
-                ->with(['category:id,name,slug', 'author']); // ✅ author sin columnas fijas
+                ->with(['category:id,name,slug', 'author']);
 
             $q = $this->applyFilters($q, $req);
             $q = $this->applySort($q, $req);

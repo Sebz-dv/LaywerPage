@@ -22,6 +22,7 @@ use App\Http\Controllers\PostController;
 | PATRONES GLOBALES (solo ID numérico)
 |--------------------------------------------------------------------------
 */
+
 Route::pattern('practice_area', '[0-9]+');
 Route::pattern('article', '[0-9]+');
 Route::pattern('post', '[0-9]+'); // 👈 importante, tu PostController bindea por id
@@ -78,16 +79,16 @@ Route::middleware(['jwt.cookie', 'auth:api'])->group(function () {
     /* =================== POSTS (PRIVADAS) =================== */
     // Solo lo que EXISTE en PostController
     Route::post('posts',          [PostController::class, 'store']);                 // crear
-    Route::match(['post','put','patch'], 'posts/{post}', [PostController::class, 'update']); // actualizar
+    Route::match(['post', 'put', 'patch'], 'posts/{post}', [PostController::class, 'update']); // actualizar
 
     /* ===== simple-posts (alias) — PRIVADAS ===== */
     Route::post('simple-posts',                 [PostController::class, 'store']);   // alias crear
-    Route::match(['post','put','patch'], 'simple-posts/{post}', [PostController::class, 'update']); // alias actualizar
+    Route::match(['post', 'put', 'patch'], 'simple-posts/{post}', [PostController::class, 'update']); // alias actualizar
 
     Route::post('/media-slots/{key}', [MediaSlotsController::class, 'store']);
 
     Route::apiResource('article-categories', ArticleCategoryController::class)
-    ->only(['index', 'store', 'update', 'destroy']);
+        ->only(['index', 'store', 'update', 'destroy']);
 });
 
 /*
@@ -111,7 +112,8 @@ Route::middleware([])->group(function () {
 
     // ARTÍCULOS (por ID numérico)
     Route::get('articles',           [ArticleController::class, 'index']);
-    Route::get('articles/{article}', [ArticleController::class, 'show']);
+    Route::get('articles/{article:slug}', [ArticleController::class, 'show'])
+        ->where('article', '[A-Za-z0-9\-]+');
 
     /* =================== POSTS (PÚBLICAS) =================== */
     Route::get('posts',        [PostController::class, 'index']); // listado
