@@ -65,7 +65,9 @@ function isImage(att = {}) {
 }
 
 export default function PublicPostDetail() {
-  const { id } = useParams();
+  // ✅ ahora es slug (porque tu ruta es /public/simple-posts/:slug)
+  const { slug } = useParams();
+
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -77,7 +79,7 @@ export default function PublicPostDetail() {
   const { scrollYProgress } = useScroll();
   const heroScale = useTransform(scrollYProgress, [0, 0.35], [1.06, 1]);
 
-  /* ========= Fetch post ========= */
+  /* ========= Fetch post (PUBLICO por SLUG) ========= */
   useEffect(() => {
     let alive = true;
     setLoading(true);
@@ -86,7 +88,7 @@ export default function PublicPostDetail() {
     setAuthor(null);
 
     postsService
-      .get(id)
+      .getBySlug(slug) // ✅ PUBLICO: por slug
       .then((p) => {
         if (!alive) return;
         setPost(p);
@@ -101,7 +103,7 @@ export default function PublicPostDetail() {
     return () => {
       alive = false;
     };
-  }, [id]);
+  }, [slug]);
 
   /* ========= Resolver autor ========= */
   useEffect(() => {
@@ -157,13 +159,17 @@ export default function PublicPostDetail() {
         await navigator.clipboard.writeText(shareData.url);
         alert("Enlace copiado al portapapeles");
       }
-    } catch {}
+    } catch {
+      //
+    }
   }
   async function handleCopyLink() {
     try {
       await navigator.clipboard.writeText(window.location.href);
       alert("Enlace copiado");
-    } catch {}
+    } catch {
+      //
+    }
   }
 
   return (
@@ -189,9 +195,7 @@ export default function PublicPostDetail() {
         </motion.div>
 
         <div className="relative z-10 h-full">
-          {/* ⬇️ MÁS ANCHO: antes max-w-4xl */}
           <div className="mx-auto h-full max-w-5xl lg:max-w-6xl px-4 sm:px-6 flex flex-col justify-end pb-6">
-            
             <motion.h1
               variants={fade}
               initial="hidden"
@@ -199,7 +203,6 @@ export default function PublicPostDetail() {
               className={cx(
                 "mt-4 font-display text-white drop-shadow-[0_8px_24px_rgba(0,0,0,.35)]",
                 "text-3xl sm:text-4xl md:text-5xl font-semibold tracking-[0.03em]",
-                // 🔒 Nunca se sale
                 "break-words [word-break:break-word] [overflow-wrap:anywhere] text-balance"
               )}
               style={{
@@ -220,7 +223,6 @@ export default function PublicPostDetail() {
                 className={cx(
                   "mt-2 font-subtitle text-base sm:text-lg text-white/95",
                   "max-w-none lg:max-w-4xl",
-                  // 🔒 Control de desbordes
                   "break-words [word-break:break-word] [overflow-wrap:anywhere]"
                 )}
               >
@@ -253,7 +255,6 @@ export default function PublicPostDetail() {
       </section>
 
       {/* ===== CONTENIDO ===== */}
-      {/* ⬇️ MÁS ANCHO: antes max-w-4xl */}
       <section className="mx-auto max-w-5xl lg:max-w-6xl px-4 sm:px-6 py-8">
         {loading ? (
           <div className="card card-pad">
@@ -277,7 +278,6 @@ export default function PublicPostDetail() {
           <article
             className={cx(
               "card card-pad space-y-8",
-              // 🔒 Garantizar contención de todo el artículo
               "break-words [word-break:break-word] [overflow-wrap:anywhere]"
             )}
           >
@@ -343,15 +343,12 @@ export default function PublicPostDetail() {
                 initial="hidden"
                 animate="show"
                 className={cx(
-                  // Prosa más permisiva y contenida
                   "prose prose-neutral dark:prose-invert max-w-none",
-                  // Imágenes y tablas nunca desbordan
                   "prose-img:max-w-full prose-img:h-auto",
                   "prose-table:w-full prose-table:overflow-x-auto",
                   "prose-a:break-words prose-code:break-words"
                 )}
               >
-                {/* Si el texto puede traer líneas larguísimas, protegemos */}
                 <p className="whitespace-pre-wrap break-words [word-break:break-word] [overflow-wrap:anywhere]">
                   {post.text}
                 </p>

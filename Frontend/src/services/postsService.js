@@ -12,19 +12,31 @@ const apiOrigin = (() => {
 const V = "";
 const BASE = `${V}/simple-posts`;
 
+/* ================== Validaciones ================== */
+const ensureNumericId = (id) => {
+  const s = String(id ?? "").trim();
+  if (!/^[0-9]+$/.test(s)) {
+    throw new Error(`SimplePost ID inválido: "${id}". Se requiere un número.`);
+  }
+  return s;
+};
+
+const ensureSlug = (slug) => {
+  const s = String(slug ?? "").trim();
+  // ajusta si permites underscores
+  if (!s || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/i.test(s)) {
+    throw new Error(`Slug inválido: "${slug}".`);
+  }
+  return s;
+};
+
 function toFormData(payload = {}) {
   const fd = new FormData();
 
-  // 👇 SIEMPRE enviar title (obligatorio en create, necesario en update)
-  if (payload.title != null) {
-    fd.append("title", payload.title);
-  }
-
-  // 👇 SIEMPRE enviar info, text si existen (aunque sea vacío)
+  if (payload.title != null) fd.append("title", payload.title);
   if (payload.info != null) fd.append("info", payload.info);
   if (payload.text != null) fd.append("text", payload.text);
 
-  // Author
   if (payload.author) {
     const a = payload.author;
     if (typeof a === "string") {
@@ -38,7 +50,6 @@ function toFormData(payload = {}) {
     }
   }
 
-  // Links
   if (Array.isArray(payload.links)) {
     payload.links.forEach((l, i) => {
       if (!l) return;
@@ -47,7 +58,6 @@ function toFormData(payload = {}) {
     });
   }
 
-  // Comments
   if (Array.isArray(payload.comments)) {
     payload.comments.forEach((c, i) => {
       if (!c) return;
@@ -60,7 +70,6 @@ function toFormData(payload = {}) {
     });
   }
 
-  // File
   if (payload.file instanceof File || payload.file instanceof Blob) {
     fd.append("file", payload.file, payload.file.name || "upload.bin");
   }
@@ -71,6 +80,7 @@ function toFormData(payload = {}) {
 function normalize(post) {
   if (!post) return null;
   const data = post.data ?? {};
+
   const attachments = Array.isArray(data.attachments)
     ? data.attachments.map((a) => ({
         ...a,
@@ -81,8 +91,10 @@ function normalize(post) {
           : undefined,
       }))
     : [];
+
   return {
     id: post.id,
+    slug: post.slug ?? data.slug ?? null, // ✅ ahora tenemos slug si viene del backend
     author_id: post.author_id ?? null,
     author: data.author ?? null,
     title: post.title ?? "",
@@ -103,8 +115,17 @@ export const postsService = {
     return Array.isArray(data) ? data.map(normalize) : [];
   },
 
+  /** ADMIN/privado: por ID */
   async get(id) {
-    const { data } = await api.get(`${BASE}/${id}`);
+    const safeId = ensureNumericId(id);
+    const { data } = await api.get(`${BASE}/${encodeURIComponent(safeId)}`);
+    return normalize(data);
+  },
+
+  /** PÚBLICO: por SLUG */
+  async getBySlug(slug) {
+    const safeSlug = ensureSlug(slug);
+    const { data } = await api.get(`${BASE}/${encodeURIComponent(safeSlug)}`);
     return normalize(data);
   },
 
@@ -116,14 +137,14 @@ export const postsService = {
     return normalize(data);
   },
 
-  // src/services/postsService.js
   async update(id, payload) {
+    const safeId = ensureNumericId(id);
     const fd = toFormData(payload);
-    fd.append("_method", "PUT"); // 👈 override para Laravel
-
-    // No fuerces Content-Type; deja que el navegador ponga el boundary correcto
-    const { data } = await api.post(`${BASE}/${id}`, fd);
-    console.log(data);
+    fd.append("_method", "PUT");
+    const { data } = await api.post(
+      `${BASE}/${encodeURIComponent(safeId)}`,
+      fd
+    );
     return normalize(data);
   },
 
@@ -175,6 +196,12 @@ export const postsService = {
       comments: current.comments,
       file,
     });
+  },
+
+  async remove(id) {
+    const safeId = ensureNumericId(id);
+    await api.delete(`${BASE}/${encodeURIComponent(safeId)}`);
+    return true;
   },
 };
 

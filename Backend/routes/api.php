@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\MediaSlotController;
 use App\Http\Controllers\ArticleCategoryController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,7 +24,7 @@ use App\Http\Controllers\PostController;
 
 Route::pattern('practice_area', '[0-9]+');
 Route::pattern('article', '[0-9]+');
-Route::pattern('post', '[0-9]+'); // 👈 importante, tu PostController bindea por id
+// Route::pattern('post', '[0-9]+'); // ❌ QUITAR: rompe {post:slug}
 
 /*
 |--------------------------------------------------------------------------
@@ -77,13 +76,16 @@ Route::middleware(['jwt.cookie', 'auth:api'])->group(function () {
     Route::delete('articles/{article}',               [ArticleController::class, 'destroy']);
 
     /* =================== POSTS (PRIVADAS) =================== */
-    // Solo lo que EXISTE en PostController
-    Route::post('posts',          [PostController::class, 'store']);                 // crear
-    Route::match(['post', 'put', 'patch'], 'posts/{post}', [PostController::class, 'update']); // actualizar
+    Route::post('posts', [PostController::class, 'store']);
+    Route::match(['post', 'put', 'patch'], 'posts/{post}', [PostController::class, 'update'])
+        ->where('post', '[0-9]+');
 
     /* ===== simple-posts (alias) — PRIVADAS ===== */
-    Route::post('simple-posts',                 [PostController::class, 'store']);   // alias crear
-    Route::match(['post', 'put', 'patch'], 'simple-posts/{post}', [PostController::class, 'update']); // alias actualizar
+    Route::post('simple-posts', [PostController::class, 'store']);
+    Route::match(['post', 'put', 'patch'], 'simple-posts/{post}', [PostController::class, 'update'])
+        ->where('post', '[0-9]+');
+    Route::delete('simple-posts/{id}', [PostController::class, 'destroyById'])
+        ->whereNumber('id');
 
     Route::post('/media-slots/{key}', [MediaSlotsController::class, 'store']);
 
@@ -110,21 +112,22 @@ Route::middleware([])->group(function () {
     Route::get('practice-areas',                 [PracticeAreaController::class, 'index'])->name('practice-areas.index');
     Route::get('practice-areas/{practice_area}', [PracticeAreaController::class, 'show'])->name('practice-areas.show');
 
-    // ARTÍCULOS (por ID numérico)
-    Route::get('articles',           [ArticleController::class, 'index']);
+    // ARTÍCULOS (por SLUG)
+    Route::get('articles', [ArticleController::class, 'index']);
     Route::get('articles/{article:slug}', [ArticleController::class, 'show'])
         ->where('article', '[A-Za-z0-9\-]+');
 
     /* =================== POSTS (PÚBLICAS) =================== */
-    Route::get('posts',        [PostController::class, 'index']); // listado
-    Route::get('posts/{post}', [PostController::class, 'show']);  // ver uno por id
+    Route::get('posts', [PostController::class, 'index']);
+    Route::get('posts/{post}', [PostController::class, 'show'])
+        ->where('post', '[0-9]+');
 
-    /* ===== simple-posts (alias) — PÚBLICA ===== */
-    Route::get('simple-posts',        [PostController::class, 'index']); // alias listado
-    Route::get('simple-posts/{post}', [PostController::class, 'show']);  // alias ver uno
+    /* ===== simple-posts (alias) — PÚBLICA (POR SLUG) ===== */
+    Route::get('simple-posts', [PostController::class, 'index']);
+    Route::get('simple-posts/{post:slug}', [PostController::class, 'show'])
+        ->where('post', '[A-Za-z0-9\-]+');
 
     Route::post('/contact', [ContactController::class, 'store']);
-
     Route::get('/media-slots/{key}', [MediaSlotsController::class, 'show']);
 });
 

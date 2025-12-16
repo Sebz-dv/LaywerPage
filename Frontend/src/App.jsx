@@ -87,10 +87,7 @@ export default function App() {
 
           <Route path="/about-us" element={<AboutUs />} />
           <Route path="/public/simple-posts" element={<PublicPostsGrid />} />
-          <Route
-            path="/public/simple-posts/:id"
-            element={<PublicPostDetail />}
-          />
+          <Route path="/public/simple-posts/:slug" element={<PublicPostDetail />} /> 
           <Route path="/contacto" element={<Contactenos />} />
         </Route>
 

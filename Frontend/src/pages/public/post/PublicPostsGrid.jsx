@@ -1,11 +1,5 @@
 // src/pages/public/simple-posts/PublicPostsGrid.jsx
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-  useId,
-  useCallback,
-} from "react";
+import React, { useEffect, useMemo, useState, useId, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import postsService from "../../../services/postsService";
 import {
@@ -138,32 +132,21 @@ export default function PublicPostsGrid() {
 
   // ====== paginación (9 por página) ======
   const PAGE_SIZE = 9;
-  const {
-    page,
-    totalPages,
-    pageItems,
-    setPage,
-    canPrev,
-    canNext,
-    next,
-    prev,
-  } = usePagination(filtered, PAGE_SIZE);
+  const { page, totalPages, pageItems, setPage, canPrev, canNext, next, prev } =
+    usePagination(filtered, PAGE_SIZE);
 
   useEffect(() => {
     setPage(1);
   }, [q, setPage]);
 
-  const onChangePage = useCallback(
-    (fn) => {
-      fn();
-      setTimeout(() => {
-        const el = document.getElementById("posts-grid-top");
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-        else window.scrollTo({ top: 0, behavior: "smooth" });
-      }, 0);
-    },
-    []
-  );
+  const onChangePage = useCallback((fn) => {
+    fn();
+    setTimeout(() => {
+      const el = document.getElementById("posts-grid-top");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      else window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 0);
+  }, []);
 
   return (
     <main className="bg-app min-h-dvh">
@@ -244,7 +227,9 @@ export default function PublicPostsGrid() {
               animate="show"
               className="mt-3 max-w-3xl text-white/95 font-subtitle text-lg md:text-xl"
             >
-              Blog de notas jurídicas breves y claras, donde traducimos la complejidad legal a ideas accionables para que tomes mejores decisiones.
+              Blog de notas jurídicas breves y claras, donde traducimos la
+              complejidad legal a ideas accionables para que tomes mejores
+              decisiones.
             </motion.p>
 
             <motion.div
@@ -278,7 +263,11 @@ export default function PublicPostsGrid() {
             animate="show"
           >
             {Array.from({ length: 6 }).map((_, i) => (
-              <motion.div key={i} variants={fade} className="card overflow-hidden">
+              <motion.div
+                key={i}
+                variants={fade}
+                className="card overflow-hidden"
+              >
                 <div className="aspect-[16/9] w-full bg-muted" />
                 <div className="p-4">
                   <div className="h-5 w-2/3 bg-muted rounded mb-3" />
@@ -293,7 +282,9 @@ export default function PublicPostsGrid() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="card card-pad text-muted">
-            {q ? "Sin resultados para tu búsqueda." : "No hay publicaciones aún."}
+            {q
+              ? "Sin resultados para tu búsqueda."
+              : "No hay publicaciones aún."}
           </div>
         ) : (
           <>
@@ -313,13 +304,18 @@ export default function PublicPostsGrid() {
                 const rawCover =
                   it.attachments?.find((a) =>
                     (a?.mime || "").startsWith("image/")
-                  )?.url || it.attachments?.[0]?.url || null;
+                  )?.url ||
+                  it.attachments?.[0]?.url ||
+                  null;
 
                 const cover = rawCover ? resolveAssetUrl(rawCover) : null;
 
+                // ✅ slug (fallback a id si falta)
+                const postSlug = it.slug || it.id;
+
                 return (
                   <motion.article
-                    key={it.id}
+                    key={it.id ?? it.slug}
                     variants={fade}
                     className={cx(
                       "group card overflow-hidden interactive cursor-pointer",
@@ -327,10 +323,16 @@ export default function PublicPostsGrid() {
                     )}
                     tabIndex={0}
                     role="button"
-                    onClick={() => navigate(`/public/simple-posts/${it.id}`)}
+                    onClick={() =>
+                      navigate(
+                        `/public/simple-posts/${encodeURIComponent(postSlug)}`
+                      )
+                    }
                     onKeyDown={(e) =>
                       e.key === "Enter" &&
-                      navigate(`/public/simple-posts/${it.id}`)
+                      navigate(
+                        `/public/simple-posts/${encodeURIComponent(postSlug)}`
+                      )
                     }
                   >
                     {/* Cover image / skeleton */}
@@ -373,7 +375,9 @@ export default function PublicPostsGrid() {
 
                       <div className="mt-4 flex items-center justify-between">
                         <Link
-                          to={`/public/simple-posts/${it.id}`}
+                          to={`/public/simple-posts/${encodeURIComponent(
+                            postSlug
+                          )}`}
                           className="link font-subtitle"
                           onClick={(e) => e.stopPropagation()}
                         >
@@ -400,7 +404,8 @@ export default function PublicPostsGrid() {
                 </button>
 
                 <span className="text-sm text-muted-foreground tabular-nums">
-                  Página <strong>{page}</strong> de <strong>{totalPages}</strong>
+                  Página <strong>{page}</strong> de{" "}
+                  <strong>{totalPages}</strong>
                 </span>
 
                 <button

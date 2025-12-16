@@ -17,8 +17,38 @@ class PostController extends Controller
     public function index()
     {
         return Post::query()
-            ->select(['id', 'author_id', 'title', 'data', 'created_at', 'updated_at'])
+            ->select(['id', 'author_id', 'title', 'slug', 'data', 'created_at', 'updated_at'])
             ->latest('id')->get();
+    }
+
+    /**
+     * Genera slug único basado en título.
+     * - Si ya existe, agrega sufijo -2, -3, ...
+     * - Si estamos actualizando, excluye el $ignoreId
+     */
+    private function makeUniqueSlug(string $title, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($title);
+        if (!$base) {
+            // fallback por si title viene raro (emoji-only, etc.)
+            $base = 'post';
+        }
+
+        $slug = $base;
+        $i = 2;
+
+        $q = Post::query()->where('slug', $slug);
+        if ($ignoreId) $q->where('id', '!=', $ignoreId);
+
+        while ($q->exists()) {
+            $slug = "{$base}-{$i}";
+            $i++;
+
+            $q = Post::query()->where('slug', $slug);
+            if ($ignoreId) $q->where('id', '!=', $ignoreId);
+        }
+
+        return $slug;
     }
 
     private function normalizeAuthor($author)
@@ -98,9 +128,13 @@ class PostController extends Controller
                 ];
             }
 
+            $title = (string) $req->string('title');
+            $slug  = $this->makeUniqueSlug($title);
+
             $post = Post::create([
                 'author_id' => auth()->id(),
-                'title'     => (string) $req->string('title'),
+                'title'     => $title,
+                'slug'      => $slug, // ✅ GUARDAR SLUG
                 'data'      => [
                     'author'      => $author,
                     'info'        => $req->input('info'),
@@ -111,7 +145,7 @@ class PostController extends Controller
                 ],
             ]);
 
-            Log::info('[simple-posts.store] OK', ['id' => $post->id]);
+            Log::info('[simple-posts.store] OK', ['id' => $post->id, 'slug' => $post->slug]);
 
             return response()->json($post, 201);
         } catch (\Throwable $e) {
@@ -144,7 +178,6 @@ class PostController extends Controller
 
         try {
             $beforeData = $post->data ?? [];
-
             $data = $post->data ?? [];
 
             if ($req->has('author')) {
@@ -179,8 +212,20 @@ class PostController extends Controller
 
             $update = ['data' => $data];
 
+            // ✅ si cambian el title, actualiza title (y si slug está vacío, lo crea)
             if ($req->filled('title')) {
-                $update['title'] = (string) $req->string('title');
+                $newTitle = (string) $req->string('title');
+                $update['title'] = $newTitle;
+
+                // Recomendación: NO cambiar slug si ya existe (evita romper URLs compartidas)
+                if (empty($post->slug)) {
+                    $update['slug'] = $this->makeUniqueSlug($newTitle, $post->id);
+                }
+            }
+
+            // ✅ Si el post viejo no tiene slug (legacy), créalo una vez
+            if (empty($post->slug) && empty($update['slug'])) {
+                $update['slug'] = $this->makeUniqueSlug($post->title ?: "post-{$post->id}", $post->id);
             }
 
             Log::info('[simple-posts.update] BEFORE->AFTER data', [
@@ -193,16 +238,15 @@ class PostController extends Controller
 
             Log::info('[simple-posts.update] SAVE RESULT', [
                 'ok'       => $ok,
-                'changes'  => $post->getChanges(), // cambios en la instancia en memoria
+                'changes'  => $post->getChanges(),
             ]);
 
-            // A veces la instancia queda “vieja”; refrescamos desde DB
             $post->refresh();
 
             Log::info('[simple-posts.update] REFRESHED', [
                 'id'    => $post->id,
                 'title' => $post->title,
-                // cuidado: puede ser largo, pero útil en la primera depuración
+                'slug'  => $post->slug,
                 'data'  => $post->data,
             ]);
 
@@ -294,5 +338,42 @@ class PostController extends Controller
         $post->save();
 
         return response()->json(['removed' => $removed], $removed ? 200 : 404);
+    }
+
+    public function destroy(Post $post)
+    {
+        try {
+            // borrar adjuntos del storage si existen
+            $data = $post->data ?? [];
+            $attachments = $data['attachments'] ?? [];
+
+            if (is_array($attachments)) {
+                foreach ($attachments as $a) {
+                    $path = $a['path'] ?? null;
+                    if ($path && Storage::disk('public')->exists($path)) {
+                        Storage::disk('public')->delete($path);
+                    }
+                }
+            }
+
+            $post->delete();
+
+            return response()->json(['ok' => true]);
+        } catch (\Throwable $e) {
+            Log::error('[simple-posts.destroy] ERROR', [
+                'id' => $post->id,
+                'msg' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'message' => 'No se pudo eliminar el post',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function destroyById(int $id)
+    {
+        $post = Post::findOrFail($id); // busca por ID aunque el route key sea slug
+        return $this->destroy($post);  // reutiliza tu destroy(Post $post)
     }
 }

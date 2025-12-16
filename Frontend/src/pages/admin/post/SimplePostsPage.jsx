@@ -9,6 +9,7 @@ export default function SimplePostsPage() {
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -33,6 +34,7 @@ export default function SimplePostsPage() {
     setEditing(null);
     setOpen(true);
   };
+
   const openEdit = (item) => {
     setEditing(item);
     setOpen(true);
@@ -50,6 +52,39 @@ export default function SimplePostsPage() {
     });
   };
 
+  const removeLocal = (id) =>
+    setItems((prev) => prev.filter((x) => x.id !== id));
+
+  const onDelete = async (it) => {
+    if (!it?.id) return;
+
+    const ok = window.confirm(
+      `¿Eliminar este post?\n\n"${
+        it.title || `#${it.id}`
+      }"\n\nEsto no se puede deshacer.`
+    );
+    if (!ok) return;
+
+    setDeletingId(it.id);
+
+    // optimista
+    const snapshot = items;
+    removeLocal(it.id);
+
+    try {
+      await postsService.remove(it.id);
+    } catch (err) {
+      console.error(err);
+      // rollback
+      setItems(snapshot);
+      alert(
+        err?.response?.data?.message || err?.message || "No se pudo eliminar"
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
       {/* Header */}
@@ -62,11 +97,7 @@ export default function SimplePostsPage() {
             Administra notas rápidas, links y adjuntos en un solo lugar.
           </p>
         </div>
-        <button
-          type="button"
-          className="btn btn-accent"
-          onClick={openNew}
-        >
+        <button type="button" className="btn btn-accent" onClick={openNew}>
           Nuevo
         </button>
       </div>
@@ -90,35 +121,24 @@ export default function SimplePostsPage() {
           </div>
         ) : (
           items.map((it) => (
-            <article
-              key={it.id}
-              className="card card-pad interactive"
-            >
+            <article key={it.id} className="card card-pad interactive">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 space-y-1.5">
-                  {/* Título */}
                   <h3 className="text-lg md:text-xl font-semibold font-display">
                     {it.title}
                   </h3>
 
-                  {/* Autor */}
                   {it.author?.name && (
                     <p className="text-xs text-soft font-subtitle">
                       Autor:{" "}
-                      <span className="font-medium">
-                        {it.author.name}
-                      </span>
+                      <span className="font-medium">{it.author.name}</span>
                     </p>
                   )}
 
-                  {/* Info / descripción corta */}
                   {it.info && (
-                    <p className="text-sm text-soft mt-1">
-                      {it.info}
-                    </p>
+                    <p className="text-sm text-soft mt-1">{it.info}</p>
                   )}
 
-                  {/* Links */}
                   {it.links?.length ? (
                     <div className="mt-2 flex flex-wrap gap-2">
                       {it.links.map((l, i) => (
@@ -138,7 +158,6 @@ export default function SimplePostsPage() {
                     </div>
                   ) : null}
 
-                  {/* Adjuntos */}
                   {Array.isArray(it.attachments) &&
                     it.attachments.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-2">
@@ -166,6 +185,16 @@ export default function SimplePostsPage() {
                   >
                     Editar
                   </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-outline text-sm border-destructive text-red-600 hover:bg-red-50"
+                    onClick={() => onDelete(it)}
+                    disabled={deletingId === it.id}
+                    title="Eliminar"
+                  >
+                    {deletingId === it.id ? "Eliminando…" : "Eliminar"}
+                  </button>
                 </div>
               </div>
             </article>
@@ -173,7 +202,6 @@ export default function SimplePostsPage() {
         )}
       </div>
 
-      {/* Modal de creación/edición */}
       <SimplePostModal
         open={open}
         initial={editing}
