@@ -21,7 +21,10 @@ const formatDate = (iso, withTime = false) => {
 
 const estimateReadingTime = (html) => {
   if (!html) return null;
-  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const text = html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   const words = text ? text.split(" ").length : 0;
   return `${Math.max(1, Math.round(words / 200))} min`;
 };
@@ -229,7 +232,8 @@ export default function BlogArticle() {
             Artículo no encontrado
           </h2>
           <p className="text-sm text-soft mb-4">
-            Revisa el enlace. Esta publicación puede no existir o no estar publicada.
+            Revisa el enlace. Esta publicación puede no existir o no estar
+            publicada.
           </p>
           <Link to="/publicaciones" className="btn btn-accent ">
             ← Volver a publicaciones
@@ -329,20 +333,23 @@ export default function BlogArticle() {
         )}
 
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/25 to-black/60" />
-        <div className="relative h-full flex items	end mt-36">
-          <div className="w-full px-4 sm:px-6 lg:px-8 pb-8">
+
+        {/* ✅ sin mt-36 (eso era lo que lo recortaba) */}
+        <div className="relative h-full min-h-0 flex items-end">
+          {/* ✅ padding-top controlado para “bajar” el contenido sin empujarlo fuera */}
+          <div className="w-full px-4 sm:px-6 lg:px-8 pb-8 pt-24 md:pt-28">
             <header className="max-w-4xl">
               {/* Botón volver a publicaciones */}
               <div className="mb-3">
                 <Link
                   to="/publicaciones"
                   className="
-                    inline-flex items-center gap-1 rounded-full
-                    border border-white/90 bg-white/40
-                    px-3 py-1 text-sm font-medium
-                    text-white/90 backdrop-blur-sm
-                    transition hover:bg-white/15 hover:border-white/70
-                  "
+              inline-flex items-center gap-1 rounded-full
+              border border-white/90 bg-white/40
+              px-3 py-1 text-sm font-medium
+              text-white/90 backdrop-blur-sm
+              transition hover:bg-white/15 hover:border-white/70
+            "
                 >
                   ← Volver a publicaciones
                 </Link>
@@ -356,7 +363,14 @@ export default function BlogArticle() {
                 {art.featured && <Badge tone="warn">Destacado</Badge>}
               </div>
 
-              <h1 className="text-white text-3xl sm:text-4xl font-semibold tracking-[0.01em] drop-shadow">
+              {/* ✅ título que sí se ajusta */}
+              <h1
+                className="
+            text-white text-3xl sm:text-4xl font-semibold tracking-[0.01em] drop-shadow
+            leading-tight whitespace-normal break-words
+            [overflow-wrap:anywhere] [text-wrap:balance]
+          "
+              >
                 {art.title}
               </h1>
 
@@ -443,7 +457,7 @@ export default function BlogArticle() {
 
       {/* Share bar + Autor */}
       <section className="px-4 md:px-6 mt-8">
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 mb-4">
           {/* Share */}
           <div className="rounded-2xl border border-token bg-card p-4">
             <div className="text-sm font-subtitle opacity-80 mb-2">
@@ -506,26 +520,32 @@ export default function BlogArticle() {
               )}
             </div>
           </div>
-
+ 
           {/* Autor */}
           <div className="rounded-2xl border border-token bg-card p-4 flex items-center gap-4">
             {art.author?.avatar_url ? (
               <img
                 src={art.author.avatar_url}
                 alt={authorName}
-                className="w-12 h-12 rounded-full object-cover border border-token"
+                className="w-12 h-12 rounded-full object-cover border border-token shrink-0"
                 onError={(e) => (e.currentTarget.style.display = "none")}
               />
             ) : (
-              <div className="w-12 h-12 rounded-full grid place-items-center bg-primary text-[hsl(var(--primary-foreground))] font-bold">
+              <div className="w-12 h-12 rounded-full grid place-items-center bg-primary text-[hsl(var(--primary-foreground))] font-bold shrink-0">
                 {initialsOf(authorName)}
               </div>
             )}
-            <div className="min-w-0">
-              <div className="text-sm text-soft mb-1">Escrito por:</div>
+
+            {/* ✅ sin mb-4 */}
+            <div className="min-w-0 leading-tight">
+              <div className="text-sm text-soft">Escrito por:</div>
               <div className="font-semibold">{authorName}</div>
+
               {art.author?.slug && (
-                <Link to={`/equipo/${art.author.slug}`} className="link text-sm">
+                <Link
+                  to={`/equipo/${art.author.slug}`}
+                  className="link text-sm inline-block mt-1"
+                >
                   Ver perfil
                 </Link>
               )}
