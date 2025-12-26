@@ -123,4 +123,7 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'client_key' => env('APP_CLIENT_KEY', 'default'),
+    'billing_token' => env('APP_BILLING_TOKEN'),
+
 ];

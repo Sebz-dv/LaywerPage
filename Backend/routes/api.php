@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AppLicensesController;
 use App\Http\Controllers\ArticleCategoryController;
 use Illuminate\Support\Facades\Route;
 
@@ -129,6 +130,9 @@ Route::middleware([])->group(function () {
 
     Route::post('/contact', [ContactController::class, 'store']);
     Route::get('/media-slots/{key}', [MediaSlotsController::class, 'show']);
+    Route::get('/billing/status', [AppLicensesController::class, 'status']);
+    Route::post('/billing/set', [AppLicensesController::class, 'setStatus']);
+    Route::get('/billing/toggle', [AppLicensesController::class, 'toggleFromBrowser']);
 });
 
 Route::fallback(fn() => response()->json(['message' => 'Not Found'], 404));
